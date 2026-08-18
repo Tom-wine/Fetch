@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Slot } from '@radix-ui/react-slot'
+import { Slot, Slottable } from '@radix-ui/react-slot'
 import { cva, type VariantProps } from 'class-variance-authority'
 
 import { cn } from '@/lib/utils'
@@ -64,8 +64,13 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const text = label ? upperSnake(label) : null
 
     return (
+      // Slottable marks which child Slot should merge its props onto. Without it,
+      // `asChild` hands Slot up to three children — the caller's element, the label
+      // span and the arrow — and Slot requires exactly one, so it throws
+      // "Slot failed to slot onto its children". With it, the label and arrow are
+      // rendered as siblings *inside* the caller's element instead.
       <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props}>
-        {children}
+        <Slottable>{children}</Slottable>
         {text ? (
           <span>
             {text}

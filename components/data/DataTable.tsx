@@ -51,11 +51,31 @@ const features = tableFeatures({
     datetime: sortFn_datetime,
     text: sortFn_text,
   },
+  // Type-only slot (v9 strips the value): declares the shape of `columnDef.meta`
+  // for every column of this table, without global declaration merging.
+  columnMeta: {} as ColumnMeta,
 })
+
+/**
+ * Per-column metadata. `sortable` is how a column opts into SERVER sorting: the
+ * table cannot know which of a screen's columns the API can actually order by, and
+ * offering a header that silently sorts only the loaded page would be a lie.
+ *
+ * It is ignored in client mode, where every column is sortable as before.
+ */
+export interface ColumnMeta {
+  sortable?: boolean
+}
 
 export type TableFeaturesOf = typeof features
 export type FetchColumnDef<TData extends RowData> = ColumnDef<TableFeaturesOf, TData, unknown>
 export type { RowSelectionState }
+
+/** The single active sort, as the API expresses it (`?sort=email&order=desc`). */
+export interface SortSpec {
+  id: string
+  desc: boolean
+}
 
 const SELECT_COLUMN_ID = '__select__'
 
@@ -102,6 +122,21 @@ export interface DataTableProps<TData extends RowData> {
   /** Emitted when rows-per-page changes. The caller resets to page 1. */
   onPageSizeChange?: (size: number) => void
 
+  /* ---- server-driven sorting (both optional) -----------------------------
+     Supplying `onSortingChange` switches the table into manual sorting: the row
+     model is left in the order the API returned it, and a header click is emitted
+     upward as `{ id, desc } | null` instead of reordering the current page.
+
+     Sorting only the loaded page would be a lie — the row that should be first is
+     usually not on it — so this is the seam that lets §7 #7's sortable headers be
+     honest against a paged endpoint.
+     ---------------------------------------------------------------------- */
+
+  /** The active sort, controlled by the caller. `null` means unsorted. */
+  sorting?: SortSpec | null
+  /** Emitted on a header click. Presence enables manual sorting. */
+  onSortingChange?: (next: SortSpec | null) => void
+
   /** Renders one row as a card under `md`, where a table cannot fit (§9 rule 3). */
   renderCard?: (row: TData) => React.ReactNode
 
@@ -133,6 +168,8 @@ export function DataTable<TData extends RowData>({
   page,
   onPageChange,
   onPageSizeChange,
+  sorting,
+  onSortingChange,
   renderCard,
   toolbar,
   toolbarActions,
@@ -143,16 +180,29 @@ export function DataTable<TData extends RowData>({
   const rowSelection = selection ?? internalSelection
   const setRowSelection = onSelectionChange ?? setInternalSelection
 
+  /**
+   * Manual sorting is chosen by the caller supplying `onSortingChange`. In v9 that
+   * means `manualSorting: true` plus a controlled `state.sorting` — the sorted row
+   * model then leaves `data` in the order the API returned it.
+   */
+  const manualSort = onSortingChange !== undefined
+
   const allColumns = React.useMemo<FetchColumnDef<TData>[]>(() => {
-    if (!enableSelection) return columns
+    // Server sorting is opt-in per column: `getCanSort()` stays the single source
+    // of truth for whether a header is clickable, so the header markup is unchanged.
+    const base = manualSort
+      ? columns.map((c) => ({ ...c, enableSorting: c.meta?.sortable === true }))
+      : columns
+
+    if (!enableSelection) return base
     const selectColumn: FetchColumnDef<TData> = {
       id: SELECT_COLUMN_ID,
       header: '',
       enableSorting: false,
       enableHiding: false,
     }
-    return [selectColumn, ...columns]
-  }, [columns, enableSelection])
+    return [selectColumn, ...base]
+  }, [columns, enableSelection, manualSort])
 
   const initialVisibility = React.useMemo(
     () => Object.fromEntries(initiallyHidden.map((id) => [id, false])),
@@ -183,7 +233,11 @@ export function DataTable<TData extends RowData>({
     columns: allColumns,
     getRowId: (row) => getRowId(row),
     enableRowSelection: enableSelection,
-    state: manual ? { rowSelection, pagination: controlledPagination } : { rowSelection },
+    state: {
+      rowSelection,
+      ...(manual ? { pagination: controlledPagination } : {}),
+      ...(manualSort ? { sorting: sorting ? [sorting] : [] } : {}),
+    },
     onRowSelectionChange: (updater) =>
       setRowSelection(typeof updater === 'function' ? updater(rowSelection) : updater),
     ...(manual
@@ -204,6 +258,29 @@ export function DataTable<TData extends RowData>({
             if (next.pageIndex !== controlledPagination.pageIndex) {
               onPageChange?.(next.pageIndex + 1)
             }
+          },
+        }
+      : {}),
+    ...(manualSort
+      ? {
+          manualSorting: true,
+          // One column at a time — the API contract takes a single `sort`/`order`
+          // pair, so offering shift-click multi-sort would promise more than it can keep.
+          enableMultiSort: false,
+          // Keeps the third click in the cycle: asc → desc → none.
+          enableSortingRemoval: true,
+          // Without this, TanStack infers a descending first click for numeric
+          // columns, so LOYALTY would cycle desc → asc → none while ACCOUNT cycled
+          // asc → desc → none. One predictable direction beats a clever one.
+          sortDescFirst: false,
+          onSortingChange: (updater) => {
+            const current = sorting ? [sorting] : []
+            const next = typeof updater === 'function' ? updater(current) : updater
+            const first = next[0] ?? null
+            onSortingChange?.(first ? { id: first.id, desc: first.desc } : null)
+            // A new sort reorders the whole result set, so page 9 of the old order
+            // is meaningless. Emitted through the existing page callback.
+            if (manual) onPageChange?.(1)
           },
         }
       : {}),

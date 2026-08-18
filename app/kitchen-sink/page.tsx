@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import Link from 'next/link'
 import {
   Ban,
   Copy,
@@ -409,6 +410,35 @@ function ButtonSection() {
           <Button variant="danger" label="Disabled" disabled />
           <Button variant="gradient" label="Disabled" forward disabled />
         </Row>
+      </Panel>
+
+      <Panel label="as child — a link that looks like a button">
+        <div id="aschild-demo" className="flex flex-wrap items-center gap-3">
+          {/* Regression case: Button renders up to three children, and Radix Slot
+              accepts exactly one, so this used to throw. Slottable fixes it — the
+              output must be a single <a> carrying the button classes. */}
+          {/* The label supplies the text, so the slotted element carries only an
+              icon — passing both would render the caption twice. */}
+          <Button asChild variant="gradient" label="Import CSV" forward>
+            <Link href="/accounts/import">
+              <Upload className="size-4" />
+            </Link>
+          </Button>
+          <Button asChild variant="secondary" label="View accounts">
+            <Link href="/accounts">
+              <Users className="size-4" />
+            </Link>
+          </Button>
+          <Button asChild variant="link" label="Read the contract">
+            <a href="https://example.com/docs" rel="noreferrer">
+              <Link2 className="size-4" />
+            </a>
+          </Button>
+        </div>
+        <Prose className="text-[12px] text-muted">
+          Each of these is one anchor element, not a button wrapping a link, so it is keyboard- and
+          middle-click-navigable like any other link.
+        </Prose>
       </Panel>
     </Section>
   )
