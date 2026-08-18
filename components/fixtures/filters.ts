@@ -7,6 +7,7 @@ import { ALL } from '@/components/data/FilterSelect'
 import { CLUBS, type ClubId } from '@/lib/registries/clubs'
 import { PROVIDERS, type Competition, type ProviderId } from '@/lib/registries/providers'
 import type { FixtureFilters } from '@/lib/api/endpoints'
+import { DEFAULT_SORT_FIELD, isSortField } from './sorting'
 
 /**
  * Every control on /mytickets writes to the query string and reads back from it —
@@ -59,7 +60,7 @@ export const DEFAULT_STATE: FixtureQueryState = {
   accountId: ALL,
   providers: [],
   region: ALL,
-  sort: 'kickoff',
+  sort: DEFAULT_SORT_FIELD,
   order: 'asc',
   view: 'table',
   page: 1,
@@ -111,17 +112,6 @@ const COMPETITIONS: Record<Competition, true> = {
 
 export const COMPETITION_IDS = Object.keys(COMPETITIONS) as Competition[]
 
-/** Sort fields the URL is allowed to name — see `SortControl`. */
-const FIXTURE_SORT_FIELDS = new Set([
-  'kickoff',
-  'valueAtRisk',
-  'counts.total',
-  'counts.listed',
-  'counts.sold',
-  'counts.transferred',
-  'venue.name',
-])
-
 const PROVIDER_IDS = new Set<string>(PROVIDERS.map((p) => p.id))
 const CLUB_IDS = new Set<string>(CLUBS.map((c) => c.id))
 
@@ -144,7 +134,7 @@ export function readState(params: URLSearchParams): FixtureQueryState {
     accountId: params.get('account') ?? ALL,
     providers: params.getAll('provider').filter((p) => PROVIDER_IDS.has(p)) as ProviderId[],
     region: one(params, 'region', (v) => REGIONS.some((r) => r.id === v)),
-    sort: FIXTURE_SORT_FIELDS.has(params.get('sort') ?? '')
+    sort: isSortField(params.get('sort') ?? '')
       ? (params.get('sort') as string)
       : DEFAULT_STATE.sort,
     order: params.get('order') === 'desc' ? 'desc' : 'asc',
@@ -199,8 +189,23 @@ export function useFixtureFilters(): FixtureFilterControls {
 
   const state = React.useMemo(() => readState(new URLSearchParams(params.toString())), [params])
 
+  /**
+   * The URL is async — `router.replace` does not update `useSearchParams` before the
+   * next line runs — so two `set` calls in one tick would both merge into the same
+   * stale state and the second would silently undo the first. DataTable does exactly
+   * that: a header click emits the new sort AND a reset to page 1. Merging into the
+   * last value written, rather than the last value rendered, makes the pair compose.
+   */
+  const latest = React.useRef(state)
+  // Re-syncs only when the URL itself changes, so an unrelated re-render cannot
+  // clobber a value that has been pushed but not yet read back.
+  React.useMemo(() => {
+    latest.current = state
+  }, [state])
+
   const push = React.useCallback(
     (next: FixtureQueryState) => {
+      latest.current = next
       const qs = writeState(next).toString()
       // replace, not push: a filter tweak is not a navigation step, and `scroll: false`
       // keeps the table where the eye left it.
@@ -211,15 +216,13 @@ export function useFixtureFilters(): FixtureFilterControls {
 
   const set = React.useCallback(
     (patch: Partial<FixtureQueryState>) => {
-      const next = { ...state, ...patch }
-      // Page 9 of 13 is meaningless once the filter under it changes.
-      const onlyPaging = Object.keys(patch).every(
-        (k) => k === 'page' || k === 'view' || k === 'sort' || k === 'order',
-      )
+      const next = { ...latest.current, ...patch }
+      // Page 9 of 13 is meaningless once the filter — or the order — under it changes.
+      const onlyPaging = Object.keys(patch).every((k) => k === 'page' || k === 'view')
       if (!onlyPaging) next.page = 1
       push(next)
     },
-    [push, state],
+    [push],
   )
 
   const clear = React.useCallback(() => {

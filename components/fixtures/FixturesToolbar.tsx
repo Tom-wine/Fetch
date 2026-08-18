@@ -84,11 +84,14 @@ export function FixturesToolbar({
             onRefreshProvider={onRefreshProvider}
             refreshing={refreshing}
           />
+          {/* Only where there is no header to click: stacked cards under md, and grid
+              view at any width. At desktop table width the headers are the sort UI. */}
           <SortControl
             sort={state.sort}
             order={state.order}
             onSortChange={(sort) => set({ sort })}
             onOrderChange={(order) => set({ order })}
+            className={state.view === 'grid' ? undefined : 'md:hidden'}
           />
           <ViewToggle value={state.view} onChange={(view) => set({ view })} />
         </>

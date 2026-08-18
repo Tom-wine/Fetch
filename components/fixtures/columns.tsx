@@ -8,6 +8,7 @@ import { Chip } from '@/components/domain/StatusChip'
 import { Num } from '@/components/domain/Money'
 import { COMPETITION_LABEL } from '@/lib/registries/providers'
 import { KickoffCell } from './KickoffCell'
+import { SORTABLE_COLUMN_IDS } from './sorting'
 import { ValueAtRisk } from './ValueAtRisk'
 
 /**
@@ -17,6 +18,10 @@ import { ValueAtRisk } from './ValueAtRisk'
  * in the first cell, and mono runs ~12% wider than a proportional face, so nine
  * columns do not fit at 1280px (§9 rule 3). It is one click away in the view
  * options — hiding a duplicate is the sanctioned fix, shrinking the type is not.
+ *
+ * `meta.sortable` is stamped from the sort registry rather than written per column,
+ * so a header is clickable exactly when the API can order by that field. FIXTURE and
+ * COMPETITION have no entry, so they render as plain header text and emit nothing.
  */
 export const FIXTURE_COLUMNS: FetchColumnDef<Fixture>[] = (
   [
@@ -107,12 +112,10 @@ export const FIXTURE_COLUMNS: FetchColumnDef<Fixture>[] = (
       ),
     },
   ] as FetchColumnDef<Fixture>[]
-)
-  // Header sorting is off on every column: DataTable sorts the rows it holds, and
-  // under server paging that is one page pretending to be the whole list. The
-  // toolbar's `Sort ▾` drives `sort` / `order` on the API instead — same call
-  // session-a made on /accounts.
-  .map((column) => ({ ...column, enableSorting: false }))
+).map((column) => ({
+  ...column,
+  meta: { ...column.meta, sortable: SORTABLE_COLUMN_IDS.has(column.id ?? '') },
+}))
 
 /** Column ids hidden on first render — see the note above. */
 export const INITIALLY_HIDDEN = ['competition']

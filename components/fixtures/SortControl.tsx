@@ -11,34 +11,17 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { FIXTURE_SORTS } from './sorting'
 
 /**
  * `Sort ▾` plus an asc/desc toggle, both backed by the `sort` / `order` query params
  * and sent to the API.
  *
- * The table's own column headers are deliberately inert here (`enableSorting: false`
- * on every column): DataTable sorts only the rows it has been handed, and under
- * server paging that would sort page 1 of 14 fixtures and present it as if it had
- * sorted all of them. Same pattern session-a settled on for /accounts (fetch-sync.md,
- * 21:52) — one product, one sorting model. When DataTable grows `sorting` /
- * `onSortingChange`, this control comes out and the headers go live.
+ * The table headers do this job at desktop width, so this control is only rendered
+ * where there are no headers to click: under `md`, where the table becomes stacked
+ * cards, and in grid view at any width. Same state either way — both write `sort` and
+ * `order` to the URL, so switching layout never loses the order.
  */
-export interface SortOption {
-  /** A field path the API can sort by — dotted paths allowed (`counts.total`). */
-  value: string
-  /** Chrome label, written normally. */
-  label: string
-}
-
-export const FIXTURE_SORTS: SortOption[] = [
-  { value: 'kickoff', label: 'Kickoff' },
-  { value: 'valueAtRisk', label: 'Value at risk' },
-  { value: 'counts.total', label: 'Tickets' },
-  { value: 'counts.listed', label: 'Listed' },
-  { value: 'counts.sold', label: 'Sold' },
-  { value: 'counts.transferred', label: 'Transferred' },
-  { value: 'venue.name', label: 'Venue' },
-]
 
 export function SortControl({
   sort,
@@ -67,7 +50,7 @@ export function SortControl({
         </SelectTrigger>
         <SelectContent className="border-border bg-surface">
           {FIXTURE_SORTS.map((option) => (
-            <SelectItem key={option.value} value={option.value} className="text-body">
+            <SelectItem key={option.field} value={option.field} className="text-body">
               {option.label}
             </SelectItem>
           ))}

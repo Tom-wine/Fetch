@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { SearchX, Ticket } from 'lucide-react'
 
-import { DataTable } from '@/components/data/DataTable'
+import { DataTable, type SortSpec } from '@/components/data/DataTable'
 import { EmptyState } from '@/components/data/states'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { PrivacyToggle } from '@/components/domain/PrivacyToggle'
@@ -18,6 +18,7 @@ import { FixturesGrid } from './FixturesGrid'
 import { FixturesToolbar } from './FixturesToolbar'
 import { downloadCsv, exportFilename, fixturesToCsv } from './export'
 import { toFixtureFilters, useFixtureFilters } from './filters'
+import { columnIdForField, DEFAULT_SORT_FIELD, fieldForColumnId } from './sorting'
 
 /**
  * `/mytickets` — the inventory, one row per FIXTURE (§8.4).
@@ -57,6 +58,32 @@ export function MyTicketsScreen() {
       setExporting(false)
     }
   }, [allFixtures, query])
+
+  /**
+   * The header sort and the toolbar control are the same state: the URL's `sort` /
+   * `order`, which the API orders by. DataTable emits the column id, so it is mapped
+   * back to the field path here.
+   *
+   * A third click clears the sort, and clearing means returning to §8.4's default —
+   * kickoff ascending — rather than to an unspecified order. The list always has an
+   * order; pretending otherwise would leave the header unlit while the rows were
+   * still sorted.
+   */
+  const sorting = React.useMemo(
+    () => ({ id: columnIdForField(state.sort), desc: state.order === 'desc' }),
+    [state.order, state.sort],
+  )
+
+  const onSortingChange = React.useCallback(
+    (next: SortSpec | null) => {
+      set(
+        next
+          ? { sort: fieldForColumnId(next.id), order: next.desc ? 'desc' : 'asc' }
+          : { sort: DEFAULT_SORT_FIELD, order: 'asc' },
+      )
+    },
+    [set],
+  )
 
   const toolbar = (
     <FixturesToolbar
@@ -138,6 +165,8 @@ export function MyTicketsScreen() {
           page={fixtures.page}
           onPageChange={(page) => set({ page })}
           onPageSizeChange={(pageSize) => set({ pageSize })}
+          sorting={sorting}
+          onSortingChange={onSortingChange}
           renderCard={(fixture) => (
             <FixtureCard fixture={fixture} linked={false} className="border-0 bg-transparent p-0" />
           )}
