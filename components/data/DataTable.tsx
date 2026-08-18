@@ -84,6 +84,24 @@ export interface DataTableProps<TData extends RowData> {
   defaultPageSize?: number
   defaultDensity?: Density
 
+  /* ---- server-driven pagination (all optional) ---------------------------
+     Supplying `pageCount` switches the table into manual mode: `data` is taken
+     to be exactly one page, nothing is sliced locally, and the footer reads from
+     `totalRows` / `pageCount` instead of `data.length`. Omit them all and the
+     table paginates client-side exactly as before.
+     ---------------------------------------------------------------------- */
+
+  /** Total pages, from the API's `meta.totalPages`. Presence enables manual mode. */
+  pageCount?: number
+  /** Total matching rows, from the API's `meta.total`. Drives the `Total N` footer. */
+  totalRows?: number
+  /** Current 1-based page, from the API's `meta.page`. */
+  page?: number
+  /** Emitted with the next 1-based page. The caller refetches. */
+  onPageChange?: (page: number) => void
+  /** Emitted when rows-per-page changes. The caller resets to page 1. */
+  onPageSizeChange?: (size: number) => void
+
   /** Renders one row as a card under `md`, where a table cannot fit (§9 rule 3). */
   renderCard?: (row: TData) => React.ReactNode
 
@@ -110,6 +128,11 @@ export function DataTable<TData extends RowData>({
   initiallyHidden = [],
   defaultPageSize = 25,
   defaultDensity = 'comfortable',
+  pageCount,
+  totalRows,
+  page,
+  onPageChange,
+  onPageSizeChange,
   renderCard,
   toolbar,
   toolbarActions,
@@ -138,15 +161,52 @@ export function DataTable<TData extends RowData>({
     [],
   )
 
+  /**
+   * Manual mode is chosen by the caller supplying `pageCount`. In v9 that means
+   * `manualPagination: true` plus `pageCount` / `rowCount` options — the paginated
+   * row model then passes `data` through untouched, and `getPageCount()` and
+   * `getRowCount()` resolve from those options rather than counting rows.
+   */
+  const manual = pageCount !== undefined
+
+  // The server owns the page index in manual mode, so the table's own slice is
+  // controlled from the `page` prop (1-based on the wire, 0-based in the table).
+  const [uncontrolledPageSize, setUncontrolledPageSize] = React.useState(defaultPageSize)
+  const controlledPagination = React.useMemo(
+    () => ({ pageIndex: Math.max(0, (page ?? 1) - 1), pageSize: uncontrolledPageSize }),
+    [page, uncontrolledPageSize],
+  )
+
   const table = useTable({
     features,
     data,
     columns: allColumns,
     getRowId: (row) => getRowId(row),
     enableRowSelection: enableSelection,
-    state: { rowSelection },
+    state: manual ? { rowSelection, pagination: controlledPagination } : { rowSelection },
     onRowSelectionChange: (updater) =>
       setRowSelection(typeof updater === 'function' ? updater(rowSelection) : updater),
+    ...(manual
+      ? {
+          manualPagination: true,
+          pageCount,
+          rowCount: totalRows,
+          onPaginationChange: (updater) => {
+            const next = typeof updater === 'function' ? updater(controlledPagination) : updater
+            if (next.pageSize !== controlledPagination.pageSize) {
+              // Rows-per-page always returns to page 1 — page 9 of 13 is meaningless
+              // once the page size changes under it.
+              setUncontrolledPageSize(next.pageSize)
+              onPageSizeChange?.(next.pageSize)
+              onPageChange?.(1)
+              return
+            }
+            if (next.pageIndex !== controlledPagination.pageIndex) {
+              onPageChange?.(next.pageIndex + 1)
+            }
+          },
+        }
+      : {}),
     initialState: {
       pagination: { pageIndex: 0, pageSize: defaultPageSize },
       columnVisibility: initialVisibility,
@@ -157,8 +217,17 @@ export function DataTable<TData extends RowData>({
 
   const pagination = table.state.pagination ?? { pageIndex: 0, pageSize: defaultPageSize }
   const rows = table.getRowModel().rows
-  const total = table.getRowCount()
+  const total = manual ? (totalRows ?? rows.length) : table.getRowCount()
   const selectedCount = Object.values(rowSelection).filter(Boolean).length
+
+  /**
+   * Under server paging the header checkbox can only reach the rows currently
+   * loaded, so the count says so out loud. Implying a cross-page selection the API
+   * cannot honour is how a bulk delete quietly does the wrong thing.
+   */
+  const selectionSummary = manual
+    ? `${selectedCount} selected on this page`
+    : `${selectedCount} selected`
 
   const columnToggles = React.useMemo<ColumnToggle[]>(
     () =>
@@ -187,8 +256,10 @@ export function DataTable<TData extends RowData>({
         onDensityChange={setDensity}
         pageSize={pagination.pageSize}
         onPageSizeChange={(n) => {
+          // Manual mode routes through onPaginationChange, which resets to page 1
+          // and notifies the caller; client mode just re-slices locally.
           table.setPageSize(n)
-          table.setPageIndex(0)
+          if (!manual) table.setPageIndex(0)
         }}
         columns={columnToggles}
         onColumnToggle={(id, visible) =>
@@ -389,7 +460,7 @@ export function DataTable<TData extends RowData>({
           <div className="flex flex-wrap items-center justify-between gap-3">
             <span className="text-caption text-muted tabular-nums">
               Total {total} {total === 1 ? noun : `${noun}s`}
-              {enableSelection && selectedCount > 0 && ` · ${selectedCount} selected`}
+              {enableSelection && selectedCount > 0 && ` · ${selectionSummary}`}
             </span>
 
             <div className="flex items-center gap-2">

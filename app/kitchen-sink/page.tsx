@@ -1039,7 +1039,7 @@ function TableSection() {
       label="data_table"
       note="live · /api/v1/accounts · sortable · selectable · stacked cards under md"
     >
-      <Panel label="live accounts — loading, populated, error, retry">
+      <Panel label="client-paged — the whole filtered set, sliced locally">
         <Row>
           <Button
             variant={forceFailure ? 'danger' : 'secondary'}
@@ -1109,6 +1109,8 @@ function TableSection() {
         </span>
       </Panel>
 
+      <ServerPagedPanel />
+
       <MutationPanel />
 
       <Panel label="fixture table — value at risk and the countdown ramp">
@@ -1163,6 +1165,72 @@ function TableSection() {
         />
       </Panel>
     </Section>
+  )
+}
+
+/**
+ * The server-paged twin of the table above. Same component, same columns; the only
+ * difference is that `pageCount` / `totalRows` / `page` are supplied, which puts
+ * DataTable into manual mode: it stops slicing and asks the caller for each page.
+ *
+ * pageSize 5 against 64 seeded accounts, so the footer must read
+ * `Total 64 accounts · 1 / 13`.
+ */
+function ServerPagedPanel() {
+  const [page, setPage] = React.useState(1)
+  const [pageSize, setPageSize] = React.useState(5)
+  const [selection, setSelection] = React.useState<RowSelectionState>({})
+
+  const filters = React.useMemo<AccountFilters>(
+    () => ({ page, pageSize, sort: 'email', order: 'asc' }),
+    [page, pageSize],
+  )
+  const accounts = useAccountsTable(filters)
+  const meta = accounts.query.data?.meta ?? null
+  const selectedCount = Object.values(selection).filter(Boolean).length
+
+  return (
+    <Panel label="server-paged — one page at a time, meta drives the footer">
+      <Row>
+        <span className="text-caption text-faint">
+          GET /api/v1/accounts?page={page}&amp;pageSize={pageSize} · meta.total {meta?.total ?? '—'}{' '}
+          · meta.totalPages {meta?.totalPages ?? '—'}
+        </span>
+      </Row>
+
+      <DataTable
+        data={accounts.rows}
+        columns={ACCOUNT_COLUMNS}
+        getRowId={(r) => r.id}
+        noun="account"
+        enableSelection
+        selection={selection}
+        onSelectionChange={setSelection}
+        loading={accounts.loading}
+        error={accounts.error}
+        onRetry={accounts.onRetry}
+        initiallyHidden={['proxy', 'tickets', 'loyalty']}
+        // These four are what switch the table into manual mode.
+        pageCount={meta?.totalPages}
+        totalRows={meta?.total}
+        page={page}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+        defaultPageSize={5}
+        toolbar={
+          <BulkActionBar
+            count={selectedCount}
+            noun="account"
+            pageScoped
+            onClear={() => setSelection({})}
+          >
+            <Button variant="secondary" size="sm" label="Check status" />
+            <Button variant="danger" size="sm" label="Delete" count={selectedCount} />
+          </BulkActionBar>
+        }
+        empty={<EmptyState icon={Users} title="No accounts" body="Nothing on this page." />}
+      />
+    </Panel>
   )
 }
 

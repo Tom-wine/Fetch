@@ -31,6 +31,38 @@
 
 ---
 
+## One-time GitHub setup — run this once, before the next part
+
+The repo to push is the **Fetch folder only**. A separate, unrelated git repo sits one level up at
+`Documents\1`; nothing in this project should ever touch it. Paste this into Claude Code once:
+
+```
+This repo pushes to https://github.com/Tom-wine/Fetch.git. Set it up, once:
+
+1. Confirm you are in the right repo: `git rev-parse --show-toplevel` must print the Fetch folder,
+   not Documents\1. If it prints anything else, stop and tell me.
+2. Clean up what should never be pushed:
+   - `git rm -r --cached _to_delete` and delete the folder — it holds a stray archive, not source.
+   - Add `_to_delete/` and `mitm_mcp_traffic.db` to .gitignore (the .db is an unrelated tool's file
+     that keeps reappearing in the working tree).
+   - Confirm `git ls-files` lists no .env file other than .env.example.
+3. Rename the local branch to match GitHub's default: `git branch -M main`.
+4. `git remote add origin https://github.com/Tom-wine/Fetch.git`
+5. If the GitHub repo was created with a README or licence, reconcile before the first push:
+   `git pull --rebase origin main`. Otherwise skip.
+6. `git push -u origin main`
+7. Commit the cleanup as "chore: gitignore local artefacts" if anything changed, and push again.
+
+Report the remote URL, the branch, and the pushed SHA.
+```
+
+Authentication: if the push prompts for a password, GitHub no longer accepts one — use
+`gh auth login`, or a personal access token as the password.
+
+From here every part ends with a push, and the per-part instructions assume `origin` and `main` exist.
+
+---
+
 ## Part 0 — Scaffold
 
 ```
@@ -57,6 +89,17 @@ ESLint and Prettier. Then:
 
 Do not build any UI beyond an empty page that says "Fetch.io". Run `npm run check` and `npm run dev`
 to prove it boots, then stop and show me the file tree and package.json.
+
+FINISH BY PUSHING
+- Commit first (message as specified above), then push. `git status` must be clean afterwards.
+- The remote is https://github.com/Tom-wine/Fetch.git. If `git remote -v` shows no `origin`, add it:
+  `git remote add origin https://github.com/Tom-wine/Fetch.git`
+- Push ONLY this repository — the Fetch folder. There is a separate, unrelated git repo one level up
+  at Documents\1; never run a git command from there, and never `git add` a path outside this folder.
+- On the main branch:      `git push -u origin main`
+- In a parallel worktree:   `git push -u origin <this part's branch>` — then tell me the branch name
+  so I can merge it, and do NOT merge into main yourself.
+- Report the pushed commit SHA and confirm the working tree is clean.
 ```
 
 ---
@@ -159,6 +202,17 @@ below lives in app/globals.css. Replace the placeholder slate tokens that shadcn
 
 Stop and show me the shell at /dashboard in both dark and light, at 1440px and at 375px, plus a
 screenshot of the type specimen so I can judge the Outfit Black / JetBrains Mono pairing.
+
+FINISH BY PUSHING
+- Commit first (message as specified above), then push. `git status` must be clean afterwards.
+- The remote is https://github.com/Tom-wine/Fetch.git. If `git remote -v` shows no `origin`, add it:
+  `git remote add origin https://github.com/Tom-wine/Fetch.git`
+- Push ONLY this repository — the Fetch folder. There is a separate, unrelated git repo one level up
+  at Documents\1; never run a git command from there, and never `git add` a path outside this folder.
+- On the main branch:      `git push -u origin main`
+- In a parallel worktree:   `git push -u origin <this part's branch>` — then tell me the branch name
+  so I can merge it, and do NOT merge into main yourself.
+- Report the pushed commit SHA and confirm the working tree is clean.
 ```
 
 ---
@@ -259,6 +313,17 @@ Definition of done, verify each before stopping:
 - No component sets a font family; no user-data string is passed through snake()/upperSnake().
 
 Stop and show me /kitchen-sink in both themes, plus the DataTable at 1280px and 375px.
+
+FINISH BY PUSHING
+- Commit first (message as specified above), then push. `git status` must be clean afterwards.
+- The remote is https://github.com/Tom-wine/Fetch.git. If `git remote -v` shows no `origin`, add it:
+  `git remote add origin https://github.com/Tom-wine/Fetch.git`
+- Push ONLY this repository — the Fetch folder. There is a separate, unrelated git repo one level up
+  at Documents\1; never run a git command from there, and never `git add` a path outside this folder.
+- On the main branch:      `git push -u origin main`
+- In a parallel worktree:   `git push -u origin <this part's branch>` — then tell me the branch name
+  so I can merge it, and do NOT merge into main yourself.
+- Report the pushed commit SHA and confirm the working tree is clean.
 ```
 
 ---
@@ -342,6 +407,83 @@ Definition of done, verify each before stopping:
 
 Prove it: run the dev server, curl both accounts calls above, and show me the responses plus the
 kitchen-sink table in its loading, populated and error states. Then stop.
+
+FINISH BY PUSHING
+- Commit first (message as specified above), then push. `git status` must be clean afterwards.
+- The remote is https://github.com/Tom-wine/Fetch.git. If `git remote -v` shows no `origin`, add it:
+  `git remote add origin https://github.com/Tom-wine/Fetch.git`
+- Push ONLY this repository — the Fetch folder. There is a separate, unrelated git repo one level up
+  at Documents\1; never run a git command from there, and never `git add` a path outside this folder.
+- On the main branch:      `git push -u origin main`
+- In a parallel worktree:   `git push -u origin <this part's branch>` — then tell me the branch name
+  so I can merge it, and do NOT merge into main yourself.
+- Report the pushed commit SHA and confirm the working tree is clean.
+```
+
+---
+
+## Part 3.5 — Server-driven pagination on DataTable (solo, ~20 min)
+
+> **Why this exists.** Part 3 found that `DataTable` counts its own rows, so a server-paged list shows
+> `Total 5 accounts · 1 / 1`. Every screen from here is server-paged. `DataTable` is a *shared* file, so
+> if Part 4 and Part 6 both run in parallel worktrees they will both edit it and conflict. Do this once,
+> alone, on `main`, commit — then fan out.
+
+```
+Read FETCH-IO-BUILD-PLAN.md §7 #7 and docs/API-CONTRACT.md.
+
+components/data/DataTable.tsx currently paginates client-side: it slices the rows it was handed and
+derives the total and page count from `data.length`. Every list endpoint returns
+`meta: { page, pageSize, total, totalPages }`, so a server-paged screen reads "Total 5 accounts · 1 / 1".
+
+Add server-driven pagination WITHOUT breaking the client-side mode:
+
+- New optional props: `pageCount?: number`, `totalRows?: number`, `page?: number`,
+  `onPageChange?: (page: number) => void`, `onPageSizeChange?: (size: number) => void`.
+- When `pageCount` is supplied, register the table as manually paginated per the installed
+  @tanstack/react-table v9 types (read them; do not assume the v8 `manualPagination` shape),
+  drive the footer from `totalRows` / `pageCount`, and emit page changes upward instead of slicing.
+- When those props are absent, behaviour is byte-for-byte what it is today. The kitchen-sink table
+  must keep working untouched.
+- Selection semantics under server paging: selecting the header checkbox selects the rows on the
+  CURRENT page only, and the bulk bar says so ("12 selected on this page"). Do not silently imply a
+  cross-page selection the API can't honour.
+- Rows-per-page changes reset to page 1.
+
+Then prove both modes on /kitchen-sink: keep the existing client-paged demo and add one server-paged
+demo wired to /api/v1/accounts with pageSize 5, whose footer must read "Total 64 accounts · 1 / 13".
+
+typecheck + lint exit 0. Commit as "part 3.5: server-driven pagination on DataTable".
+Stop and show me both table footers.
+
+FINISH BY PUSHING
+- Commit first (message as specified above), then push. `git status` must be clean afterwards.
+- The remote is https://github.com/Tom-wine/Fetch.git. If `git remote -v` shows no `origin`, add it:
+  `git remote add origin https://github.com/Tom-wine/Fetch.git`
+- Push ONLY this repository — the Fetch folder. There is a separate, unrelated git repo one level up
+  at Documents\1; never run a git command from there, and never `git add` a path outside this folder.
+- On the main branch:      `git push -u origin main`
+- In a parallel worktree:   `git push -u origin <this part's branch>` — then tell me the branch name
+  so I can merge it, and do NOT merge into main yourself.
+- Report the pushed commit SHA and confirm the working tree is clean.
+```
+
+---
+
+## Parallel-session preamble
+
+Paste this ABOVE any part you run in a second worktree at the same time as another session.
+
+```
+You are running in a git worktree alongside another Claude Code session working on a different part
+of this same project. To avoid clobbering each other:
+- Do NOT edit app/globals.css, app/layout.tsx, app/providers.tsx, or anything in components/ui,
+  components/data, components/domain, lib/format or lib/registries.
+- You MAY add new files under lib/api/hooks/ and components/<your-feature>/, and you MAY edit the
+  route folder for your own screen.
+- If you need a new shared primitive, or a change to an existing one, STOP and tell me what you need
+  and why, instead of making the change.
+- Commit only your own part's files. Never `git add -A` from the repo root without checking `git status`.
 ```
 
 ---
@@ -351,6 +493,14 @@ kitchen-sink table in its loading, populated and error states. Then stop.
 ```
 Read FETCH-IO-BUILD-PLAN.md §8.2. This is the anchor screen of the product — the reason the operator
 opens the app before an on-sale.
+
+REPO STATE — Parts 1, 2, 3 and 3.5 are done and committed. The data layer is finished:
+lib/api/client.ts is the only place that calls fetch, lib/api/hooks/useAccounts.ts already exposes
+list/filter hooks in the {loading, error, onRetry} shape DataTable expects, and DataTable now supports
+server-driven pagination via pageCount/totalRows/page/onPageChange. Use all of it. Add no new
+primitives — if a screen needs one, stop and tell me.
+Note: useRevealPassword is deliberately NOT a TanStack mutation (a cached mutation result would leave
+a plaintext password in the query cache). Call it directly and keep the value in the cell's own state.
 
 Build /accounts using ONLY the primitives from Part 2 and the hooks from Part 3.
 
@@ -380,6 +530,17 @@ Build /accounts using ONLY the primitives from Part 2 and the hooks from Part 3.
 
 Stop and show me /accounts in both themes, at 1440px and 375px, with the populated table, an empty
 state (temporarily seed zero accounts to prove it), and the loading skeleton.
+
+FINISH BY PUSHING
+- Commit first (message as specified above), then push. `git status` must be clean afterwards.
+- The remote is https://github.com/Tom-wine/Fetch.git. If `git remote -v` shows no `origin`, add it:
+  `git remote add origin https://github.com/Tom-wine/Fetch.git`
+- Push ONLY this repository — the Fetch folder. There is a separate, unrelated git repo one level up
+  at Documents\1; never run a git command from there, and never `git add` a path outside this folder.
+- On the main branch:      `git push -u origin main`
+- In a parallel worktree:   `git push -u origin <this part's branch>` — then tell me the branch name
+  so I can merge it, and do NOT merge into main yourself.
+- Report the pushed commit SHA and confirm the working tree is clean.
 ```
 
 ---
@@ -439,6 +600,17 @@ wrong-format.txt.
 
 Prove it: import messy-500.csv end to end and show me each of the four steps, then the downloaded
 error report. Then stop.
+
+FINISH BY PUSHING
+- Commit first (message as specified above), then push. `git status` must be clean afterwards.
+- The remote is https://github.com/Tom-wine/Fetch.git. If `git remote -v` shows no `origin`, add it:
+  `git remote add origin https://github.com/Tom-wine/Fetch.git`
+- Push ONLY this repository — the Fetch folder. There is a separate, unrelated git repo one level up
+  at Documents\1; never run a git command from there, and never `git add` a path outside this folder.
+- On the main branch:      `git push -u origin main`
+- In a parallel worktree:   `git push -u origin <this part's branch>` — then tell me the branch name
+  so I can merge it, and do NOT merge into main yourself.
+- Report the pushed commit SHA and confirm the working tree is clean.
 ```
 
 ---
@@ -447,6 +619,10 @@ error report. Then stop.
 
 ```
 Read FETCH-IO-BUILD-PLAN.md §8.4.
+
+REPO STATE — Parts 1, 2, 3 and 3.5 are done and committed. lib/api/hooks/useFixtures.ts already
+exposes the list hook; DataTable already supports server-driven pagination. Add no new shared
+primitives — if this screen needs one, stop and tell me.
 
 Build the inventory list — one row per FIXTURE, not per ticket.
 
@@ -466,6 +642,17 @@ Build the inventory list — one row per FIXTURE, not per ticket.
   own" → CTA to /accounts), and error state with retry.
 
 Stop and show me the screen in both themes with a fixture inside 7 days visible so I can see the ramp.
+
+FINISH BY PUSHING
+- Commit first (message as specified above), then push. `git status` must be clean afterwards.
+- The remote is https://github.com/Tom-wine/Fetch.git. If `git remote -v` shows no `origin`, add it:
+  `git remote add origin https://github.com/Tom-wine/Fetch.git`
+- Push ONLY this repository — the Fetch folder. There is a separate, unrelated git repo one level up
+  at Documents\1; never run a git command from there, and never `git add` a path outside this folder.
+- On the main branch:      `git push -u origin main`
+- In a parallel worktree:   `git push -u origin <this part's branch>` — then tell me the branch name
+  so I can merge it, and do NOT merge into main yourself.
+- Report the pushed commit SHA and confirm the working tree is clean.
 ```
 
 ---
@@ -506,6 +693,17 @@ Actions menu exactly, item for item, description for description.
 
 Stop and show me: the empty panel state, a 4-row selection with the panel populated, the open Actions
 menu, the marketplace modal, and the layout at 1279px (stacked) and 1280px (side by side).
+
+FINISH BY PUSHING
+- Commit first (message as specified above), then push. `git status` must be clean afterwards.
+- The remote is https://github.com/Tom-wine/Fetch.git. If `git remote -v` shows no `origin`, add it:
+  `git remote add origin https://github.com/Tom-wine/Fetch.git`
+- Push ONLY this repository — the Fetch folder. There is a separate, unrelated git repo one level up
+  at Documents\1; never run a git command from there, and never `git add` a path outside this folder.
+- On the main branch:      `git push -u origin main`
+- In a parallel worktree:   `git push -u origin <this part's branch>` — then tell me the branch name
+  so I can merge it, and do NOT merge into main yourself.
+- Report the pushed commit SHA and confirm the working tree is clean.
 ```
 
 ---
@@ -528,6 +726,17 @@ Read FETCH-IO-BUILD-PLAN.md §8.6.
 - Under md, stacked cards with the price still editable.
 
 Stop and show me an inline price edit succeeding, and the same edit rolling back on a forced failure.
+
+FINISH BY PUSHING
+- Commit first (message as specified above), then push. `git status` must be clean afterwards.
+- The remote is https://github.com/Tom-wine/Fetch.git. If `git remote -v` shows no `origin`, add it:
+  `git remote add origin https://github.com/Tom-wine/Fetch.git`
+- Push ONLY this repository — the Fetch folder. There is a separate, unrelated git repo one level up
+  at Documents\1; never run a git command from there, and never `git add` a path outside this folder.
+- On the main branch:      `git push -u origin main`
+- In a parallel worktree:   `git push -u origin <this part's branch>` — then tell me the branch name
+  so I can merge it, and do NOT merge into main yourself.
+- Report the pushed commit SHA and confirm the working tree is clean.
 ```
 
 ---
@@ -555,6 +764,17 @@ Read FETCH-IO-BUILD-PLAN.md §8.1.
   "Add manually". Never render three zeros and a blank chart.
 
 Stop and show me both the populated dashboard and the zero-data state, in both themes.
+
+FINISH BY PUSHING
+- Commit first (message as specified above), then push. `git status` must be clean afterwards.
+- The remote is https://github.com/Tom-wine/Fetch.git. If `git remote -v` shows no `origin`, add it:
+  `git remote add origin https://github.com/Tom-wine/Fetch.git`
+- Push ONLY this repository — the Fetch folder. There is a separate, unrelated git repo one level up
+  at Documents\1; never run a git command from there, and never `git add` a path outside this folder.
+- On the main branch:      `git push -u origin main`
+- In a parallel worktree:   `git push -u origin <this part's branch>` — then tell me the branch name
+  so I can merge it, and do NOT merge into main yourself.
+- Report the pushed commit SHA and confirm the working tree is clean.
 ```
 
 ---
@@ -577,6 +797,17 @@ Stop and show me both the populated dashboard and the zero-data state, in both t
   when the query is empty.
 
 Stop and show me the palette open with results from all four groups.
+
+FINISH BY PUSHING
+- Commit first (message as specified above), then push. `git status` must be clean afterwards.
+- The remote is https://github.com/Tom-wine/Fetch.git. If `git remote -v` shows no `origin`, add it:
+  `git remote add origin https://github.com/Tom-wine/Fetch.git`
+- Push ONLY this repository — the Fetch folder. There is a separate, unrelated git repo one level up
+  at Documents\1; never run a git command from there, and never `git add` a path outside this folder.
+- On the main branch:      `git push -u origin main`
+- In a parallel worktree:   `git push -u origin <this part's branch>` — then tell me the branch name
+  so I can merge it, and do NOT merge into main yourself.
+- Report the pushed commit SHA and confirm the working tree is clean.
 ```
 
 ---
@@ -624,6 +855,14 @@ Copy & typography
   cell containing "->" and "!=" and checking it is not glyph-substituted.
 
 Handoff
+The seam acceptance check — read this before running it
+- NEXT_PUBLIC_* is inlined at BUILD time, and two dev servers in one project share .next. Running a
+  second server with a different base URL rewrites the first server's bundle, so both show the new
+  value and a broken seam can read as a pass. Run this check with a single dev server and a cleared
+  .next: `rm -rf .next && NEXT_PUBLIC_API_BASE_URL=http://localhost:9999/v1 npm run dev`, confirm the
+  ErrorState names the variable, then clear .next again before restoring.
+
+Handoff
 - Write docs/BACKEND-HANDOFF.md: how the seam works, the one env var to change, the full endpoint
   contract with request/response examples, the envelope and error shapes, the money-as-minor-units
   and ISO-date conventions, the auth header, which endpoints are security-sensitive (credential
@@ -633,6 +872,17 @@ Handoff
 
 Then run npm run check and npm run build, and give me a final report against the §11 acceptance
 criteria in the plan — item by item, pass or fail, with the fix for anything failing.
+
+FINISH BY PUSHING
+- Commit first (message as specified above), then push. `git status` must be clean afterwards.
+- The remote is https://github.com/Tom-wine/Fetch.git. If `git remote -v` shows no `origin`, add it:
+  `git remote add origin https://github.com/Tom-wine/Fetch.git`
+- Push ONLY this repository — the Fetch folder. There is a separate, unrelated git repo one level up
+  at Documents\1; never run a git command from there, and never `git add` a path outside this folder.
+- On the main branch:      `git push -u origin main`
+- In a parallel worktree:   `git push -u origin <this part's branch>` — then tell me the branch name
+  so I can merge it, and do NOT merge into main yourself.
+- Report the pushed commit SHA and confirm the working tree is clean.
 ```
 
 ---
@@ -647,4 +897,15 @@ Pick up in this order, one prompt each:
 4. Bulk proxy import + tester (same wizard pattern as Part 5, reuse ImportWizard).
 5. /insights: ROI per club, sell-through rate, average days-to-sale.
 6. E2E tests with Playwright over the three critical paths: import a CSV, list a ticket, edit a price.
+
+FINISH BY PUSHING
+- Commit first (message as specified above), then push. `git status` must be clean afterwards.
+- The remote is https://github.com/Tom-wine/Fetch.git. If `git remote -v` shows no `origin`, add it:
+  `git remote add origin https://github.com/Tom-wine/Fetch.git`
+- Push ONLY this repository — the Fetch folder. There is a separate, unrelated git repo one level up
+  at Documents\1; never run a git command from there, and never `git add` a path outside this folder.
+- On the main branch:      `git push -u origin main`
+- In a parallel worktree:   `git push -u origin <this part's branch>` — then tell me the branch name
+  so I can merge it, and do NOT merge into main yourself.
+- Report the pushed commit SHA and confirm the working tree is clean.
 ```
