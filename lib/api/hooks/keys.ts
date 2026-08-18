@@ -23,6 +23,12 @@ export const qk = {
     list: (filters: AccountFilters) => [...qk.accounts.lists(), filters] as const,
     detail: (id: string) => [...qk.accounts.all, 'detail', id] as const,
     stats: () => [...qk.accounts.all, 'stats'] as const,
+    /**
+     * Every row matching a filter set, not just the current page — the set behind
+     * the /accounts bulk-selection escalation ("select all 64 matching these
+     * filters"). Separate from `list` because it is deliberately unpaged.
+     */
+    matching: (filters: AccountFilters) => [...qk.accounts.all, 'matching', filters] as const,
   },
   clubs: {
     all: ['clubs'] as const,
