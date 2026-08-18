@@ -1,3 +1,5 @@
+import type { Currency } from '@/lib/types'
+
 /**
  * The single locale setting for the whole app (§9 rule 6).
  *
@@ -14,7 +16,7 @@ export interface LocaleSettings {
   displayCurrency: Currency | null
 }
 
-export type Currency = 'GBP' | 'EUR' | 'USD'
+export type { Currency }
 
 export const DEFAULT_LOCALE: LocaleSettings = {
   locale: 'en-GB',

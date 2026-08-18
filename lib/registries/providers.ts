@@ -1,7 +1,9 @@
+import type { Competition, ProviderId } from '@/lib/types'
+
 /** Where an account actually buys — the club's own site, or a platform in front of it. */
 
-export type ProviderId =
-  'club-direct' | 'ticketmaster-uk' | 'eventim-uk' | 'seatgeek' | 'stubhub-exchange'
+// The unions live in lib/types.ts (§5) so the domain model has one home.
+export type { ProviderId }
 
 export interface ProviderInfo {
   id: ProviderId
@@ -28,7 +30,7 @@ export function getProvider(id: ProviderId): ProviderInfo {
 }
 
 /** Competitions a fixture can belong to (§5). */
-export type Competition = 'premier-league' | 'fa-cup' | 'efl-cup' | 'ucl' | 'uel' | 'friendly'
+export type { Competition }
 
 export const COMPETITION_LABEL: Record<Competition, string> = {
   'premier-league': 'Premier League',

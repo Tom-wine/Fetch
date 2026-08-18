@@ -1,0 +1,413 @@
+import { z } from 'zod'
+
+/**
+ * THE CONTRACT (§6).
+ *
+ * These schemas — not the TypeScript interfaces — are what the client validates
+ * every response against. If a real backend diverges, the parse fails loudly at the
+ * seam with a readable path instead of rendering `undefined` three components deep.
+ *
+ * lib/types.ts holds the same shapes as hand-written interfaces because §5 specifies
+ * them and they read better in editor tooltips; `schemas.test-types.ts` is not needed
+ * because the route handlers and the seed are both typed against lib/types.ts and
+ * parsed through these schemas, so a drift between the two fails the build or the parse.
+ *
+ * Money is `z.int()` — minor units, never a float (§6.2).
+ * Dates are ISO-8601 UTC strings; nothing here is pre-formatted.
+ */
+
+/* ------------------------------------------------------------------ unions */
+
+export const clubIdSchema = z.enum([
+  'arsenal',
+  'aston-villa',
+  'bournemouth',
+  'brentford',
+  'brighton',
+  'chelsea',
+  'crystal-palace',
+  'everton',
+  'fulham',
+  'ipswich',
+  'leicester',
+  'liverpool',
+  'man-city',
+  'man-utd',
+  'newcastle',
+  'nottingham-forest',
+  'southampton',
+  'tottenham',
+  'west-ham',
+  'wolves',
+])
+
+export const providerIdSchema = z.enum([
+  'club-direct',
+  'ticketmaster-uk',
+  'eventim-uk',
+  'seatgeek',
+  'stubhub-exchange',
+])
+
+export const platformSchema = z.enum(['viagogo', 'stubhub', 'ticombo', 'gigsberg', 'fanpass'])
+export const currencySchema = z.enum(['GBP', 'EUR', 'USD'])
+export const competitionSchema = z.enum([
+  'premier-league',
+  'fa-cup',
+  'efl-cup',
+  'ucl',
+  'uel',
+  'friendly',
+])
+
+export const membershipTypeSchema = z.enum([
+  'season-ticket',
+  'official-member',
+  'digital-member',
+  'international-member',
+  'ticket-exchange',
+  'general-sale',
+  'hospitality',
+])
+
+export const accountStatusSchema = z.enum([
+  'active',
+  'needs_login',
+  'needs_otp',
+  'locked',
+  'expired',
+  'error',
+])
+
+export const ticketStatusSchema = z.enum(['ticket', 'listed', 'sold', 'transferred'])
+export const ticketVisibilitySchema = z.enum(['visible', 'hidden'])
+export const listingStatusSchema = z.enum([
+  'ACTIVE',
+  'INACTIVE',
+  'SOLDOUT',
+  'PAUSED',
+  'UNDELIVERABLE',
+])
+export const proxyStatusSchema = z.enum(['ok', 'dead', 'untested'])
+
+/** An ISO-8601 UTC instant. Opaque to the server; the client formats it. */
+const isoDate = z.iso.datetime()
+
+/** Integer minor units. A float here is a bug, so the schema refuses one. */
+const minorUnits = z.int()
+
+/* --------------------------------------------------------------- resources */
+
+export const accountSchema = z.object({
+  id: z.string(),
+  email: z.email(),
+  passwordMasked: z.string(),
+  club: clubIdSchema,
+  provider: providerIdSchema,
+  membershipId: z.string(),
+  membershipType: membershipTypeSchema,
+  memberSince: isoDate.optional(),
+  membershipExpiresAt: isoDate.optional(),
+  loyaltyPoints: z.int().nonnegative().optional(),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  phone: z.string().optional(),
+  dateOfBirth: z.string().optional(),
+  status: accountStatusSchema,
+  proxyId: z.string().optional(),
+  imapId: z.string().optional(),
+  ticketsPurchased: z.int().nonnegative(),
+  lastCheckedAt: isoDate.optional(),
+  tags: z.array(z.string()),
+  notes: z.string().optional(),
+  createdAt: isoDate,
+})
+
+export const venueSchema = z.object({
+  name: z.string(),
+  city: z.string(),
+  country: z.string(),
+})
+
+export const fixtureCountsSchema = z.object({
+  total: z.int().nonnegative(),
+  listed: z.int().nonnegative(),
+  sold: z.int().nonnegative(),
+  transferred: z.int().nonnegative(),
+})
+
+export const fixtureSchema = z.object({
+  id: z.string(),
+  externalId: z.string(),
+  homeClub: clubIdSchema,
+  awayClub: clubIdSchema,
+  competition: competitionSchema,
+  matchweek: z.int().positive().optional(),
+  kickoff: isoDate,
+  venue: venueSchema,
+  artworkUrl: z.string(),
+  provider: providerIdSchema,
+  counts: fixtureCountsSchema,
+  blockedPlatforms: z.array(platformSchema),
+  faceValueTotal: minorUnits,
+  valueAtRisk: minorUnits,
+  currency: currencySchema,
+})
+
+export const ticketSchema = z.object({
+  id: z.string(),
+  fixtureId: z.string(),
+  block: z.string(),
+  levelName: z.string(),
+  row: z.string(),
+  seat: z.string(),
+  price: minorUnits,
+  faceValue: minorUnits,
+  currency: currencySchema,
+  accountId: z.string(),
+  visibility: ticketVisibilitySchema,
+  status: ticketStatusSchema,
+  groupId: z.string().optional(),
+  orderId: z.string(),
+  purchasedAt: isoDate,
+})
+
+export const listingSchema = z.object({
+  id: z.string(),
+  listingId: z.string(),
+  platform: platformSchema,
+  accountId: z.string(),
+  fixtureId: z.string(),
+  fixtureName: z.string(),
+  kickoff: isoDate,
+  price: minorUnits,
+  currency: currencySchema,
+  block: z.string(),
+  rank: z.int().positive().optional(),
+  quantity: z.int().positive(),
+  status: listingStatusSchema,
+  floorPrice: minorUnits.optional(),
+  createdAt: isoDate,
+})
+
+export const proxySchema = z.object({
+  id: z.string(),
+  groupId: z.string(),
+  label: z.string(),
+  host: z.string(),
+  port: z.int().positive(),
+  username: z.string(),
+  passwordMasked: z.string(),
+  country: z.string().optional(),
+  status: proxyStatusSchema,
+  lastTestedAt: isoDate.optional(),
+  latencyMs: z.int().nonnegative().optional(),
+})
+
+export const kpiSetSchema = z.object({
+  totalRevenue: minorUnits,
+  ticketsSold: z.int().nonnegative(),
+  monthRevenue: minorUnits,
+  currency: currencySchema,
+  accountsTotal: z.int().nonnegative(),
+  accountsHealthy: z.int().nonnegative(),
+  accountsNeedAction: z.int().nonnegative(),
+  valueAtRisk: minorUnits,
+})
+
+export const accountStatsSchema = z.object({
+  total: z.int().nonnegative(),
+  byStatus: z.record(accountStatusSchema, z.int().nonnegative()),
+  byClub: z.record(clubIdSchema, z.int().nonnegative()),
+})
+
+export const revenuePointSchema = z.object({
+  period: z.string(),
+  revenue: minorUnits,
+  ticketsSold: z.int().nonnegative(),
+  currency: currencySchema,
+})
+
+export const activityEntrySchema = z.object({
+  id: z.string(),
+  kind: z.enum(['sale', 'listing', 'account', 'system', 'marketplace']),
+  source: z.union([z.literal('fetch'), platformSchema]),
+  title: z.string(),
+  body: z.string(),
+  at: isoDate,
+})
+
+export const notificationSchema = z.object({
+  id: z.string(),
+  kind: z.enum(['success', 'issue', 'marketplace']),
+  title: z.string(),
+  body: z.string(),
+  at: isoDate,
+  unread: z.boolean(),
+})
+
+export const clubRefSchema = z.object({
+  id: clubIdSchema,
+  name: z.string(),
+  short: z.string(),
+  stadium: z.string(),
+  city: z.string(),
+  primaryColor: z.string(),
+  crest: z.string(),
+})
+
+export const searchResultSchema = z.object({
+  id: z.string(),
+  type: z.enum(['account', 'fixture', 'listing', 'navigation']),
+  title: z.string(),
+  subtitle: z.string().optional(),
+  href: z.string(),
+})
+
+export const bulkImportResultSchema = z.object({
+  created: z.int().nonnegative(),
+  updated: z.int().nonnegative(),
+  skipped: z.int().nonnegative(),
+  errors: z.array(
+    z.object({
+      row: z.int().nonnegative(),
+      email: z.string().optional(),
+      message: z.string(),
+    }),
+  ),
+})
+
+export const importRowVerdictSchema = z.object({
+  row: z.int().nonnegative(),
+  status: z.enum(['ok', 'warning', 'error']),
+  email: z.string().optional(),
+  messages: z.array(z.string()),
+})
+
+/** POST /accounts/:id/reveal — the one endpoint that returns a plaintext password. */
+export const revealSchema = z.object({
+  password: z.string(),
+  /** When the caller should consider it stale. The UI re-masks after 10s regardless. */
+  expiresAt: isoDate,
+})
+
+/** Bulk delete and the maintenance actions all report the same shape. */
+export const bulkActionResultSchema = z.object({
+  affected: z.int().nonnegative(),
+  ids: z.array(z.string()),
+})
+
+/* --------------------------------------------------------------- envelope */
+
+export const metaSchema = z.object({
+  page: z.int().positive(),
+  pageSize: z.int().positive(),
+  total: z.int().nonnegative(),
+  totalPages: z.int().nonnegative(),
+})
+
+export type Meta = z.infer<typeof metaSchema>
+
+export const apiErrorSchema = z.object({
+  code: z.string(),
+  message: z.string(),
+  /** Field-level messages for a form, keyed by field name. */
+  fields: z.record(z.string(), z.array(z.string())).optional(),
+})
+
+export type ApiErrorBody = z.infer<typeof apiErrorSchema>
+
+/**
+ * `{ data, meta, error }` — every successful response, §6.2. `meta` is null for a
+ * single resource and populated for a list.
+ */
+export function ok<T extends z.ZodType>(schema: T) {
+  return z.object({
+    data: schema,
+    meta: metaSchema.nullable(),
+    error: z.null(),
+  })
+}
+
+/** `{ data: null, meta: null, error: { code, message, fields? } }`. */
+export const errorEnvelopeSchema = z.object({
+  data: z.null(),
+  meta: z.null(),
+  error: apiErrorSchema,
+})
+
+/** A list response: `data: T[]` plus a non-null `meta`. */
+export function okList<T extends z.ZodType>(schema: T) {
+  return z.object({
+    data: z.array(schema),
+    meta: metaSchema,
+    error: z.null(),
+  })
+}
+
+/** Either shape, for a client that has not yet branched on `error`. */
+export function envelope<T extends z.ZodType>(schema: T) {
+  return z.union([ok(schema), errorEnvelopeSchema])
+}
+
+/* ----------------------------------------------------------- write payloads */
+
+/** POST /accounts — everything the manual-entry form can send. */
+export const accountCreateSchema = z.object({
+  email: z.email(),
+  password: z.string().min(1),
+  club: clubIdSchema,
+  provider: providerIdSchema.optional(),
+  membershipId: z.string().optional(),
+  membershipType: membershipTypeSchema.optional(),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  phone: z.string().optional(),
+  dateOfBirth: z.string().optional(),
+  loyaltyPoints: z.int().nonnegative().optional(),
+  proxyId: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+  notes: z.string().optional(),
+})
+
+export type AccountCreate = z.infer<typeof accountCreateSchema>
+
+/** PATCH /accounts/:id — every field optional; `password` is write-only. */
+export const accountPatchSchema = accountCreateSchema.partial().extend({
+  status: accountStatusSchema.optional(),
+})
+
+export type AccountPatch = z.infer<typeof accountPatchSchema>
+
+export const listingPatchSchema = z.object({
+  price: minorUnits.positive().optional(),
+  status: listingStatusSchema.optional(),
+  floorPrice: minorUnits.positive().optional(),
+  quantity: z.int().positive().optional(),
+})
+
+export type ListingPatch = z.infer<typeof listingPatchSchema>
+
+export const listingBulkSchema = z.object({
+  ids: z.array(z.string()).min(1),
+  action: z.enum(['activate', 'deactivate', 'reprice', 'delete']),
+  /** Required when `action` is `reprice`. Minor units. */
+  price: minorUnits.positive().optional(),
+})
+
+export type ListingBulk = z.infer<typeof listingBulkSchema>
+
+export const idsSchema = z.object({ ids: z.array(z.string()).min(1) })
+
+export const ticketActionSchema = z.object({
+  ids: z.array(z.string()).min(1),
+  /** `list` needs a platform and a price; the others ignore them. */
+  platform: platformSchema.optional(),
+  price: minorUnits.positive().optional(),
+})
+
+export const proxyBulkSchema = z.object({
+  /** Raw `host:port:user:pass` lines, as pasted. */
+  lines: z.array(z.string()).min(1),
+  groupId: z.string().optional(),
+})

@@ -1,3 +1,5 @@
+import type { ClubId } from '@/lib/types'
+
 /**
  * The 20 Premier League clubs — the reference data behind every ClubBadge, club
  * tab and club picker in the app.
@@ -8,27 +10,8 @@
  * Swapping in licensed artwork later is a one-file change here.
  */
 
-export type ClubId =
-  | 'arsenal'
-  | 'aston-villa'
-  | 'bournemouth'
-  | 'brentford'
-  | 'brighton'
-  | 'chelsea'
-  | 'crystal-palace'
-  | 'everton'
-  | 'fulham'
-  | 'ipswich'
-  | 'leicester'
-  | 'liverpool'
-  | 'man-city'
-  | 'man-utd'
-  | 'newcastle'
-  | 'nottingham-forest'
-  | 'southampton'
-  | 'tottenham'
-  | 'west-ham'
-  | 'wolves'
+// The union lives in lib/types.ts (§5) so the domain model has one home.
+export type { ClubId }
 
 export interface Club {
   id: ClubId

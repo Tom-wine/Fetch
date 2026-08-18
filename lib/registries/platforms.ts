@@ -1,6 +1,8 @@
+import type { Platform } from '@/lib/types'
+
 /** The secondary marketplaces Fetch.io lists on. */
 
-export type Platform = 'viagogo' | 'stubhub' | 'ticombo' | 'gigsberg' | 'fanpass'
+export type { Platform }
 
 export interface PlatformInfo {
   id: Platform

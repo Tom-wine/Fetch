@@ -269,6 +269,32 @@ Stop and show me /kitchen-sink in both themes, plus the DataTable at 1280px and 
 Read FETCH-IO-BUILD-PLAN.md §5 (data model) and §6 (the placeholder API). §6 is the most important
 section in the plan — the whole point is that attaching a real backend later costs one env var.
 
+REPO STATE — Parts 1 and 2 are done, committed (e977007, d6be2d7) and audited. Do NOT rebuild them.
+This part adds the data layer UNDER the existing primitives; it must not touch a component's markup.
+What already exists and what it expects from you:
+- components/data/DataTable.tsx takes `loading`, `error: string | null`, `onRetry`, `empty`,
+  `getRowId: (row) => string`. Your list hooks must expose exactly that shape — isPending → loading,
+  error.message → error, refetch → onRetry. Do not invent a second loading convention.
+- lib/format/money.ts defines `MoneyValue { amount: number; currency: Currency }` where `amount` is
+  INTEGER MINOR UNITS. The API keeps the §5 flat shape (`price: number` + `currency: Currency`), also
+  in minor units; components compose `{ amount: price, currency }` at the boundary. Do not change
+  either side to match the other — the seam is deliberate.
+- components/domain/PasswordCell.tsx takes `onReveal?: () => Promise<string>` and stays disabled
+  without it. Give it a real hook backed by POST /accounts/:id/reveal.
+- lib/registries/{clubs,platforms,providers}.ts already hold the reference data and 20 crests exist
+  in public/crests/. The seed must use those exact ids — do not duplicate the registries in lib/mock.
+- lib/format/{date,locale,money,text}.ts and LocaleProvider are the only formatters. API responses
+  carry raw ISO strings and integer minor units; never a pre-formatted string.
+
+Three environment facts to build against:
+1. Zod installed here is v4. Use its native `z.toJSONSchema()` for docs/openapi.json — do NOT install
+   zod-to-openapi or any v3-era companion package.
+2. `npm run ui -- <name> --overwrite` will clobber the customised Button. If you must regenerate a
+   shadcn primitive, check `git diff` afterwards and restore anything hand-tuned.
+3. Seeded timestamps that must read as past (lastCheckedAt, purchasedAt, createdAt) are computed as
+   offsets from server start, not hardcoded dates — a "last checked" that lands in the future is a
+   bug. Timestamps that must read as future (kickoff) stay fixed relative to that same anchor.
+
 1. lib/types.ts — every interface and union from §5, verbatim.
 2. lib/api/schemas.ts — a Zod schema for each type, plus envelope helpers:
    ok<T>(schema) => { data: T, meta: Meta | null, error: null } and the error envelope.
@@ -297,10 +323,25 @@ section in the plan — the whole point is that attaching a real backend later c
 8. docs/API-CONTRACT.md — the endpoint table, the envelope, the query-param conventions, the money
    and date conventions, the auth header, and a "how to attach a real backend" section that is
    literally: set NEXT_PUBLIC_API_BASE_URL, match this contract, done.
-   Generate docs/openapi.json from the Zod schemas.
+   Generate docs/openapi.json from the Zod schemas with z.toJSONSchema().
+9. Wire /kitchen-sink's DataTable demo to a real hook against /api/v1/accounts, replacing the static
+   demo-data import for that one table. It becomes the live proof that loading → populated → error →
+   retry all work end to end, and it stays the regression check for every part after this.
 
-Prove it: run the dev server and curl /api/v1/accounts?page=1&pageSize=5&club=arsenal and
-/api/v1/accounts?__fail=500, and show me both responses. Then stop.
+Definition of done, verify each before stopping:
+- `npm run typecheck` and `npm run lint` exit 0.
+- curl /api/v1/accounts?page=1&pageSize=5&club=arsenal returns a valid envelope with meta.total.
+- curl /api/v1/accounts?__fail=500 returns the error envelope, and the kitchen-sink table shows the
+  ErrorState with a working Retry.
+- A mutation (PATCH a listing price) updates optimistically, toasts, and rolls back visibly under
+  ?__fail=500.
+- No component anywhere calls fetch() directly — grep to confirm the only hit is lib/api/client.ts.
+- Pointing NEXT_PUBLIC_API_BASE_URL at a nonexistent host produces a clean ApiError and the ErrorState,
+  not a crash. That is the proof the seam works.
+- Commit as "part 3: types, mock api, client, query hooks".
+
+Prove it: run the dev server, curl both accounts calls above, and show me the responses plus the
+kitchen-sink table in its loading, populated and error states. Then stop.
 ```
 
 ---

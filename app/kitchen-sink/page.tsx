@@ -49,16 +49,22 @@ import { ConfirmDialog } from '@/components/domain/ConfirmDialog'
 import { PrivacyToggle } from '@/components/domain/PrivacyToggle'
 import { BarChart, LineChart, Sparkline } from '@/components/domain/charts'
 
+import {
+  useAccountsTable,
+  useListingsTable,
+  useRevealPassword,
+  useUpdateListing,
+} from '@/lib/api/hooks'
+import type { AccountFilters, ListingFilters } from '@/lib/api/endpoints'
+import type { Account } from '@/lib/types'
 import { CLUBS } from '@/lib/registries/clubs'
 import { PLATFORMS } from '@/lib/registries/platforms'
 import { PROVIDERS } from '@/lib/registries/providers'
 import {
-  DEMO_ACCOUNTS,
   DEMO_FIXTURES,
   DEMO_LISTINGS,
   DEMO_REVENUE,
   DEMO_SPARK,
-  type DemoAccount,
   type DemoFixture,
 } from './demo-data'
 
@@ -102,6 +108,9 @@ export default function KitchenSinkPage() {
     </div>
   )
 }
+
+/** A fixed offset, so the "2h ago" specimen does not drift between screenshots. */
+const FOUR_MINUTES_AGO = new Date(Date.now() - 4 * 60_000).toISOString()
 
 /* ------------------------------------------------------------------ layout */
 
@@ -561,7 +570,7 @@ function FormatSection() {
               </Pair>
             ))}
             <Pair k="last checked, no ramp">
-              <RelativeTime value={DEMO_ACCOUNTS[0]!.lastCheckedAt} />
+              <RelativeTime value={FOUR_MINUTES_AGO} />
             </Pair>
           </dl>
         </Panel>
@@ -843,7 +852,11 @@ function StateSection() {
 
 /* ------------------------------------------------------------------ tables */
 
-const ACCOUNT_COLUMNS: FetchColumnDef<DemoAccount>[] = [
+/**
+ * Typed against the real `Account` resource from lib/types.ts — this table is fed by
+ * the live API, not by demo data.
+ */
+const ACCOUNT_COLUMNS: FetchColumnDef<Account>[] = [
   {
     id: 'account',
     accessorKey: 'email',
@@ -852,7 +865,9 @@ const ACCOUNT_COLUMNS: FetchColumnDef<DemoAccount>[] = [
     cell: ({ row }) => (
       <div className="min-w-0">
         <div className="truncate text-text">{row.original.email}</div>
-        <div className="truncate text-caption text-faint">{row.original.name}</div>
+        <div className="truncate text-caption text-faint">
+          {[row.original.firstName, row.original.lastName].filter(Boolean).join(' ')}
+        </div>
       </div>
     ),
   },
@@ -877,7 +892,7 @@ const ACCOUNT_COLUMNS: FetchColumnDef<DemoAccount>[] = [
     id: 'loyalty',
     accessorKey: 'loyaltyPoints',
     header: 'loyalty',
-    cell: ({ row }) => <Num value={row.original.loyaltyPoints} className="font-semibold" />,
+    cell: ({ row }) => <Num value={row.original.loyaltyPoints ?? 0} className="font-semibold" />,
   },
   {
     id: 'tickets',
@@ -893,27 +908,23 @@ const ACCOUNT_COLUMNS: FetchColumnDef<DemoAccount>[] = [
   },
   {
     id: 'proxy',
-    accessorKey: 'proxy',
+    accessorKey: 'proxyId',
     header: 'proxy',
-    cell: ({ row }) => <span className="text-muted">{row.original.proxy}</span>,
+    cell: ({ row }) => <span className="text-muted">{row.original.proxyId ?? '—'}</span>,
   },
   {
     id: 'lastCheck',
     accessorKey: 'lastCheckedAt',
     header: 'last_check',
-    cell: ({ row }) => <RelativeTime value={row.original.lastCheckedAt} />,
+    cell: ({ row }) =>
+      row.original.lastCheckedAt ? <RelativeTime value={row.original.lastCheckedAt} /> : null,
   },
   {
     id: 'password',
     accessorKey: 'passwordMasked',
     header: 'password',
     enableSorting: false,
-    cell: ({ row }) => (
-      <PasswordCell
-        masked={row.original.passwordMasked}
-        onReveal={async () => 'not-a-real-password'}
-      />
-    ),
+    cell: ({ row }) => <LivePasswordCell account={row.original} />,
   },
 ]
 
@@ -990,21 +1001,62 @@ const FIXTURE_COLUMNS: FetchColumnDef<DemoFixture>[] = [
   },
 ]
 
+/**
+ * The live table. Fed by `useAccountsTable` against /api/v1/accounts — this is the
+ * end-to-end proof that loading → populated → error → retry all work, and it is the
+ * regression check for every part after this one.
+ */
 function TableSection() {
-  const [selection, setSelection] = React.useState<RowSelectionState>({
-    acc_02: true,
-    acc_03: true,
-  })
+  const [selection, setSelection] = React.useState<RowSelectionState>({})
+  const [forceFailure, setForceFailure] = React.useState(false)
+  const [search, setSearch] = React.useState('')
+  const [club, setClub] = React.useState(ALL)
+
   const selectedCount = Object.values(selection).filter(Boolean).length
+
+  // Memoised: the filters object is part of the query key, so a fresh object every
+  // render would refetch forever.
+  const filters = React.useMemo<AccountFilters>(
+    () => ({
+      // DataTable paginates client-side, so it is handed the whole filtered set and
+      // its `Total N` footer and page count stay truthful. Server-side paging needs
+      // page/pageCount props on DataTable — that lands with /accounts in Part 4.
+      pageSize: 200,
+      sort: 'email',
+      order: 'asc',
+      q: search || undefined,
+      club: club === ALL ? undefined : [club as Account['club']],
+      // §6.2 failure injection, so the error state is demonstrable on demand.
+      ...(forceFailure ? { __fail: 500 } : {}),
+    }),
+    [search, club, forceFailure],
+  )
+
+  const accounts = useAccountsTable(filters)
 
   return (
     <Section
       label="data_table"
-      note="sortable · selectable · sticky header · frozen first column · stacked cards under md"
+      note="live · /api/v1/accounts · sortable · selectable · stacked cards under md"
     >
-      <Panel label="populated with a selection">
+      <Panel label="live accounts — loading, populated, error, retry">
+        <Row>
+          <Button
+            variant={forceFailure ? 'danger' : 'secondary'}
+            size="sm"
+            label={forceFailure ? 'Serving errors' : 'Force API failure'}
+            onClick={() => setForceFailure((v) => !v)}
+          />
+          <span className="text-caption text-faint">
+            appends <code>?__fail=500</code> to the request
+          </span>
+          {accounts.fetching && !accounts.loading && (
+            <span className="text-caption text-primary-ink">refetching…</span>
+          )}
+        </Row>
+
         <DataTable
-          data={DEMO_ACCOUNTS}
+          data={accounts.rows}
           columns={ACCOUNT_COLUMNS}
           getRowId={(r) => r.id}
           noun="account"
@@ -1013,20 +1065,51 @@ function TableSection() {
           onSelectionChange={setSelection}
           onRowClick={() => {}}
           defaultPageSize={5}
+          loading={accounts.loading}
+          error={accounts.error}
+          onRetry={accounts.onRetry}
           // Mono is ~12% wider, so these two start hidden rather than crowding at 1280px.
           initiallyHidden={['proxy', 'tickets']}
           toolbar={
-            <BulkActionBar count={selectedCount} noun="account" onClear={() => setSelection({})}>
-              <Button variant="secondary" size="sm" label="Check status" />
-              <Button variant="danger" size="sm" label="Delete" count={selectedCount} />
-            </BulkActionBar>
+            <div className="flex flex-col gap-3">
+              <Toolbar
+                search={
+                  <ToolbarSearch
+                    value={search}
+                    onChange={setSearch}
+                    placeholder="Search by email, name or membership ID"
+                  />
+                }
+                filters={
+                  <FilterSelect
+                    value={club}
+                    onChange={setClub}
+                    noun="clubs"
+                    options={CLUBS.map((c) => ({ value: c.id, label: c.name }))}
+                  />
+                }
+              />
+              <BulkActionBar count={selectedCount} noun="account" onClear={() => setSelection({})}>
+                <Button variant="secondary" size="sm" label="Check status" />
+                <Button variant="danger" size="sm" label="Delete" count={selectedCount} />
+              </BulkActionBar>
+            </div>
           }
           toolbarActions={<Button variant="secondary" label="Export" />}
           empty={
-            <EmptyState icon={Users} title="No accounts yet" body="Import a CSV to get started." />
+            <EmptyState
+              icon={Users}
+              title="No accounts match"
+              body="No account matches that search and club combination. Clear the filters to see them all."
+            />
           }
         />
+        <span className="text-caption text-faint">
+          server reports {accounts.total} matching accounts
+        </span>
       </Panel>
+
+      <MutationPanel />
 
       <Panel label="fixture table — value at risk and the countdown ramp">
         <DataTable
@@ -1080,6 +1163,85 @@ function TableSection() {
         />
       </Panel>
     </Section>
+  )
+}
+
+/**
+ * PasswordCell against the real endpoint. A component rather than an inline closure
+ * because `useRevealPassword` is a hook and a cell renderer is not a component body.
+ *
+ * The revealed value is returned straight to the cell and never enters the query
+ * cache — a secret that outlives its ten-second window is a leak.
+ */
+function LivePasswordCell({ account }: { account: Account }) {
+  const revealFor = useRevealPassword()
+  return <PasswordCell masked={account.passwordMasked} onReveal={revealFor(account.id)} />
+}
+
+/**
+ * The optimistic-mutation proof (§6.4). Bumping a price updates the cell instantly
+ * and toasts; with failures forced, the same click rolls the price back visibly and
+ * toasts the error instead.
+ */
+function MutationPanel() {
+  const [forceFailure, setForceFailure] = React.useState(false)
+  const filters = React.useMemo<ListingFilters>(
+    () => ({ pageSize: 4, sort: 'price', order: 'desc' }),
+    [],
+  )
+  const listings = useListingsTable(filters)
+  const updateListing = useUpdateListing()
+
+  return (
+    <Panel label="optimistic mutation — PATCH /listings/:id">
+      <Row>
+        <Button
+          variant={forceFailure ? 'danger' : 'secondary'}
+          size="sm"
+          label={forceFailure ? 'Writes will fail' : 'Force write failure'}
+          onClick={() => setForceFailure((v) => !v)}
+        />
+        <span className="text-caption text-faint">
+          {forceFailure
+            ? 'the price moves, then rolls back when the server rejects it'
+            : 'the price moves immediately, then the server confirms'}
+        </span>
+      </Row>
+
+      {listings.error ? (
+        <ErrorState message={listings.error} onRetry={listings.onRetry} />
+      ) : listings.loading ? (
+        <SkeletonTable rows={4} columns={4} />
+      ) : (
+        <div className="flex flex-col gap-2">
+          {listings.rows.map((l) => (
+            <div
+              key={l.id}
+              className="flex flex-wrap items-center gap-3 border-b border-border pb-2 last:border-0 last:pb-0"
+            >
+              <PlatformBadge platform={l.platform} />
+              <span className="min-w-0 flex-1 truncate text-body">{l.fixtureName}</span>
+              <span className="text-caption text-muted">{l.block}</span>
+              <Money amount={l.price} currency={l.currency} className="font-semibold" />
+              <StatusChip status={l.status} kind="listing" />
+              <Button
+                size="sm"
+                variant="secondary"
+                label="Raise £5"
+                disabled={updateListing.isPending}
+                onClick={() =>
+                  updateListing.mutate({
+                    id: l.id,
+                    patch: { price: l.price + 500 },
+                    forceFailure,
+                  })
+                }
+              />
+            </div>
+          ))}
+        </div>
+      )}
+    </Panel>
   )
 }
 
