@@ -120,13 +120,17 @@ function relative(locale: string): Intl.RelativeTimeFormat {
 
 /**
  * The §8.4 urgency ramp. A fixture inside 7 days is the thing the operator is
- * anxious about, so it reads danger; inside 30 days, warning.
+ * anxious about, so it reads danger; inside 14 days, warning.
+ *
+ * The amber band was 30 days, which put most of a season's fixtures in amber and
+ * left the ramp signalling nothing. Every screen reads this one helper, so kickoff
+ * and value-at-risk stay in agreement automatically.
  */
 export type Urgency = 'past' | 'urgent' | 'soon' | 'later'
 
 export function urgencyOf(daysAway: number): Urgency {
   if (daysAway < 0) return 'past'
   if (daysAway <= 7) return 'urgent'
-  if (daysAway <= 30) return 'soon'
+  if (daysAway <= 14) return 'soon'
   return 'later'
 }
