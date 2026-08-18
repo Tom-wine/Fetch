@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import type { AccountFilters } from '@/lib/api/endpoints'
 import type { AccountStatus, ClubId, MembershipType } from '@/lib/types'
+import { normaliseSortField, sortSpecFor } from './sorting'
 
 /**
  * Every filter, sort, page and tab value on /accounts lives in the query string.
@@ -31,7 +32,6 @@ export const ACCOUNT_TABS: Array<{ id: AccountsTabId; label: string }> = [
 /** Values equal to these are dropped from the URL, so a clean view has a clean link. */
 const DEFAULTS = {
   tab: 'accounts' as AccountsTabId,
-  sort: 'email',
   order: 'asc' as 'asc' | 'desc',
   page: 1,
   size: 25,
@@ -46,7 +46,7 @@ export interface AccountsUrlPatch {
   type?: MembershipType | null
   tag?: string | null
   q?: string | null
-  sort?: string
+  sort?: string | null
   order?: 'asc' | 'desc'
   page?: number
   size?: number
@@ -63,14 +63,31 @@ export function useAccountsUrlState() {
   const type = (params.get('type') as MembershipType | null) ?? null
   const tag = params.get('tag')
   const q = params.get('q') ?? ''
-  const sort = params.get('sort') ?? DEFAULTS.sort
-  const order = params.get('order') === 'desc' ? 'desc' : DEFAULTS.order
+  // An unrecognised `?sort=` is dropped rather than forwarded, so a hand-edited
+  // link degrades to the endpoint's default order instead of a silent no-op.
+  const sortField = normaliseSortField(params.get('sort'))
+  // Direction only means something with a field to apply it to.
+  const order = sortField && params.get('order') === 'desc' ? 'desc' : DEFAULTS.order
   const page = Math.max(1, Number(params.get('page') ?? DEFAULTS.page) || DEFAULTS.page)
   const size = Math.max(1, Number(params.get('size') ?? DEFAULTS.size) || DEFAULTS.size)
 
+  /**
+   * The URL as of the last write, not as of the last render.
+   *
+   * One header click produces TWO calls in the same tick: DataTable emits
+   * `onSortingChange`, then `onPageChange(1)`. Both would otherwise start from the
+   * same render-time `params` snapshot, and the second would overwrite the first —
+   * the sort would be written and then silently dropped. Carrying the URL forward
+   * here makes writes within a tick compose instead of race.
+   */
+  const searchRef = React.useRef(params.toString())
+  React.useEffect(() => {
+    searchRef.current = params.toString()
+  }, [params])
+
   const write = React.useCallback(
     (patch: AccountsUrlPatch) => {
-      const next = new URLSearchParams(params.toString())
+      const next = new URLSearchParams(searchRef.current)
 
       for (const [key, value] of Object.entries(patch)) {
         const isDefault = value === DEFAULTS[key as keyof typeof DEFAULTS]
@@ -83,9 +100,10 @@ export function useAccountsUrlState() {
       if (patch.page === undefined) next.delete('page')
 
       const search = next.toString()
+      searchRef.current = search
       router.replace(search ? `${pathname}?${search}` : pathname, { scroll: false })
     },
-    [params, pathname, router],
+    [pathname, router],
   )
 
   /**
@@ -124,16 +142,25 @@ export function useAccountsUrlState() {
     () => ({
       page,
       pageSize: size,
-      sort,
-      order,
+      // Omitted rather than sent as the default: the request then says exactly what
+      // the URL says, and the server applies its own `defaultSort`.
+      sort: sortField ?? undefined,
+      order: sortField ? order : undefined,
       q: q || undefined,
       club: club ? [club] : undefined,
       status: status ? [status] : undefined,
       membershipType: type ? [type] : undefined,
       tag: tag ? [tag] : undefined,
     }),
-    [page, size, sort, order, q, club, status, type, tag],
+    [page, size, sortField, order, q, club, status, type, tag],
   )
+
+  /**
+   * The same sort in DataTable's terms, for the controlled `sorting` prop. Memoised:
+   * it is table state, and a fresh object on every render would put the table into a
+   * render loop.
+   */
+  const sortSpec = React.useMemo(() => sortSpecFor(sortField, order), [sortField, order])
 
   /** The same filters with paging stripped — what "everything matching" means. */
   const unpagedFilters = React.useMemo<AccountFilters>(() => {
@@ -150,7 +177,8 @@ export function useAccountsUrlState() {
     type,
     tag,
     q,
-    sort,
+    sortField,
+    sortSpec,
     order,
     page,
     size,

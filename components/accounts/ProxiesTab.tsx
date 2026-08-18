@@ -5,7 +5,7 @@ import { Signal } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { DataTable, type FetchColumnDef } from '@/components/data/DataTable'
+import { DataTable, type FetchColumnDef, type SortSpec } from '@/components/data/DataTable'
 import { Toolbar, ToolbarSearch } from '@/components/data/Toolbar'
 import { Chip } from '@/components/domain/StatusChip'
 import { PasswordCell } from '@/components/domain/PasswordCell'
@@ -25,11 +25,31 @@ import { NoProxies } from './AccountsEmpty'
  * reveal control disabled. Better a control that says "not wired up" in its tooltip
  * than a cell that quietly prints a secret.
  *
+ * Sorting is server-side through the same seam the accounts table uses. This tab is
+ * paged too, so a client-side header sort would reorder one page and look like it had
+ * ordered all eighteen. There is no URL state here — §8.2 asks for a shareable link on
+ * the accounts view, and a read-only proxy list does not earn one — so the sort lives
+ * beside this tab's search and page in local state.
+ *
  * `Test` updates the row optimistically: the status chip flips to TESTING the
  * instant it is clicked, and the real verdict replaces it when POST /proxies/:id/test
  * returns. The mutation itself is the shared `useTestProxy`, so the toast and the
  * invalidation behave like every other write in the app (§6.4).
  */
+
+/** Column id → the `?sort=` field. PASSWORD and ACTIONS hold nothing orderable. */
+const SORT_FIELD: Record<string, string> = {
+  proxy: 'label',
+  endpoint: 'host',
+  username: 'username',
+  country: 'country',
+  status: 'status',
+  latency: 'latencyMs',
+  lastTested: 'lastTestedAt',
+}
+
+/** Matches the API's default order, so the header agrees with the rows on first paint. */
+const DEFAULT_SORT: SortSpec = { id: 'proxy', desc: false }
 
 const DOT: Record<ProxyStatus, string> = {
   ok: 'bg-success',
@@ -43,6 +63,7 @@ export function ProxiesTab() {
   const [page, setPage] = React.useState(1)
   const [pageSize, setPageSize] = React.useState(25)
   const [testing, setTesting] = React.useState<Set<string>>(new Set())
+  const [sorting, setSorting] = React.useState<SortSpec | null>(DEFAULT_SORT)
 
   React.useEffect(() => {
     const timer = setTimeout(() => {
@@ -53,8 +74,15 @@ export function ProxiesTab() {
   }, [search])
 
   const filters = React.useMemo<ProxyFilters>(
-    () => ({ page, pageSize, q: debounced || undefined, sort: 'label', order: 'asc' }),
-    [page, pageSize, debounced],
+    () => ({
+      page,
+      pageSize,
+      q: debounced || undefined,
+      // Clearing the sort falls back to the endpoint's own default, which is `label`.
+      sort: sorting ? SORT_FIELD[sorting.id] : undefined,
+      order: sorting?.desc ? 'desc' : 'asc',
+    }),
+    [page, pageSize, debounced, sorting],
   )
 
   const proxies = useProxiesTable(filters)
@@ -94,6 +122,8 @@ export function ProxiesTab() {
       loading={proxies.loading}
       error={proxies.error}
       onRetry={proxies.onRetry}
+      sorting={sorting}
+      onSortingChange={setSorting}
       pageCount={Math.max(1, Math.ceil(proxies.total / pageSize))}
       totalRows={proxies.total}
       page={page}
@@ -127,7 +157,7 @@ function makeProxyColumns({
       id: 'proxy',
       accessorKey: 'label',
       header: 'proxy',
-      enableSorting: false,
+      meta: { sortable: true },
       enableHiding: false,
       cell: ({ row }) => (
         <span className="inline-flex min-w-0 items-center gap-2">
@@ -143,7 +173,7 @@ function makeProxyColumns({
       id: 'endpoint',
       accessorKey: 'host',
       header: 'endpoint',
-      enableSorting: false,
+      meta: { sortable: true },
       cell: ({ row }) => (
         <span className="font-mono text-body text-muted">
           {row.original.host}:{row.original.port}
@@ -154,14 +184,13 @@ function makeProxyColumns({
       id: 'username',
       accessorKey: 'username',
       header: 'username',
-      enableSorting: false,
+      meta: { sortable: true },
       cell: ({ row }) => <span className="text-body text-muted">{row.original.username}</span>,
     },
     {
       id: 'password',
       accessorKey: 'passwordMasked',
       header: 'password',
-      enableSorting: false,
       // No onReveal: there is no proxy reveal endpoint, so the cell stays masked.
       cell: ({ row }) => <PasswordCell masked={row.original.passwordMasked} />,
     },
@@ -169,7 +198,7 @@ function makeProxyColumns({
       id: 'country',
       accessorKey: 'country',
       header: 'country',
-      enableSorting: false,
+      meta: { sortable: true },
       cell: ({ row }) => (
         <span className="text-body text-muted">{row.original.country ?? '—'}</span>
       ),
@@ -178,7 +207,7 @@ function makeProxyColumns({
       id: 'status',
       accessorKey: 'status',
       header: 'status',
-      enableSorting: false,
+      meta: { sortable: true },
       cell: ({ row }) =>
         testing.has(row.original.id) ? (
           <Chip tone="primary">TESTING</Chip>
@@ -194,7 +223,7 @@ function makeProxyColumns({
       id: 'latency',
       accessorKey: 'latencyMs',
       header: 'latency',
-      enableSorting: false,
+      meta: { sortable: true },
       cell: ({ row }) =>
         row.original.latencyMs ? (
           <span className="text-body tabular-nums">{row.original.latencyMs}ms</span>
@@ -206,7 +235,7 @@ function makeProxyColumns({
       id: 'lastTested',
       accessorKey: 'lastTestedAt',
       header: 'last tested',
-      enableSorting: false,
+      meta: { sortable: true },
       cell: ({ row }) =>
         row.original.lastTestedAt ? (
           <RelativeTime value={row.original.lastTestedAt} />
@@ -218,7 +247,6 @@ function makeProxyColumns({
       id: 'actions',
       accessorKey: 'id',
       header: 'actions',
-      enableSorting: false,
       enableHiding: false,
       cell: ({ row }) => (
         <div className="flex justify-end">

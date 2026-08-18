@@ -19,7 +19,7 @@ import { ALL, FilterSelect, type FilterOption } from '@/components/data/FilterSe
 import { Toolbar, ToolbarSearch } from '@/components/data/Toolbar'
 import { ClubBadge } from '@/components/domain/ClubBadge'
 import type { AccountStatus, ClubId, MembershipType } from '@/lib/types'
-import { SORT_OPTIONS } from './columns'
+import { DEFAULT_SORT_FIELD, SORTABLE_COLUMNS } from './sorting'
 import type { AccountsUrlState } from './url-state'
 
 /**
@@ -112,18 +112,27 @@ export function AccountsToolbar({
 }
 
 /**
- * Sorting lives here rather than on the column headers because this table is
- * server-paged and DataTable sorts client-side — a header click would reorder the 25
- * rows on screen and look like it had ordered all 64. Driving it from the query
- * string instead means the sort is real, and the link is shareable. See the ASK in
- * fetch-sync.md.
+ * The under-`md` sorting UI, and only that — `md:hidden`.
+ *
+ * Above `md` the column headers are the sorting UI and this would be a second,
+ * redundant control for the same query params. Below `md` the table is replaced by
+ * stacked cards, which have no headers to click, so without this there would be no
+ * way to sort on a phone at all.
+ *
+ * Both surfaces write the same `sort` / `order` params and the same request goes out,
+ * so a link shared from a phone opens sorted on a desktop.
  */
 function SortControl({ state }: { state: AccountsUrlState }) {
   const ascending = state.order === 'asc'
 
   return (
-    <div className="flex items-center gap-1">
-      <Select value={state.sort} onValueChange={(value) => state.set({ sort: value })}>
+    <div className="flex items-center gap-1 md:hidden">
+      {/* Shows the effective order: with no `sort` in the URL the API still orders
+          by its own default, so naming it is truer than showing an empty box. */}
+      <Select
+        value={state.sortField ?? DEFAULT_SORT_FIELD}
+        onValueChange={(value) => state.set({ sort: value })}
+      >
         <SelectTrigger
           aria-label="Sort by"
           className="h-9 w-auto min-w-[150px] gap-2 rounded-md border-border bg-surface text-body"
@@ -131,8 +140,8 @@ function SortControl({ state }: { state: AccountsUrlState }) {
           <SelectValue />
         </SelectTrigger>
         <SelectContent className="border-border bg-surface">
-          {SORT_OPTIONS.map((option) => (
-            <SelectItem key={option.value} value={option.value} className="text-body">
+          {SORTABLE_COLUMNS.map((option) => (
+            <SelectItem key={option.field} value={option.field} className="text-body">
               Sort by {option.label.toLowerCase()}
             </SelectItem>
           ))}

@@ -15,12 +15,16 @@ import { AccountIdentity, AccountPasswordCell, MembershipCell, ProxyCell } from 
  * TICKETS · STATUS · PROXY · LAST CHECK · PASSWORD · ACTIONS. The select column is
  * added by DataTable itself.
  *
- * SORTING IS OFF ON EVERY COLUMN, deliberately. DataTable sorts client-side, and
- * this table is server-paged, so a header click would sort the 25 rows on screen and
- * present it as a sort of all 64. Sorting is driven from the toolbar instead, through
- * the `sort` / `order` query params, and happens on the server across the whole match
- * set. See the ASK in fetch-sync.md — when DataTable gains a `manualSorting`
- * passthrough this flag comes off and the toolbar control goes away.
+ * Sorting is SERVER-side. A column opts in with `meta.sortable`, which is what makes
+ * its header clickable; DataTable then emits the click upward instead of reordering
+ * the 25 rows it happens to hold, and the API orders the whole 64-row set. The set of
+ * sortable columns, and the API field each maps to, lives in ./sorting.ts so the
+ * headers and the under-`md` Sort control cannot drift apart.
+ *
+ * PROXY is deliberately NOT sortable: the API can only order by `proxyId`, an opaque
+ * string, while the cell shows a label resolved from a separate query — the rows would
+ * reorder in a way the column does not explain. PASSWORD and ACTIONS hold no orderable
+ * value at all.
  */
 export function makeAccountColumns({
   proxyById,
@@ -34,7 +38,7 @@ export function makeAccountColumns({
       id: 'account',
       accessorKey: 'email',
       header: 'account',
-      enableSorting: false,
+      meta: { sortable: true },
       // The frozen first column. Hiding the identity of the row you are acting on
       // is never the right way to make a table fit.
       enableHiding: false,
@@ -44,42 +48,41 @@ export function makeAccountColumns({
       id: 'club',
       accessorKey: 'club',
       header: 'club',
-      enableSorting: false,
+      meta: { sortable: true },
       cell: ({ row }) => <ClubBadge club={row.original.club} />,
     },
     {
       id: 'membership',
       accessorKey: 'membershipId',
       header: 'membership',
-      enableSorting: false,
+      meta: { sortable: true },
       cell: ({ row }) => <MembershipCell account={row.original} />,
     },
     {
       id: 'loyalty',
       accessorKey: 'loyaltyPoints',
       header: 'loyalty',
-      enableSorting: false,
+      meta: { sortable: true },
       cell: ({ row }) => <Num value={row.original.loyaltyPoints ?? 0} className="font-semibold" />,
     },
     {
       id: 'tickets',
       accessorKey: 'ticketsPurchased',
       header: 'tickets',
-      enableSorting: false,
+      meta: { sortable: true },
       cell: ({ row }) => <Num value={row.original.ticketsPurchased} className="font-semibold" />,
     },
     {
       id: 'status',
       accessorKey: 'status',
       header: 'status',
-      enableSorting: false,
+      meta: { sortable: true },
       cell: ({ row }) => <StatusChip status={row.original.status} kind="account" />,
     },
     {
       id: 'proxy',
       accessorKey: 'proxyId',
       header: 'proxy',
-      enableSorting: false,
       cell: ({ row }) => (
         <ProxyCell proxy={row.original.proxyId ? proxyById.get(row.original.proxyId) : undefined} />
       ),
@@ -88,7 +91,7 @@ export function makeAccountColumns({
       id: 'lastCheck',
       accessorKey: 'lastCheckedAt',
       header: 'last check',
-      enableSorting: false,
+      meta: { sortable: true },
       cell: ({ row }) =>
         row.original.lastCheckedAt ? (
           <RelativeTime value={row.original.lastCheckedAt} />
@@ -100,28 +103,14 @@ export function makeAccountColumns({
       id: 'password',
       accessorKey: 'passwordMasked',
       header: 'password',
-      enableSorting: false,
       cell: ({ row }) => <AccountPasswordCell account={row.original} />,
     },
     {
       id: 'actions',
       accessorKey: 'id',
       header: 'actions',
-      enableSorting: false,
       enableHiding: false,
       cell: ({ row }) => <div className="flex justify-end">{renderActions(row.original)}</div>,
     },
   ]
 }
-
-/** The columns the toolbar's Sort ▾ offers, matched to the API's sortable fields. */
-export const SORT_OPTIONS: Array<{ value: string; label: string }> = [
-  { value: 'email', label: 'Account' },
-  { value: 'club', label: 'Club' },
-  { value: 'membershipType', label: 'Membership' },
-  { value: 'loyaltyPoints', label: 'Loyalty' },
-  { value: 'ticketsPurchased', label: 'Tickets' },
-  { value: 'status', label: 'Status' },
-  { value: 'lastCheckedAt', label: 'Last check' },
-  { value: 'createdAt', label: 'Added' },
-]

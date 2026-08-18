@@ -4,9 +4,8 @@ import * as React from 'react'
 import Link from 'next/link'
 import { FileUp, UserPlus } from 'lucide-react'
 
-import { Button, buttonVariants } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 import { Prose, SectionLabel } from '@/components/ui/typography'
-import { cn } from '@/lib/utils'
 import {
   Sheet,
   SheetClose,
@@ -119,13 +118,14 @@ export function ImportSheet({
             and an error report. Parsing runs in a web worker so 5000 rows never freeze the page.
           </Prose>
           <div className="flex flex-wrap gap-2">
-            {/* A Link styled as a button, not `<Button asChild>`: Button always
-                renders children + label + arrow, and Radix's Slot takes exactly one
-                child, so asChild throws at runtime. ConfirmDialog solves it the same
-                way. */}
-            <Link href="/accounts/import" className={cn(buttonVariants({ variant: 'secondary' }))}>
-              OPEN_FULL_PAGE
-            </Link>
+            {/* One <a>, not a button wrapping a link, so it is middle-clickable and
+                keyboard-navigable like any other link. `label` supplies the caption,
+                so the slotted element carries only the icon. */}
+            <Button asChild variant="secondary" label="Open full page">
+              <Link href="/accounts/import">
+                <FileUp className="size-4" aria-hidden="true" />
+              </Link>
+            </Button>
             <SheetClose asChild>
               <Button variant="ghost" label="Close" />
             </SheetClose>

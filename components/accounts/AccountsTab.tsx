@@ -31,6 +31,7 @@ import { NoAccountsMatch, NoAccountsYet } from './AccountsEmpty'
 import { StatusFilterChips } from './StatusFilterChips'
 import { downloadCsv, type CsvColumn } from './export-csv'
 import { makeAccountColumns } from './columns'
+import { sortFieldForColumn } from './sorting'
 import { useAccountsUrlState } from './url-state'
 
 /**
@@ -65,6 +66,9 @@ function makeCsvColumns(proxyById: Map<string, Proxy>): Array<CsvColumn<Account>
     { header: 'notes', value: (a) => a.notes },
   ]
 }
+
+/** Hidden at 1440 so ACTIONS is not pushed off the right edge — see the note below. */
+const HIDDEN_COLUMNS = ['loyalty', 'tickets', 'proxy']
 
 export function AccountsTab() {
   const state = useAccountsUrlState()
@@ -315,7 +319,23 @@ export function AccountsTab() {
         // scrolling. §9 rule 3 names the column picker as the sanctioned fix, so the
         // three columns an operator does not scan before an on-sale start hidden and
         // the VIEW button reports "(3 hidden)". Nothing is lost; it is one click.
-        initiallyHidden={['loyalty', 'tickets', 'proxy']}
+        // ...unless the link being opened sorts by one of them. Landing on rows
+        // ordered by a column that is not on screen is a table sorted by nothing
+        // visible. `initiallyHidden` is read once at mount, which is exactly the
+        // moment the incoming URL is known.
+        initiallyHidden={HIDDEN_COLUMNS.filter((id) => id !== state.sortSpec?.id)}
+        // Server sorting. DataTable reports the column id; ./sorting.ts turns it into
+        // the API field, and the same query params the under-`md` control writes.
+        // DataTable follows this with onPageChange(1) in the same tick — see the
+        // write-composition note in url-state.ts for why that does not clobber it.
+        sorting={state.sortSpec}
+        onSortingChange={(next) =>
+          state.set(
+            next
+              ? { sort: sortFieldForColumn(next.id), order: next.desc ? 'desc' : 'asc' }
+              : { sort: null, order: 'asc' },
+          )
+        }
         pageCount={meta?.totalPages ?? 1}
         totalRows={matchingTotal}
         page={state.page}
