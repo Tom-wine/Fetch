@@ -40,3 +40,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local artefacts
+_to_delete/
+mitm_mcp_traffic.db
