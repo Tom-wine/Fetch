@@ -200,7 +200,12 @@ export interface KpiSet {
 
 export interface AccountStats {
   total: number
-  byStatus: Record<AccountStatus, number>
+  /**
+   * Both maps are SPARSE: a status or club with no accounts is absent, not zero.
+   * `Partial<>` is what makes a consumer write `?? 0` instead of trusting a key
+   * that may never arrive.
+   */
+  byStatus: Partial<Record<AccountStatus, number>>
   byClub: Partial<Record<ClubId, number>>
 }
 

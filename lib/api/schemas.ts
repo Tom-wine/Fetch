@@ -217,8 +217,11 @@ export const kpiSetSchema = z.object({
 
 export const accountStatsSchema = z.object({
   total: z.int().nonnegative(),
-  byStatus: z.record(accountStatusSchema, z.int().nonnegative()),
-  byClub: z.record(clubIdSchema, z.int().nonnegative()),
+  // z.record() with an ENUM key is exhaustive in Zod 4 — it demands an entry for
+  // every member. These maps are sparse by design (a club with no accounts is
+  // absent, not zero), so they need partialRecord. Use it for every enum-keyed map.
+  byStatus: z.partialRecord(accountStatusSchema, z.int().nonnegative()),
+  byClub: z.partialRecord(clubIdSchema, z.int().nonnegative()),
 })
 
 export const revenuePointSchema = z.object({
