@@ -1,0 +1,341 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+/* Class strategy for dark mode under Tailwind v4 (next-themes writes .dark on <html>). */
+@custom-variant dark (&:is(.dark *));
+
+/* ===========================================================================
+   RAW TOKENS — FETCH-IO-BUILD-PLAN.md §3.1
+   Light values on :root, dark values in .dark. Every hex in the app lives here
+   and nowhere else. Verified against the contrast ledger in the brand sheet.
+   =========================================================================== */
+
+/* `.light` is listed alongside :root so a subtree can be forced back to the light
+   palette while nested inside .dark — used by the kitchen-sink's side-by-side
+   theme comparison. Custom properties inherit, so the nearest declaring ancestor
+   wins and no hex is duplicated. */
+:root,
+.light {
+  color-scheme: light;
+
+  /* --- canvas (§3.1 light) --- */
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-raised: #f3f5f9;
+  --surface-hover: #e9edf4;
+  --border: #e1e6ee;
+  --border-strong: #c8d1df;
+  --text: #0b1220; /* 18.7:1 on white */
+  --text-muted: #5a6577; /* 5.9:1 on white */
+  --text-faint: #626d80; /* 4.8:1 on surface-raised */
+
+  /* --- brand (§3.1, theme-invariant: sampled from the logo) --- */
+  --primary: #1a8cf0; /* links, active nav, selection, focus ring */
+  --primary-solid: #0b6fd4; /* filled buttons with white text — 4.95:1 */
+  --primary-hover: #1a8cf0;
+  --primary-press: #0a5fb8;
+  --primary-ink: #0b63c9; /* primary *text* on a light surface — 5.8:1 */
+  --cyan: #5fd0fa;
+  --deep: #0057c8;
+
+  /* --- status (§3.1, theme-invariant hues) --- */
+  --success: #22d18a;
+  --warning: #f5a524;
+  --danger: #ff4d6a;
+  --violet: #a78bfa;
+  --neutral-chip: #9aa6b8;
+
+  /* --- status INK: the text variant of each hue on a light surface (§3.1 statusInk).
+         In dark mode each collapses back onto the raw hue, so one chip class works
+         in both themes (§3.5). --- */
+  --success-ink: #0a7b54;
+  --warning-ink: #b45309;
+  --danger-ink: #c81e3c;
+  --violet-ink: #6d28d9;
+  --neutral-chip-ink: #5a6577;
+
+  /* --- shadcn semantic aliases, pointed at the Fetch tokens so any primitive we
+         generate later is on-brand automatically. var()-based, so they follow the
+         theme without being restated in .dark. --- */
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface-raised);
+  --popover-foreground: var(--text);
+  --primary-foreground: #ffffff;
+  --secondary: var(--surface-raised);
+  --secondary-foreground: var(--text);
+  --muted: var(--surface-raised);
+  --muted-foreground: var(--text-muted);
+  --accent: var(--surface-hover);
+  --accent-foreground: var(--text);
+  --destructive: var(--danger);
+  --destructive-foreground: #ffffff;
+  --input: var(--border);
+  --ring: var(--primary);
+  --radius: 14px; /* lg — §3.4 */
+
+  --sidebar: var(--bg);
+  --sidebar-foreground: var(--text);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--surface-hover);
+  --sidebar-accent-foreground: var(--text);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--primary);
+
+  /* --- charts (§3.1 hues, in the order Recharts consumes them) --- */
+  --chart-1: var(--primary);
+  --chart-2: var(--cyan);
+  --chart-3: var(--success);
+  --chart-4: var(--violet);
+  --chart-5: var(--warning);
+}
+
+.dark {
+  color-scheme: dark;
+
+  /* --- canvas (§3.1 dark) --- */
+  --bg: #07080b; /* app + sidebar canvas — near-black, the logo background */
+  --surface: #0e1116; /* cards, panels, table container */
+  --surface-raised: #161a21; /* table header row, inputs, popovers, hover */
+  --surface-hover: #1c222b; /* row hover, ghost-button hover */
+  --border: #242a34;
+  --border-strong: #333b48;
+  --text: #ecf2f8; /* 16.8:1 on surface */
+  --text-muted: #9aa6b8; /* 7.7:1 on surface */
+  --text-faint: #7a8698; /* 4.7:1 on surface-raised */
+
+  /* Brand and status hues are unchanged in dark — only their text variants
+     collapse, because the raw hue already carries on a near-black surface. */
+  --primary-ink: var(--primary); /* 5.5:1 as link text on surface */
+  --success-ink: var(--success);
+  --warning-ink: var(--warning);
+  --danger-ink: var(--danger);
+  --violet-ink: var(--violet);
+  --neutral-chip-ink: var(--neutral-chip);
+}
+
+/* ===========================================================================
+   THEME MAPPING — makes the tokens above generate Tailwind utilities.
+   `inline` so the utilities read var(--token) at use time and stay
+   theme-switchable rather than being frozen at build time.
+   =========================================================================== */
+
+@theme inline {
+  /* --- fonts. Mono is the DEFAULT: --font-sans deliberately resolves to it, so
+         an unstyled element lands on mono, never on a proportional face. --- */
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, 'SF Mono', monospace;
+  --font-sans: var(--font-jetbrains-mono), ui-monospace, 'SF Mono', monospace;
+  --font-display: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+  --font-prose: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+
+  /* --- type scale (§3.3). Mono runs ~12% wider than a proportional face, so
+         13px is the floor for data — never shrink below it. --- */
+  --text-kpi: 30px;
+  --text-kpi--line-height: 1.1;
+  --text-kpi--letter-spacing: -0.02em;
+  --text-display: 28px; /* h1 · Outfit 900 · uppercase */
+  --text-display--line-height: 1.1;
+  --text-display--letter-spacing: -0.02em;
+  --text-h2: 18px; /* h2 · Outfit 900 */
+  --text-h2--line-height: 1.2;
+  --text-h2--letter-spacing: -0.02em;
+  --text-prose: 14px; /* Outfit 400 — the only multi-line face */
+  --text-prose--line-height: 1.6;
+  --text-title: 14px; /* CARD_TITLE · mono 600 · uppercase */
+  --text-title--line-height: 1.3;
+  --text-title--letter-spacing: 0.02em;
+  --text-body: 13px; /* body / table cell · mono 400 */
+  --text-body--line-height: 1.5;
+  --text-body--letter-spacing: -0.01em;
+  --text-nav: 13px; /* nav item · mono · lower_snake_case */
+  --text-nav--line-height: 1.4;
+  --text-chip: 12px; /* status chip · mono 500 · UPPER_SNAKE */
+  --text-chip--line-height: 1.2;
+  --text-chip--letter-spacing: 0.04em;
+  --text-btn: 12px; /* button · mono 600 · UPPER_SNAKE */
+  --text-btn--line-height: 1;
+  --text-btn--letter-spacing: 0.06em;
+  --text-label: 11px; /* // section_label and COLUMN_HEADER */
+  --text-label--line-height: 1.4;
+  --text-label--letter-spacing: 0.08em;
+  --text-caption: 11px; /* caption / timestamp · mono 400 */
+  --text-caption--line-height: 1.4;
+
+  /* --- radii (§3.4) --- */
+  --radius-sm: 8px; /* chips, inputs */
+  --radius-md: 12px; /* buttons, menu items */
+  --radius-lg: 14px; /* cards, panels */
+  --radius-xl: 20px; /* modals */
+
+  /* --- colours. Naming follows §3.1, so bg-surface / text-muted / border-border /
+         bg-primary-solid / text-success all exist, along with the slash-opacity
+         forms the §3.5 chip recipe needs (bg-primary/12, bg-success/15). --- */
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-hover: var(--surface-hover);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text: var(--text);
+  --color-muted: var(--text-muted);
+  --color-faint: var(--text-faint);
+
+  --color-primary: var(--primary);
+  --color-primary-solid: var(--primary-solid);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-press: var(--primary-press);
+  --color-primary-ink: var(--primary-ink);
+  --color-cyan: var(--cyan);
+  --color-deep: var(--deep);
+
+  --color-success: var(--success);
+  --color-success-ink: var(--success-ink);
+  --color-warning: var(--warning);
+  --color-warning-ink: var(--warning-ink);
+  --color-danger: var(--danger);
+  --color-danger-ink: var(--danger-ink);
+  --color-violet: var(--violet);
+  --color-violet-ink: var(--violet-ink);
+  --color-neutral-chip: var(--neutral-chip);
+  --color-neutral-chip-ink: var(--neutral-chip-ink);
+
+  /* shadcn semantic names, so generated primitives inherit the brand */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+}
+
+/* ===========================================================================
+   SIGNATURE GRADIENT — §3.2. Five allowed uses, listed in docs/DESIGN-TOKENS.md.
+   v4 replaces the plugin API with @utility.
+   =========================================================================== */
+
+@utility bg-fetch-gradient {
+  background-image: linear-gradient(135deg, #0057c8 0%, #1a8cf0 48%, #6fd3fa 100%);
+}
+
+@utility shadow-fetch-glow {
+  box-shadow: 0 0 24px -4px rgb(26 140 240 / 0.55);
+}
+
+/* ===========================================================================
+   BASE LAYER
+   =========================================================================== */
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    /* Dark is the default; next-themes only ever swaps the class. */
+    background-color: var(--bg);
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--text);
+    /* Mono is the default UI font — an unstyled element must land here. */
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+    /* JetBrains Mono otherwise renders -> and != as single glyphs, which
+       corrupts data cells. Re-enabled only where code is genuinely code. */
+    font-variant-ligatures: none;
+    font-feature-settings:
+      'liga' 0,
+      'calt' 0,
+      'tnum';
+  }
+
+  pre,
+  code,
+  .csv-preview {
+    font-variant-ligatures: normal;
+    font-feature-settings:
+      'liga' 1,
+      'calt' 1;
+  }
+
+  /* Focus is always visible and never removed (§3.4). */
+  :focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+
+  /* Privacy blur — PrivacyToggle sets data-privacy on <html>; every monetary
+     value in the app carries .money (§7 #27/#28). */
+  .money {
+    transition: filter 150ms ease-in-out;
+  }
+
+  [data-privacy='on'] .money {
+    filter: blur(6px);
+    user-select: none;
+  }
+}
+
+/* The dashboard h1 carries a single terminal caret. Nowhere else. */
+@keyframes fetch-caret {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.caret-blink {
+  animation: fetch-caret 1.06s steps(1) infinite;
+}
+
+/* Motion: sidebar collapse is 300ms, everything else 150ms, and non-essential
+   transitions drop to 0ms when the user asks for reduced motion (§3.4). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Killing the animation must leave the caret visible, not stuck mid-blink. */
+  .caret-blink {
+    animation: none !important;
+    opacity: 1;
+  }
+}
