@@ -19,8 +19,9 @@ export function ThemeSegment() {
   React.useEffect(() => setMounted(true), [])
 
   // Until mounted, `theme` is unknown on the client and rendering it would
-  // hydrate-mismatch. Reserve the space instead of flashing the wrong segment.
-  const value = mounted ? (theme === 'light' ? 'light' : 'dark') : undefined
+  // hydrate-mismatch. Empty string rather than undefined, so the group is controlled
+  // for its whole lifetime — no segment is filled, but React never sees it switch.
+  const value = mounted ? (theme === 'light' ? 'light' : 'dark') : ''
 
   const segment =
     'data-[state=on]:bg-primary/15 data-[state=on]:text-primary-ink text-faint hover:text-text size-7 rounded-sm p-0 transition-colors duration-150'

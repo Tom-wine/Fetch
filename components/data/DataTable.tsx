@@ -1,0 +1,467 @@
+'use client'
+
+import * as React from 'react'
+import {
+  columnPinningFeature,
+  columnVisibilityFeature,
+  createPaginatedRowModel,
+  createSortedRowModel,
+  rowPaginationFeature,
+  rowSelectionFeature,
+  rowSortingFeature,
+  sortFn_alphanumeric,
+  sortFn_basic,
+  sortFn_datetime,
+  sortFn_text,
+  tableFeatures,
+  useTable,
+  type ColumnDef,
+  type RowData,
+  type RowSelectionState,
+} from '@tanstack/react-table'
+import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, ChevronsUpDown } from 'lucide-react'
+
+import { cn } from '@/lib/utils'
+import { snake, upperSnake } from '@/lib/format/text'
+import { Checkbox } from '@/components/ui/checkbox'
+import { ErrorState, SkeletonTable } from './states'
+import { ViewOptionsPopover, type ColumnToggle, type Density } from './ViewOptionsPopover'
+
+/**
+ * The workhorse (§7 #7), built on TanStack Table **v9**.
+ *
+ * v9 is not v8 with a new coat: features are registered explicitly through
+ * `tableFeatures()`, row models are factories rather than `getXRowModel` options,
+ * and state is read from `table.state` (there is no `getState()`). Everything below
+ * is written against the installed 9.1.2 types.
+ */
+
+// Registered once at module scope — the helper is explicitly documented as static.
+const features = tableFeatures({
+  rowSelectionFeature,
+  rowSortingFeature,
+  rowPaginationFeature,
+  columnVisibilityFeature,
+  columnPinningFeature,
+  sortedRowModel: createSortedRowModel(),
+  paginatedRowModel: createPaginatedRowModel(),
+  sortFns: {
+    alphanumeric: sortFn_alphanumeric,
+    basic: sortFn_basic,
+    datetime: sortFn_datetime,
+    text: sortFn_text,
+  },
+})
+
+export type TableFeaturesOf = typeof features
+export type FetchColumnDef<TData extends RowData> = ColumnDef<TableFeaturesOf, TData, unknown>
+export type { RowSelectionState }
+
+const SELECT_COLUMN_ID = '__select__'
+
+export interface DataTableProps<TData extends RowData> {
+  data: TData[]
+  columns: FetchColumnDef<TData>[]
+  /** Stable row identity — never the array index (§6.2: IDs are opaque strings). */
+  getRowId: (row: TData) => string
+  /** Singular noun for the `Total N <noun>` footer and the selection count. */
+  noun: string
+
+  loading?: boolean
+  error?: string | null
+  onRetry?: () => void
+  /** Rendered in place of the table when there are no rows and no error. */
+  empty?: React.ReactNode
+
+  enableSelection?: boolean
+  selection?: RowSelectionState
+  onSelectionChange?: (selection: RowSelectionState) => void
+
+  onRowClick?: (row: TData) => void
+
+  /** Column ids hidden on first render — the fix when a table crowds at 1280px. */
+  initiallyHidden?: string[]
+  defaultPageSize?: number
+  defaultDensity?: Density
+
+  /** Renders one row as a card under `md`, where a table cannot fit (§9 rule 3). */
+  renderCard?: (row: TData) => React.ReactNode
+
+  /** Slot above the table: a <Toolbar>, a <BulkActionBar>, club tabs. */
+  toolbar?: React.ReactNode
+  /** Extra controls beside the view-options button. */
+  toolbarActions?: React.ReactNode
+  className?: string
+}
+
+export function DataTable<TData extends RowData>({
+  data,
+  columns,
+  getRowId,
+  noun,
+  loading = false,
+  error = null,
+  onRetry,
+  empty,
+  enableSelection = false,
+  selection,
+  onSelectionChange,
+  onRowClick,
+  initiallyHidden = [],
+  defaultPageSize = 25,
+  defaultDensity = 'comfortable',
+  renderCard,
+  toolbar,
+  toolbarActions,
+  className,
+}: DataTableProps<TData>) {
+  const [density, setDensity] = React.useState<Density>(defaultDensity)
+  const [internalSelection, setInternalSelection] = React.useState<RowSelectionState>({})
+  const rowSelection = selection ?? internalSelection
+  const setRowSelection = onSelectionChange ?? setInternalSelection
+
+  const allColumns = React.useMemo<FetchColumnDef<TData>[]>(() => {
+    if (!enableSelection) return columns
+    const selectColumn: FetchColumnDef<TData> = {
+      id: SELECT_COLUMN_ID,
+      header: '',
+      enableSorting: false,
+      enableHiding: false,
+    }
+    return [selectColumn, ...columns]
+  }, [columns, enableSelection])
+
+  const initialVisibility = React.useMemo(
+    () => Object.fromEntries(initiallyHidden.map((id) => [id, false])),
+    // The initial hidden set is a mount-time decision; later changes come from the picker.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  )
+
+  const table = useTable({
+    features,
+    data,
+    columns: allColumns,
+    getRowId: (row) => getRowId(row),
+    enableRowSelection: enableSelection,
+    state: { rowSelection },
+    onRowSelectionChange: (updater) =>
+      setRowSelection(typeof updater === 'function' ? updater(rowSelection) : updater),
+    initialState: {
+      pagination: { pageIndex: 0, pageSize: defaultPageSize },
+      columnVisibility: initialVisibility,
+      // The first column is frozen (§9 rule 3) — pinning drives the sticky offset.
+      columnPinning: { start: enableSelection ? [SELECT_COLUMN_ID] : [], end: [] },
+    },
+  })
+
+  const pagination = table.state.pagination ?? { pageIndex: 0, pageSize: defaultPageSize }
+  const rows = table.getRowModel().rows
+  const total = table.getRowCount()
+  const selectedCount = Object.values(rowSelection).filter(Boolean).length
+
+  const columnToggles = React.useMemo<ColumnToggle[]>(
+    () =>
+      table
+        .getAllLeafColumns()
+        .filter((c) => c.id !== SELECT_COLUMN_ID)
+        .map((c) => ({
+          id: c.id,
+          label: headerLabel(c.columnDef.header, c.id),
+          visible: c.getIsVisible(),
+          canHide: c.getCanHide(),
+        })),
+    // `table` is a stable instance in v9 (state lives in atoms), so it alone would
+    // never re-trigger this. The visibility slice is the real dependency.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [table, table.state.columnVisibility],
+  )
+
+  const cellPad = density === 'compact' ? 'px-4 py-2' : 'px-4 py-3'
+
+  const controls = (
+    <div className="flex flex-wrap items-center gap-2">
+      {toolbarActions}
+      <ViewOptionsPopover
+        density={density}
+        onDensityChange={setDensity}
+        pageSize={pagination.pageSize}
+        onPageSizeChange={(n) => {
+          table.setPageSize(n)
+          table.setPageIndex(0)
+        }}
+        columns={columnToggles}
+        onColumnToggle={(id, visible) =>
+          table
+            .getAllLeafColumns()
+            .find((c) => c.id === id)
+            ?.toggleVisibility(visible)
+        }
+      />
+    </div>
+  )
+
+  if (error) {
+    return (
+      <div className={cn('space-y-4', className)}>
+        {toolbar}
+        <div className="rounded-lg border border-border bg-surface">
+          <ErrorState message={error} onRetry={onRetry} />
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className={cn('space-y-4', className)}>
+      {(toolbar || toolbarActions) && (
+        // Stacked below md: giving the toolbar `flex-1 min-w-0` on a phone lets it
+        // collapse to a sliver beside the controls, which is how a bulk bar ends up
+        // one word wide.
+        <div className="flex flex-col items-stretch gap-3 md:flex-row md:flex-wrap md:items-start md:justify-between">
+          <div className="min-w-0 md:flex-1">{toolbar}</div>
+          {controls}
+        </div>
+      )}
+
+      {loading ? (
+        <div className="overflow-hidden rounded-lg border border-border bg-surface">
+          <SkeletonTable
+            rows={Math.min(pagination.pageSize, 8)}
+            columns={columnToggles.length || 6}
+          />
+        </div>
+      ) : rows.length === 0 ? (
+        <div className="rounded-lg border border-border bg-surface">{empty}</div>
+      ) : (
+        <>
+          {/* ---- table, md and up ---------------------------------------- */}
+          <div className="hidden overflow-hidden rounded-lg border border-border bg-surface md:block">
+            {/* The only horizontal scroll in the app is the DATA, never the toolbar. */}
+            <div className="max-h-[70vh] overflow-auto">
+              <table className="w-full border-collapse">
+                <thead className="sticky top-0 z-20">
+                  {table.getHeaderGroups().map((group) => (
+                    <tr key={group.id}>
+                      {group.headers.map((header, index) => {
+                        const isSelect = header.column.id === SELECT_COLUMN_ID
+                        const frozen = index === 0
+                        const sorted = header.column.getIsSorted()
+                        const canSort = header.column.getCanSort()
+
+                        return (
+                          <th
+                            key={header.id}
+                            scope="col"
+                            style={{ width: isSelect ? 44 : undefined }}
+                            className={cn(
+                              'border-b border-border bg-surface-raised text-left text-label font-semibold whitespace-nowrap text-muted',
+                              cellPad,
+                              frozen && 'sticky left-0 z-30',
+                            )}
+                          >
+                            {isSelect ? (
+                              <Checkbox
+                                aria-label="Select all rows on this page"
+                                checked={
+                                  table.getIsAllPageRowsSelected()
+                                    ? true
+                                    : table.getIsSomePageRowsSelected()
+                                      ? 'indeterminate'
+                                      : false
+                                }
+                                onCheckedChange={(value) =>
+                                  table.toggleAllPageRowsSelected(value === true)
+                                }
+                              />
+                            ) : canSort ? (
+                              <button
+                                type="button"
+                                onClick={header.column.getToggleSortingHandler()}
+                                className="flex items-center gap-1.5 transition-colors duration-150 hover:text-text"
+                                aria-label={`Sort by ${headerLabel(header.column.columnDef.header, header.column.id)}`}
+                              >
+                                {upperSnake(
+                                  headerLabel(header.column.columnDef.header, header.column.id),
+                                )}
+                                <SortIcon sorted={sorted} />
+                              </button>
+                            ) : (
+                              upperSnake(
+                                headerLabel(header.column.columnDef.header, header.column.id),
+                              )
+                            )}
+                          </th>
+                        )
+                      })}
+                    </tr>
+                  ))}
+                </thead>
+
+                <tbody>
+                  {rows.map((row) => {
+                    const selected = row.getIsSelected()
+                    return (
+                      <tr
+                        key={row.id}
+                        data-state={selected ? 'selected' : undefined}
+                        tabIndex={0}
+                        aria-selected={enableSelection ? selected : undefined}
+                        onClick={() => onRowClick?.(row.original)}
+                        onKeyDown={(e) => handleRowKeys(e, row, enableSelection, onRowClick)}
+                        className={cn(
+                          'border-b border-border transition-colors duration-150 last:border-0 hover:bg-surface-hover',
+                          selected && 'bg-primary/8',
+                          onRowClick && 'cursor-pointer',
+                        )}
+                      >
+                        {row.getVisibleCells().map((cell, index) => {
+                          const isSelect = cell.column.id === SELECT_COLUMN_ID
+                          const frozen = index === 0
+                          return (
+                            <td
+                              key={cell.id}
+                              className={cn(
+                                'align-middle text-body',
+                                cellPad,
+                                frozen && 'sticky left-0 z-10 bg-surface',
+                                selected && frozen && 'bg-surface',
+                              )}
+                              // A click on the checkbox must not also open the row.
+                              onClick={isSelect ? (e) => e.stopPropagation() : undefined}
+                            >
+                              {isSelect ? (
+                                <Checkbox
+                                  aria-label="Select row"
+                                  checked={selected}
+                                  onCheckedChange={(value) => row.toggleSelected(value === true)}
+                                />
+                              ) : (
+                                <table.FlexRender cell={cell} />
+                              )}
+                            </td>
+                          )
+                        })}
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* ---- stacked cards, below md --------------------------------- */}
+          <div className="space-y-2 md:hidden">
+            {rows.map((row) => (
+              <div
+                key={row.id}
+                onClick={() => onRowClick?.(row.original)}
+                className={cn(
+                  'rounded-lg border border-border bg-surface p-4',
+                  row.getIsSelected() && 'border-primary/30 bg-primary/8',
+                  onRowClick && 'cursor-pointer',
+                )}
+              >
+                {renderCard ? (
+                  renderCard(row.original)
+                ) : (
+                  <dl className="space-y-1.5">
+                    {row
+                      .getVisibleCells()
+                      .filter((c) => c.column.id !== SELECT_COLUMN_ID)
+                      .map((cell) => (
+                        <div key={cell.id} className="flex items-start justify-between gap-3">
+                          <dt className="shrink-0 text-label text-muted">
+                            {upperSnake(headerLabel(cell.column.columnDef.header, cell.column.id))}
+                          </dt>
+                          <dd className="min-w-0 text-right text-body">
+                            <table.FlexRender cell={cell} />
+                          </dd>
+                        </div>
+                      ))}
+                  </dl>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* ---- footer -------------------------------------------------- */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span className="text-caption text-muted tabular-nums">
+              Total {total} {total === 1 ? noun : `${noun}s`}
+              {enableSelection && selectedCount > 0 && ` · ${selectedCount} selected`}
+            </span>
+
+            <div className="flex items-center gap-2">
+              <span className="text-caption text-faint tabular-nums">
+                {pagination.pageIndex + 1} / {Math.max(table.getPageCount(), 1)}
+              </span>
+              <button
+                type="button"
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+                aria-label="Previous page"
+                className="flex size-8 items-center justify-center rounded-full border border-border text-muted transition-colors duration-150 hover:bg-surface-hover hover:text-text disabled:opacity-40"
+              >
+                <ChevronLeft className="size-4" aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+                aria-label="Next page"
+                className="flex size-8 items-center justify-center rounded-full border border-border text-muted transition-colors duration-150 hover:bg-surface-hover hover:text-text disabled:opacity-40"
+              >
+                <ChevronRight className="size-4" aria-hidden="true" />
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+function SortIcon({ sorted }: { sorted: false | 'asc' | 'desc' }) {
+  if (sorted === 'asc') return <ArrowUp className="size-3 text-primary" aria-hidden="true" />
+  if (sorted === 'desc') return <ArrowDown className="size-3 text-primary" aria-hidden="true" />
+  return <ChevronsUpDown className="size-3 opacity-40" aria-hidden="true" />
+}
+
+/**
+ * Column headers are authored as plain strings so the grammar can be applied once,
+ * here. A header that is a render function falls back to the column id.
+ */
+function headerLabel(header: unknown, fallbackId: string): string {
+  return typeof header === 'string' && header.length > 0 ? header : snake(fallbackId)
+}
+
+/**
+ * Keyboard path (§11): arrows move between rows, space toggles selection, enter
+ * opens the row. Rows are focusable, so tab reaches the table body directly.
+ */
+function handleRowKeys<TData extends RowData>(
+  e: React.KeyboardEvent<HTMLTableRowElement>,
+  row: { toggleSelected: (v: boolean) => void; getIsSelected: () => boolean; original: TData },
+  enableSelection: boolean,
+  onRowClick?: (row: TData) => void,
+) {
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault()
+    const sibling =
+      e.key === 'ArrowDown'
+        ? e.currentTarget.nextElementSibling
+        : e.currentTarget.previousElementSibling
+    if (sibling instanceof HTMLElement) sibling.focus()
+    return
+  }
+  if (e.key === ' ' && enableSelection) {
+    e.preventDefault()
+    row.toggleSelected(!row.getIsSelected())
+    return
+  }
+  if (e.key === 'Enter' && onRowClick) {
+    e.preventDefault()
+    onRowClick(row.original)
+  }
+}

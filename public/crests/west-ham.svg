@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" role="img" aria-label="West Ham placeholder crest">
+  <title>West Ham</title>
+  <path d="M24 2 42 8v18c0 10-8 17.5-18 20C14 43.5 6 36 6 26V8Z" fill="#7A263A"/>
+  <path d="M24 2 42 8v18c0 10-8 17.5-18 20C14 43.5 6 36 6 26V8Z" fill="none" stroke="#FFFFFF" stroke-opacity=".25" stroke-width="1.5"/>
+  <text x="24" y="30" text-anchor="middle" fill="#FFFFFF"
+        font-family="ui-monospace, 'JetBrains Mono', 'SF Mono', monospace"
+        font-size="16" font-weight="700" letter-spacing="0.5">WH</text>
+</svg>
