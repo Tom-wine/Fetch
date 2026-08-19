@@ -2466,6 +2466,1641 @@
           }
         }
       }
+    },
+    "/ballots/profiles": {
+      "get": {
+        "summary": "List run profiles",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 25
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "asc"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Free-text search."
+          },
+          {
+            "name": "__fail",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 400,
+              "maximum": 599
+            },
+            "description": "Mock only. Forces the route to return an error envelope with this status."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta",
+                    "error"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/BallotProfile"
+                      }
+                    },
+                    "meta": {
+                      "oneOf": [
+                        {
+                          "$ref": "#/components/schemas/Meta"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "error": {
+                      "type": "null"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta",
+                    "error"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "null"
+                    },
+                    "meta": {
+                      "type": "null"
+                    },
+                    "error": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a run profile",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BallotProfileInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta",
+                    "error"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BallotProfile"
+                    },
+                    "meta": {
+                      "oneOf": [
+                        {
+                          "$ref": "#/components/schemas/Meta"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "error": {
+                      "type": "null"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta",
+                    "error"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "null"
+                    },
+                    "meta": {
+                      "type": "null"
+                    },
+                    "error": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ballots/profiles/{id}": {
+      "patch": {
+        "summary": "Edit a run profile",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque string id. Never assume numeric or sequential."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BallotProfileInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta",
+                    "error"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BallotProfile"
+                    },
+                    "meta": {
+                      "oneOf": [
+                        {
+                          "$ref": "#/components/schemas/Meta"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "error": {
+                      "type": "null"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta",
+                    "error"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "null"
+                    },
+                    "meta": {
+                      "type": "null"
+                    },
+                    "error": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a run profile",
+        "description": "The shipped \"bpf_default\" profile is refused with a 422 and a reason rather than silently succeeding.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque string id. Never assume numeric or sequential."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta",
+                    "error"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "required": [
+                        "id"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "meta": {
+                      "oneOf": [
+                        {
+                          "$ref": "#/components/schemas/Meta"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "error": {
+                      "type": "null"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta",
+                    "error"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "null"
+                    },
+                    "meta": {
+                      "type": "null"
+                    },
+                    "error": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ballots/imap": {
+      "get": {
+        "summary": "List mailboxes an IMAP profile can read codes from",
+        "description": "Backs the IMAP field a profile requires when otpSource is \"imap\", and the check the launcher runs before it will start a run.",
+        "parameters": [
+          {
+            "name": "__fail",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 400,
+              "maximum": 599
+            },
+            "description": "Mock only. Forces the route to return an error envelope with this status."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta",
+                    "error"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ImapAccount"
+                      }
+                    },
+                    "meta": {
+                      "oneOf": [
+                        {
+                          "$ref": "#/components/schemas/Meta"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "error": {
+                      "type": "null"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta",
+                    "error"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "null"
+                    },
+                    "meta": {
+                      "type": "null"
+                    },
+                    "error": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ballots/accounts/paste": {
+      "post": {
+        "summary": "Load accounts from pasted email:password lines",
+        "description": "Reuses the ordinary Account model — there is no second account model. Passwords go to the same store every other account uses and are never returned, logged, or written into an event payload.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountPaste"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta",
+                    "error"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PasteResult"
+                    },
+                    "meta": {
+                      "oneOf": [
+                        {
+                          "$ref": "#/components/schemas/Meta"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "error": {
+                      "type": "null"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta",
+                    "error"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "null"
+                    },
+                    "meta": {
+                      "type": "null"
+                    },
+                    "error": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ballots/accounts/results": {
+      "get": {
+        "summary": "Last ballot result per account",
+        "description": "The last-run / last-result join behind the pool table, done once on the server rather than one request per run in the client. One row per account that has been attempted at least once.",
+        "parameters": [
+          {
+            "name": "__fail",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 400,
+              "maximum": 599
+            },
+            "description": "Mock only. Forces the route to return an error envelope with this status."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta",
+                    "error"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AccountResult"
+                      }
+                    },
+                    "meta": {
+                      "oneOf": [
+                        {
+                          "$ref": "#/components/schemas/Meta"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "error": {
+                      "type": "null"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta",
+                    "error"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "null"
+                    },
+                    "meta": {
+                      "type": "null"
+                    },
+                    "error": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ballots/runs": {
+      "get": {
+        "summary": "Run history",
+        "description": "Newest first unless an explicit sort says otherwise.",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 25
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "asc"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Free-text search."
+          },
+          {
+            "name": "__fail",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 400,
+              "maximum": 599
+            },
+            "description": "Mock only. Forces the route to return an error envelope with this status."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "explode": true,
+            "style": "form",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "QUEUED",
+                  "RUNNING",
+                  "PAUSED",
+                  "COMPLETED",
+                  "STOPPED",
+                  "FAILED"
+                ]
+              }
+            },
+            "description": "Repeated keys mean OR."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta",
+                    "error"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/BallotRun"
+                      }
+                    },
+                    "meta": {
+                      "oneOf": [
+                        {
+                          "$ref": "#/components/schemas/Meta"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "error": {
+                      "type": "null"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta",
+                    "error"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "null"
+                    },
+                    "meta": {
+                      "type": "null"
+                    },
+                    "error": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create AND start a run",
+        "description": "There is no separate start call: a run that exists but has not begun is a state with no meaning to an operator.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta",
+                    "error"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BallotRun"
+                    },
+                    "meta": {
+                      "oneOf": [
+                        {
+                          "$ref": "#/components/schemas/Meta"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "error": {
+                      "type": "null"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta",
+                    "error"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "null"
+                    },
+                    "meta": {
+                      "type": "null"
+                    },
+                    "error": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ballots/runs/{id}": {
+      "get": {
+        "summary": "One run's state",
+        "description": "Poll every 2000 ms while the status is not terminal. Stop when it is.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque string id. Never assume numeric or sequential."
+          },
+          {
+            "name": "__fail",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 400,
+              "maximum": 599
+            },
+            "description": "Mock only. Forces the route to return an error envelope with this status."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta",
+                    "error"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BallotRun"
+                    },
+                    "meta": {
+                      "oneOf": [
+                        {
+                          "$ref": "#/components/schemas/Meta"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "error": {
+                      "type": "null"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta",
+                    "error"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "null"
+                    },
+                    "meta": {
+                      "type": "null"
+                    },
+                    "error": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Remove a run from the history",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque string id. Never assume numeric or sequential."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta",
+                    "error"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "required": [
+                        "id"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "meta": {
+                      "oneOf": [
+                        {
+                          "$ref": "#/components/schemas/Meta"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "error": {
+                      "type": "null"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta",
+                    "error"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "null"
+                    },
+                    "meta": {
+                      "type": "null"
+                    },
+                    "error": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ballots/runs/{id}/pause": {
+      "post": {
+        "summary": "Pause a run",
+        "description": "Freezes the run's clock; the accumulated elapsed time is kept.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque string id. Never assume numeric or sequential."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta",
+                    "error"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BallotRun"
+                    },
+                    "meta": {
+                      "oneOf": [
+                        {
+                          "$ref": "#/components/schemas/Meta"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "error": {
+                      "type": "null"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta",
+                    "error"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "null"
+                    },
+                    "meta": {
+                      "type": "null"
+                    },
+                    "error": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ballots/runs/{id}/resume": {
+      "post": {
+        "summary": "Resume a run",
+        "description": "Restarts the clock from exactly where it froze.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque string id. Never assume numeric or sequential."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta",
+                    "error"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BallotRun"
+                    },
+                    "meta": {
+                      "oneOf": [
+                        {
+                          "$ref": "#/components/schemas/Meta"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "error": {
+                      "type": "null"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta",
+                    "error"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "null"
+                    },
+                    "meta": {
+                      "type": "null"
+                    },
+                    "error": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ballots/runs/{id}/stop": {
+      "post": {
+        "summary": "Stop a run early",
+        "description": "Everything unattempted becomes SKIPPED. A stopped run cannot be restarted, only retried as a new one.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque string id. Never assume numeric or sequential."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta",
+                    "error"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BallotRun"
+                    },
+                    "meta": {
+                      "oneOf": [
+                        {
+                          "$ref": "#/components/schemas/Meta"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "error": {
+                      "type": "null"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta",
+                    "error"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "null"
+                    },
+                    "meta": {
+                      "type": "null"
+                    },
+                    "error": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ballots/runs/{id}/retry-failed": {
+      "post": {
+        "summary": "Retry a run's failures",
+        "description": "Returns a DIFFERENT run containing exactly the source run's failures. The original is left untouched as the record of what happened. 422 when the run has no failures.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque string id. Never assume numeric or sequential."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta",
+                    "error"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BallotRun"
+                    },
+                    "meta": {
+                      "oneOf": [
+                        {
+                          "$ref": "#/components/schemas/Meta"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "error": {
+                      "type": "null"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta",
+                    "error"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "null"
+                    },
+                    "meta": {
+                      "type": "null"
+                    },
+                    "error": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ballots/runs/{id}/tasks": {
+      "get": {
+        "summary": "Per-account rows for a run",
+        "description": "Poll every 3000 ms while the run is live, plus ONE final call once it is terminal — the run endpoint is what discovers that, and without a last read the table freezes one poll short.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque string id. Never assume numeric or sequential."
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 25
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "asc"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Free-text search."
+          },
+          {
+            "name": "__fail",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 400,
+              "maximum": 599
+            },
+            "description": "Mock only. Forces the route to return an error envelope with this status."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "explode": true,
+            "style": "form",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "QUEUED",
+                  "RUNNING",
+                  "RETRYING",
+                  "SUCCESS",
+                  "FAILED",
+                  "NEEDS_OTP",
+                  "SKIPPED"
+                ]
+              }
+            },
+            "description": "Repeated keys mean OR."
+          },
+          {
+            "name": "clubId",
+            "in": "query",
+            "explode": true,
+            "style": "form",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/BallotClubId"
+              }
+            },
+            "description": "Repeated keys mean OR."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta",
+                    "error"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/BallotTask"
+                      }
+                    },
+                    "meta": {
+                      "oneOf": [
+                        {
+                          "$ref": "#/components/schemas/Meta"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "error": {
+                      "type": "null"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta",
+                    "error"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "null"
+                    },
+                    "meta": {
+                      "type": "null"
+                    },
+                    "error": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ballots/runs/{id}/events": {
+      "get": {
+        "summary": "Append-only event stream, by cursor",
+        "description": "THE PIECE NOT TO GET WRONG.\n\n- Returns ONLY events with seq STRICTLY GREATER than `since`. Not >=. A client that echoes back the cursor it was given must receive nothing, or it re-reads the same row forever.\n- In order, ascending by seq.\n- `meta.lastSeq` is the seq of the LAST EVENT IN THIS RESPONSE, not the run's high-water mark. Returning the high-water mark while truncating at `limit` would skip everything in between.\n- When nothing is new: `data` is [] and `lastSeq` is unchanged. THE CURSOR NEVER GOES BACKWARDS.\n- `meta.hasMore` is true when the run holds events past `lastSeq`.\n\nThe client never deduplicates. If it has to, this endpoint lied. A page reload starts from since=0 and replays the whole run, which is why events are kept rather than trimmed.\n\nPoll every 1000 ms while the run is live, plus ONE final call once it is terminal.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque string id. Never assume numeric or sequential."
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "description": "The previous response's meta.lastSeq. 0 replays the whole run."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 200
+            }
+          },
+          {
+            "name": "__fail",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 400,
+              "maximum": 599
+            },
+            "description": "Mock only. Forces the route to return an error envelope with this status."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta",
+                    "error"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/RunEvent"
+                      }
+                    },
+                    "meta": {
+                      "oneOf": [
+                        {
+                          "$ref": "#/components/schemas/Meta"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "error": {
+                      "type": "null"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta",
+                    "error"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "null"
+                    },
+                    "meta": {
+                      "type": "null"
+                    },
+                    "error": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ballots/runs/{id}/export": {
+      "get": {
+        "summary": "Run results as CSV",
+        "description": "A FILE, not the envelope — it is a download. There is no password column, ever: this file leaves the machine.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque string id. Never assume numeric or sequential."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CSV attachment",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such run"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3435,6 +5070,15 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 9007199254740991
+          },
+          "lastSeq": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Cursor for the next call. The seq of the LAST EVENT IN THIS RESPONSE, not the run's high-water mark. Set only by GET /ballots/runs/{id}/events."
+          },
+          "hasMore": {
+            "type": "boolean",
+            "description": "True when the run holds events past lastSeq, so a client that has fallen behind can call again immediately. Events endpoint only."
           }
         },
         "required": [
@@ -3723,6 +5367,591 @@
           }
         },
         "additionalProperties": false
+      },
+      "BallotClubId": {
+        "type": "string",
+        "enum": [
+          "arsenal",
+          "chelsea",
+          "liverpool",
+          "newcastle",
+          "leeds",
+          "nottingham-forest",
+          "everton"
+        ],
+        "description": "The seven clubs the ballot module supports. A SUBSET of ClubId, not a parallel union — a ballot account is an ordinary Account whose club happens to be one of these."
+      },
+      "ImapAccount": {
+        "type": "object",
+        "required": [
+          "id",
+          "email",
+          "host",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "host": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "error"
+            ]
+          },
+          "lastCheckedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "A mailbox a profile with otpSource \"imap\" can read two-factor codes from."
+      },
+      "BallotProfileInput": {
+        "type": "object",
+        "required": [
+          "name",
+          "delayMinMs",
+          "delayMaxMs",
+          "concurrency",
+          "maxRetries",
+          "timeoutMs",
+          "otpSource",
+          "stopOnRateLimit"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "delayMinMs": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Shortest pause between two tasks on the same worker."
+          },
+          "delayMaxMs": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The gap is drawn uniformly from [delayMinMs, delayMaxMs]. Must be >= delayMinMs."
+          },
+          "concurrency": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          },
+          "maxRetries": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5
+          },
+          "timeoutMs": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "proxyGroupId": {
+            "type": "string",
+            "description": "Absent means no proxy."
+          },
+          "otpSource": {
+            "type": "string",
+            "enum": [
+              "imap",
+              "manual",
+              "none"
+            ]
+          },
+          "imapId": {
+            "type": "string",
+            "description": "Required when otpSource is \"imap\"; must name a mailbox from GET /ballots/imap."
+          },
+          "stopOnRateLimit": {
+            "type": "boolean",
+            "description": "A 429 ends the run instead of carrying on."
+          },
+          "webhookUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "notes": {
+            "type": "string"
+          }
+        },
+        "description": "The writable half of a profile. Two rules are enforced server-side, not in the form: delayMinMs <= delayMaxMs, and imapId is required when otpSource is \"imap\"."
+      },
+      "BallotProfile": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "delayMinMs",
+          "delayMaxMs",
+          "concurrency",
+          "maxRetries",
+          "timeoutMs",
+          "otpSource",
+          "stopOnRateLimit",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "delayMinMs": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Shortest pause between two tasks on the same worker."
+          },
+          "delayMaxMs": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The gap is drawn uniformly from [delayMinMs, delayMaxMs]. Must be >= delayMinMs."
+          },
+          "concurrency": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          },
+          "maxRetries": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5
+          },
+          "timeoutMs": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "proxyGroupId": {
+            "type": "string",
+            "description": "Absent means no proxy."
+          },
+          "otpSource": {
+            "type": "string",
+            "enum": [
+              "imap",
+              "manual",
+              "none"
+            ]
+          },
+          "imapId": {
+            "type": "string",
+            "description": "Required when otpSource is \"imap\"; must name a mailbox from GET /ballots/imap."
+          },
+          "stopOnRateLimit": {
+            "type": "boolean",
+            "description": "A 429 ends the run instead of carrying on."
+          },
+          "webhookUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RunCounts": {
+        "type": "object",
+        "required": [
+          "total",
+          "queued",
+          "running",
+          "success",
+          "failed",
+          "needsOtp",
+          "skipped"
+        ],
+        "properties": {
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "queued": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "running": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "success": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "needsOtp": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "skipped": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "BallotRun": {
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "clubIds",
+          "profileId",
+          "profileName",
+          "status",
+          "counts",
+          "startedAt",
+          "ratePerMin",
+          "lastEventSeq"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string",
+            "description": "Domain data. Rendered verbatim, never snake_cased."
+          },
+          "clubIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BallotClubId"
+            }
+          },
+          "profileId": {
+            "type": "string"
+          },
+          "profileName": {
+            "type": "string",
+            "description": "Denormalised on purpose: renaming a profile must not rewrite the history of a run that already happened."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "QUEUED",
+              "RUNNING",
+              "PAUSED",
+              "COMPLETED",
+              "STOPPED",
+              "FAILED"
+            ]
+          },
+          "counts": {
+            "$ref": "#/components/schemas/RunCounts"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "finishedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "ratePerMin": {
+            "type": "number",
+            "minimum": 0
+          },
+          "etaSeconds": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Absent on a terminal run or before anything has been attempted."
+          },
+          "lastEventSeq": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "High-water mark of the run's event stream."
+          }
+        }
+      },
+      "BallotTask": {
+        "type": "object",
+        "required": [
+          "id",
+          "runId",
+          "accountId",
+          "accountEmail",
+          "clubId",
+          "status",
+          "attempt",
+          "maxAttempts",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "runId": {
+            "type": "string"
+          },
+          "accountId": {
+            "type": "string"
+          },
+          "accountEmail": {
+            "type": "string",
+            "description": "Denormalised so the table needs no second request."
+          },
+          "clubId": {
+            "$ref": "#/components/schemas/BallotClubId"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "QUEUED",
+              "RUNNING",
+              "RETRYING",
+              "SUCCESS",
+              "FAILED",
+              "NEEDS_OTP",
+              "SKIPPED"
+            ]
+          },
+          "attempt": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "maxAttempts": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "lastHttpStatus": {
+            "type": "integer"
+          },
+          "lastMessage": {
+            "type": "string",
+            "description": "A short readable sentence, never a stack trace. A code is not an explanation."
+          },
+          "proxyLabel": {
+            "type": "string"
+          },
+          "durationMs": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "entryRef": {
+            "type": "string",
+            "description": "The club's entry reference, on success."
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RunEvent": {
+        "type": "object",
+        "required": [
+          "id",
+          "seq",
+          "runId",
+          "at",
+          "level",
+          "code",
+          "message"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "seq": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Strictly increasing per run, append-only. THIS IS THE CURSOR."
+          },
+          "runId": {
+            "type": "string"
+          },
+          "taskId": {
+            "type": "string"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "level": {
+            "type": "string",
+            "enum": [
+              "info",
+              "success",
+              "warn",
+              "error"
+            ]
+          },
+          "code": {
+            "type": "string",
+            "description": "SUBMITTED, OTP_REQUIRED, RATE_LIMITED, PROXY_DEAD, ENTRY_CONFIRMED, UPSTREAM_ERROR, …"
+          },
+          "message": {
+            "type": "string",
+            "description": "The readable half. Never carries a \"//\" prefix."
+          },
+          "httpStatus": {
+            "type": "integer"
+          }
+        }
+      },
+      "AccountResult": {
+        "type": "object",
+        "required": [
+          "accountId",
+          "runId",
+          "runLabel",
+          "at",
+          "status"
+        ],
+        "properties": {
+          "accountId": {
+            "type": "string"
+          },
+          "runId": {
+            "type": "string"
+          },
+          "runLabel": {
+            "type": "string"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "QUEUED",
+              "RUNNING",
+              "RETRYING",
+              "SUCCESS",
+              "FAILED",
+              "NEEDS_OTP",
+              "SKIPPED"
+            ]
+          },
+          "httpStatus": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "entryRef": {
+            "type": "string"
+          }
+        }
+      },
+      "AccountPaste": {
+        "type": "object",
+        "required": [
+          "club",
+          "text"
+        ],
+        "properties": {
+          "club": {
+            "$ref": "#/components/schemas/BallotClubId"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "description": "One \"email:password\" per line. \",\" and \";\" are accepted as separators too. Sent ONCE and never stored client-side."
+          }
+        }
+      },
+      "PasteResult": {
+        "type": "object",
+        "required": [
+          "created",
+          "updated",
+          "skipped",
+          "errors"
+        ],
+        "properties": {
+          "created": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "updated": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "skipped": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Lines repeated within the pasted block itself."
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "row",
+                "message"
+              ],
+              "properties": {
+                "row": {
+                  "type": "integer",
+                  "description": "1-based line number in the operator's own paste."
+                },
+                "email": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "description": "Never echoes a password back, in any field."
+      },
+      "RunCreate": {
+        "type": "object",
+        "required": [
+          "clubIds",
+          "profileId"
+        ],
+        "properties": {
+          "clubIds": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/BallotClubId"
+            }
+          },
+          "profileId": {
+            "type": "string"
+          },
+          "accountIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Explicit account ids. OMIT to mean every eligible account in clubIds, resolved server-side at start."
+          },
+          "label": {
+            "type": "string",
+            "description": "Optional. Defaults to the clubs plus the start time."
+          }
+        }
       }
     }
   }

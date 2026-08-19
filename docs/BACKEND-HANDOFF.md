@@ -251,7 +251,93 @@ how many tickets exist. They must not disagree about money.
 
 ---
 
-## 10. Mock-only affordances
+## 10. The frontend automates nothing
+
+Fetch.io **creates a run and reads its state.** That is all it does.
+
+It never issues a request to a club's website. It never drives a browser, a headless
+one included. It never holds a proxy connection, never opens an IMAP mailbox, never
+solves a challenge, never sees a two-factor code. A `BallotProfile` is a set of numbers
+the frontend stores and displays; nothing in this repository acts on `concurrency`,
+`delayMinMs`, `proxyGroupId` or `otpSource`.
+
+Every one of those is yours. The backend owns:
+
+- the actual entry into each club's ballot, and whatever session, browser or client it
+  takes to make one;
+- proxy selection, rotation and health — `proxyGroupId` names a group you resolve;
+- the OTP path — reading the mailbox `imapId` points at, or holding a task in
+  `NEEDS_OTP` until a code arrives;
+- honouring `stopOnRateLimit`, `maxRetries`, `timeoutMs` and the delay window;
+- calling `webhookUrl` when a run finishes.
+
+**What breaks:** nothing visible, and that is the point. Read the polling loop in
+`lib/api/hooks/useRunMonitor.ts` and it is easy to assume the client is driving the
+run — it is not, it is reading a resource. Build the backend to that assumption and a
+run works; build it expecting the browser to do half the job and every run sits at
+`QUEUED` forever while the UI cheerfully polls an endpoint that never changes.
+
+The one place the frontend touches a credential is
+`POST /ballots/accounts/paste`: an `email:password` block goes up **once**, the field is
+cleared the moment you answer, and nothing about it is written to `localStorage`, the
+URL, the console, or any event payload. Passwords must never appear in a `RunEvent`
+message, a task's `lastMessage`, or the CSV export — see §6.
+
+---
+
+## 11. The event cursor is strictly increasing and append-only
+
+`GET /ballots/runs/:id/events?since=<seq>` is the contract the monitor is built on.
+
+- `seq` is **strictly increasing per run and never reused.** Not a timestamp, not a
+  row id, not something that resets. Append-only: an event that has been served is
+  never edited or removed.
+- `?since=N` returns **only** events with `seq > N`. **Not `>=`.**
+- They come back **in order**, ascending.
+- `meta.lastSeq` is the seq of the **last event in THIS response** — not the run's
+  high-water mark. If you truncate at `limit`, `lastSeq` is the last one you actually
+  sent.
+- Nothing new means `data: []` and `lastSeq` unchanged. **The cursor never goes
+  backwards.**
+- `meta.hasMore` is true when events exist past `lastSeq`.
+
+**`?since=` must never return the same event twice.** The client does not deduplicate,
+by design: it keeps the cursor, requests `since=lastSeq`, and appends what arrives. If
+duplicates reach the screen the server broke this contract, and having the client
+filter them out would hide exactly the bug worth seeing.
+
+**What breaks:** with `>=` instead of `>`, every poll re-serves the boundary event and
+the log grows by one duplicate line per second — for twenty minutes, on the screen an
+operator is staring at. With `lastSeq` set to the high-water mark while truncating, the
+gap between the truncation point and the high-water mark is skipped forever and
+**nobody ever finds out**, because the log looks continuous. With a non-monotonic
+`seq`, the cursor moves past events that arrive later and they are never delivered.
+
+A page reload starts at `since=0` and replays the whole run, so keep a run's events for
+as long as you keep the run. Do not trim.
+
+---
+
+## 12. Polling stops on terminal statuses
+
+`COMPLETED`, `STOPPED` and `FAILED` are terminal. `PAUSED` is **not** — a paused run
+can be resumed from another machine.
+
+| Resource | while live | terminal |
+| --- | --- | --- |
+| `/ballots/runs/:id` | 2000 ms | stop |
+| `/ballots/runs/:id/tasks` | 3000 ms | one last call, then stop |
+| `/ballots/runs/:id/events` | 1000 ms | one last call, then stop |
+
+The frontend enforces this and the monitor has been measured doing it: a COMPLETED run
+issues zero further requests, and navigating away from a live one drops it to zero
+immediately. Mentioned here because it constrains your side too — a terminal run's
+state must be **stable**, so a client that stopped polling is not left showing something
+that quietly changed afterwards.
+
+---
+
+## 13. Mock-only affordances
 
 Both are ignored by a real backend and can be dropped with `app/api/v1`.
 
@@ -268,7 +354,7 @@ Nothing is broken; the screen is waiting for you to come back.
 
 ---
 
-## 11. Checklist
+## 14. Checklist
 
 - [ ] Envelope is `{ data, meta, error }` on every response, with explicit `null`s.
 - [ ] Money is an integer of minor units plus a currency code. Never a float.
@@ -281,4 +367,10 @@ Nothing is broken; the screen is waiting for you to come back.
 - [ ] `sort` + `order` honoured on every list; `pageSize` capped at 200.
 - [ ] `meta.total` and `meta.totalPages` correct — the pager reads them.
 - [ ] `/kpis` money comes from the revenue series, not the ticket store.
+- [ ] Ballot `seq` is strictly increasing, append-only, never reused.
+- [ ] `?since=N` returns `seq > N` — never `>=`, never the same event twice.
+- [ ] `meta.lastSeq` is the last event **sent**, not the run's high-water mark.
+- [ ] Run events are kept as long as the run — a reload replays from `since=0`.
+- [ ] A terminal run's state is stable; nothing changes after polling stops.
+- [ ] No password in a `RunEvent`, a task's `lastMessage`, or the CSV export.
 - [ ] `app/api/v1` and `lib/mock` deleted.

@@ -59,6 +59,10 @@ Every response, success or failure, is the same three keys.
 }
 ```
 
+`meta` carries two extra optional keys, and **only** `/ballots/runs/:id/events` sets
+them: `lastSeq` (the cursor for the next call) and `hasMore` (whether the run holds
+events beyond the ones just returned). See the event-stream section below.
+
 **Error** — always HTTP 4xx/5xx *and* an error body:
 
 ```json
@@ -199,6 +203,24 @@ broken; the screen is waiting for you to come back.
 | `GET`    | `/notifications`                | bell popover                                                 |
 | `POST`   | `/notifications/read`           | mark some or all read; omit `ids` for all                    |
 | `GET`    | `/search?q=`                    | mixed-type results for ⌘K                                    |
+| `GET`    | `/ballots/profiles`             | run profiles — pacing, retries, proxy group, OTP source       |
+| `POST`   | `/ballots/profiles`             | create                                                        |
+| `PATCH`  | `/ballots/profiles/:id`         | edit                                                          |
+| `DELETE` | `/ballots/profiles/:id`         | delete; the shipped `bpf_default` is refused with a reason    |
+| `GET`    | `/ballots/imap`                 | mailboxes an `otpSource: "imap"` profile can read codes from  |
+| `POST`   | `/ballots/accounts/paste`       | load `email:password` lines → `{ created, updated, skipped, errors[] }` |
+| `GET`    | `/ballots/accounts/results`     | last ballot result per account, for the pool table            |
+| `GET`    | `/ballots/runs`                 | run history — newest first unless `sort` says otherwise       |
+| `POST`   | `/ballots/runs`                 | **create and start** — there is no separate start call        |
+| `GET`    | `/ballots/runs/:id`             | one run's state (poll 2s while not terminal)                  |
+| `DELETE` | `/ballots/runs/:id`             | remove a run from the history                                 |
+| `POST`   | `/ballots/runs/:id/pause`       | freeze the run's clock                                        |
+| `POST`   | `/ballots/runs/:id/resume`      | restart it from where it froze                                |
+| `POST`   | `/ballots/runs/:id/stop`        | end early; everything unattempted becomes `SKIPPED`           |
+| `POST`   | `/ballots/runs/:id/retry-failed`| **a NEW run** holding exactly this run's failures             |
+| `GET`    | `/ballots/runs/:id/tasks`       | per-account rows, paginated + filterable (poll 3s)            |
+| `GET`    | `/ballots/runs/:id/events`      | **append-only cursor feed** (poll 1s) — see below             |
+| `GET`    | `/ballots/runs/:id/export`      | results as CSV. A file, not the envelope. No password column. |
 
 ### Filters per resource
 
@@ -210,6 +232,8 @@ broken; the screen is waiting for you to come back.
 | `/proxies`      | `status`, `groupId`                                          | —                                     |
 | `/activity`     | `source`, `kind`                                             | —                                     |
 | `/notifications`| `kind`                                                       | `unread=true`                         |
+| `/ballots/runs` | `status`                                                     | —                                     |
+| `/ballots/runs/:id/tasks` | `status`, `clubId`                                 | —                                     |
 
 ### Ticket writes
 
@@ -226,6 +250,90 @@ a partial.
 **Not implemented, and not waiting on a route:** a wallet pass. A `.pkpass` is a signed
 bundle and a Google Wallet pass is a signed JWT, so both need a private key that must
 never reach a browser. The menu item stays disabled and says so.
+
+---
+
+## Ballots
+
+Three endpoints in this group did not exist when §B4 was first written and are part of
+the contract now.
+
+- **`GET /ballots/imap`** — without it, a profile with `otpSource: "imap"` had no
+  mailbox to point at, so the required `imapId` could never be satisfied and the
+  launcher's IMAP block could never fire. Returns `{ id, email, host, status, lastCheckedAt }`.
+  `status` is `ok` or `error`; a profile pointed at a mailbox that no longer answers is
+  a real state the launcher warns about.
+- **`GET /ballots/accounts/results`** — the last-run / last-result join behind the pool
+  table's two extra columns, done once on the server. The alternative was a request per
+  run inside a React component, growing with the history rather than with what is on
+  screen. Returns one row per account that has been attempted at least once:
+  `{ accountId, runId, runLabel, at, status, httpStatus?, message?, entryRef? }`.
+- **`GET /ballots/runs/:id/export`** — a CSV file rather than the envelope, because it
+  is a download. **No password column, ever.**
+
+### Ballot accounts are ordinary accounts
+
+There is no second account model. A ballot account is an `Account` whose `club` is one
+of the seven ballot clubs, which is what gives the pool the same password masking, the
+same audited reveal, the same proxies and the same CSV import as `/accounts`.
+
+### The event stream
+
+This is the piece not to get wrong.
+
+```
+GET /ballots/runs/:id/events?since=0&limit=200
+{
+  "data": [ { "id": "…", "seq": 1, "runId": "…", "at": "…", "level": "info",
+              "code": "RUN_STARTED", "message": "Run started with 48 accounts.",
+              "httpStatus": null } ],
+  "meta": { "page": 1, "pageSize": 200, "total": 1, "totalPages": 1,
+            "lastSeq": 1, "hasMore": false },
+  "error": null
+}
+```
+
+- **Only `seq > since` comes back. Not `>=`.** A client that echoes back the cursor it
+  was given must receive nothing, or it re-reads the same row forever.
+- Events come back **in order**, ascending by `seq`.
+- **`meta.lastSeq` is the seq of the last event in THIS response**, not the run's
+  high-water mark. Returning the high-water mark while truncating at `limit` would skip
+  everything in between.
+- When nothing is new, `data` is `[]` and `lastSeq` is unchanged — **the cursor never
+  goes backwards**.
+- `hasMore` is true when the run holds events past `lastSeq`, so a client that has
+  fallen behind knows to call again immediately rather than wait for the next tick.
+
+**The client never deduplicates.** If it has to, this endpoint lied. A page reload
+starts from `since=0` and replays the whole run, which is why events are kept rather
+than trimmed.
+
+### Polling cadence
+
+Every interval must stop on a terminal status (`COMPLETED`, `STOPPED`, `FAILED`) and on
+unmount. `PAUSED` is **not** terminal — a paused run can be resumed from elsewhere.
+
+| Resource | while live | terminal |
+| --- | --- | --- |
+| `/ballots/runs/:id` | 2000 ms | stop |
+| `/ballots/runs/:id/tasks` | 3000 ms | one last call, then stop |
+| `/ballots/runs/:id/events` | 1000 ms | one last call, then stop |
+
+The two "one last call" rows are not decoration. The run endpoint is what discovers the
+run went terminal; without a final read of the other two, the table freezes one poll
+short and shows accounts as `QUEUED` on a run that has already marked them `SKIPPED`.
+
+### Run writes
+
+`POST /ballots/runs` creates **and starts** — a run that exists but has not begun is a
+state with no meaning to an operator. Omit `accountIds` to mean "every eligible account
+in `clubIds`", resolved server-side at start, so it stays correct if the pool grew while
+the launcher was open.
+
+`POST /ballots/runs/:id/retry-failed` returns a **different** run. The original is left
+untouched as the record of what happened. Runs denormalise `profileName` for the same
+reason: renaming a profile next week must not rewrite the history of a run that already
+happened, which is also why a profile a run has used is not deleted out from under it.
 
 ---
 
