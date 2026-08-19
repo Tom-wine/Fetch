@@ -1,11 +1,6 @@
 'use client'
 
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-  type UseQueryResult,
-} from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-query'
 import { ApiError, type ApiResult } from '../client'
 import { accountsApi, type AccountFilters } from '../endpoints'
 import type { AccountCreate, AccountPatch } from '../schemas'

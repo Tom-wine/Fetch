@@ -34,7 +34,10 @@ function scoreHeaderAgainstField(header: string, field: (typeof FIELDS)[number])
   const candidates = [field.header, field.label, ...field.aliases]
   let best = 0
   for (const candidate of candidates) {
-    best = Math.max(best, normalise(candidate) === normalise(header) ? 1 : similarity(header, candidate))
+    best = Math.max(
+      best,
+      normalise(candidate) === normalise(header) ? 1 : similarity(header, candidate),
+    )
     if (best === 1) break
   }
   return best

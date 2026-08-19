@@ -3,7 +3,14 @@
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import type { LucideIcon } from 'lucide-react'
-import { ClipboardCopy, ExternalLink, MoreVertical, PauseCircle, PlayCircle, Trash2 } from 'lucide-react'
+import {
+  ClipboardCopy,
+  ExternalLink,
+  MoreVertical,
+  PauseCircle,
+  PlayCircle,
+  Trash2,
+} from 'lucide-react'
 import { toast } from 'sonner'
 
 import { cn } from '@/lib/utils'

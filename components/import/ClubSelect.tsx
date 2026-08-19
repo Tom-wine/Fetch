@@ -122,7 +122,10 @@ export function ClubSelect({
         <ChevronDown className="size-4 shrink-0 opacity-50" aria-hidden="true" />
       </PopoverTrigger>
 
-      <PopoverContent align="start" className="w-[var(--radix-popover-trigger-width)] min-w-[260px] border-border bg-surface p-0">
+      <PopoverContent
+        align="start"
+        className="w-[var(--radix-popover-trigger-width)] min-w-[260px] border-border bg-surface p-0"
+      >
         <div className="relative border-b border-border p-2">
           <Search
             className="pointer-events-none absolute top-1/2 left-4 size-3.5 -translate-y-1/2 text-faint"

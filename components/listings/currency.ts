@@ -1,4 +1,9 @@
-import { convertMinor, minorUnitExponent, type Currency, type LocaleSettings } from '@/lib/format/locale'
+import {
+  convertMinor,
+  minorUnitExponent,
+  type Currency,
+  type LocaleSettings,
+} from '@/lib/format/locale'
 import { formatMoney, type MoneyValue } from '@/lib/format/money'
 
 /**
@@ -26,7 +31,7 @@ export const DISPLAY_OPTIONS: Array<{ value: DisplayCurrency; label: string; hin
   { value: 'GBP', label: 'GBP', hint: 'Pound sterling' },
   { value: 'EUR', label: 'EUR', hint: 'Euro' },
   { value: 'USD', label: 'USD', hint: 'US dollar' },
-  { value: ORIGINAL, label: 'Original', hint: "Each listing in the currency it was priced in" },
+  { value: ORIGINAL, label: 'Original', hint: 'Each listing in the currency it was priced in' },
 ]
 
 const REAL_CURRENCIES = new Set<string>(['GBP', 'EUR', 'USD'])

@@ -372,7 +372,10 @@ function ExpectedColumns() {
             >
               COLUMN
             </th>
-            <th scope="col" className="w-[110px] px-4 py-2 text-left font-mono text-label text-muted">
+            <th
+              scope="col"
+              className="w-[110px] px-4 py-2 text-left font-mono text-label text-muted"
+            >
               NEEDED
             </th>
             <th scope="col" className="px-4 py-2 text-left font-mono text-label text-muted">

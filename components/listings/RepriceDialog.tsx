@@ -82,10 +82,7 @@ export function RepriceDialog({
    * operator was just reading; on `Original` it falls back to the set's own currency
    * when they all agree, and to the app's display currency when they do not.
    */
-  const currencies = React.useMemo(
-    () => [...new Set(listings.map((l) => l.currency))],
-    [listings],
-  )
+  const currencies = React.useMemo(() => [...new Set(listings.map((l) => l.currency))], [listings])
   const inputCurrency: Currency =
     show !== ORIGINAL
       ? show
@@ -227,9 +224,11 @@ export function RepriceDialog({
                       <span className="block truncate text-body text-text">
                         {listing.fixtureName}
                       </span>
-                      <span className="block truncate text-caption text-faint">{listing.block}</span>
+                      <span className="block truncate text-caption text-faint">
+                        {listing.block}
+                      </span>
                     </span>
-                    <span className="shrink-0 text-caption text-faint line-through tabular-nums">
+                    <span className="shrink-0 text-caption text-faint tabular-nums line-through">
                       {formatMoney({ amount: from, currency: listing.currency }, settings)}
                     </span>
                     <span

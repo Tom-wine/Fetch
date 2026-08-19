@@ -108,7 +108,9 @@ export function clubIdOf(value: string): ClubId | null {
 }
 
 /** What "Fix all clubs automatically" is allowed to touch, unattended. */
-export function isAutoFixable(match: ClubMatch): match is { status: 'suggestion'; club: Club; score: number } {
+export function isAutoFixable(
+  match: ClubMatch,
+): match is { status: 'suggestion'; club: Club; score: number } {
   return match.status === 'suggestion' && match.score >= AUTO_FIX_THRESHOLD
 }
 

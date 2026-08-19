@@ -50,7 +50,11 @@ export function PriceCell({
   // keeps a cancel from being saved a millisecond later.
   const cancelled = React.useRef(false)
 
-  const display = displayMoney({ amount: listing.price, currency: listing.currency }, show, settings)
+  const display = displayMoney(
+    { amount: listing.price, currency: listing.currency },
+    show,
+    settings,
+  )
 
   React.useEffect(() => {
     if (!editing) return

@@ -16,11 +16,7 @@ import { ImportProgress, ImportSummary } from './ImportResult'
 import { recallMapping, rememberMapping } from './mapping-memory'
 import type { ParsedCsv } from './parse'
 import { Stepper, type StepDefinition } from './Stepper'
-import {
-  ValidationPreview,
-  type DuplicateChoice,
-  type PreviewFilter,
-} from './ValidationPreview'
+import { ValidationPreview, type DuplicateChoice, type PreviewFilter } from './ValidationPreview'
 import type { FieldId } from './fields'
 import {
   autoClubFixes,
@@ -261,7 +257,18 @@ export function BulkImportTab({
         },
       },
     )
-  }, [parsed, importable, rows, included, excluded, verdicts, proxies, mapping, duplicateChoice, bulkImport])
+  }, [
+    parsed,
+    importable,
+    rows,
+    included,
+    excluded,
+    verdicts,
+    proxies,
+    mapping,
+    duplicateChoice,
+    bulkImport,
+  ])
 
   const startOver = React.useCallback(() => {
     setStep(0)

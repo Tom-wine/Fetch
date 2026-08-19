@@ -109,7 +109,10 @@ export function makeListingColumns({
           <span className="text-faint">—</span>
         ) : (
           // Rank is position among comparable listings: 1 is the cheapest on sale.
-          <span className="text-body text-muted tabular-nums" title="Position among comparable listings">
+          <span
+            className="text-body text-muted tabular-nums"
+            title="Position among comparable listings"
+          >
             #{row.original.rank}
           </span>
         ),
@@ -138,7 +141,9 @@ export function makeListingColumns({
   // One stamp from one registry, rather than a `meta` hand-written per column that
   // can drift from what the endpoint actually supports.
   return columns.map((column) =>
-    column.id && SORTABLE_COLUMN_IDS.has(column.id) ? { ...column, meta: { sortable: true } } : column,
+    column.id && SORTABLE_COLUMN_IDS.has(column.id)
+      ? { ...column, meta: { sortable: true } }
+      : column,
   )
 }
 

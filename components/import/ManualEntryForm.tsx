@@ -130,8 +130,7 @@ export function ManualEntryForm({
   const debouncedEmail = useDebounced(email, 350)
   const duplicate = useEmailDuplicate(debouncedEmail)
   // Editing an account is not a collision with itself.
-  const collision =
-    duplicate.data && duplicate.data.id !== account?.id ? duplicate.data : null
+  const collision = duplicate.data && duplicate.data.id !== account?.id ? duplicate.data : null
 
   const pending = createAccount.isPending || updateAccount.isPending || isSubmitting
   const blocked = !editing && collision !== null
@@ -253,11 +252,7 @@ export function ManualEntryForm({
               emailRef.current = element
             }}
           />
-          <DuplicateNotice
-            checking={duplicate.isFetching}
-            account={collision}
-            editing={editing}
-          />
+          <DuplicateNotice checking={duplicate.isFetching} account={collision} editing={editing} />
         </Field>
 
         <Field

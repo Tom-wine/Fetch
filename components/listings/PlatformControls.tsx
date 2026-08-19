@@ -74,9 +74,7 @@ export function PlatformFilter({
                 selected={selected}
                 onClick={() =>
                   select(
-                    selected
-                      ? value.filter((id) => id !== platform.id)
-                      : [...value, platform.id],
+                    selected ? value.filter((id) => id !== platform.id) : [...value, platform.id],
                   )
                 }
               >
@@ -130,9 +128,7 @@ export function PlatformChips({
                 : `Show ${platform.name} listings`
             }
             onClick={() =>
-              onChange(
-                active ? value.filter((id) => id !== platform.id) : [...value, platform.id],
-              )
+              onChange(active ? value.filter((id) => id !== platform.id) : [...value, platform.id])
             }
             className={cn(
               'flex h-8 items-center gap-2 rounded-md border px-2.5 text-body transition-colors duration-150',

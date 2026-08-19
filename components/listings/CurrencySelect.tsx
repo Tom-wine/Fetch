@@ -75,8 +75,9 @@ export function CurrencySelect({
           ))}
         </div>
         <p className="border-t border-border px-3 py-2.5 font-prose text-prose text-muted">
-          Converted figures are marked <span className="text-text">≈</span> and carry the original in
-          a tooltip. Prices are edited, saved and sorted in the currency the listing was created in.
+          Converted figures are marked <span className="text-text">≈</span> and carry the original
+          in a tooltip. Prices are edited, saved and sorted in the currency the listing was created
+          in.
         </p>
       </PopoverContent>
     </Popover>

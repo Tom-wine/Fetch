@@ -246,15 +246,7 @@ function MapperRow({
  * A field already claimed by another column still renders, annotated — hiding it
  * would leave the operator hunting for a field that is on screen twice.
  */
-function FieldOption({
-  id,
-  taken,
-  current,
-}: {
-  id: FieldId
-  taken: Mapping
-  current: Mapped
-}) {
+function FieldOption({ id, taken, current }: { id: FieldId; taken: Mapping; current: Mapped }) {
   const field = FIELDS.find((f) => f.id === id)!
   const claimedBy = taken.find((entry) => entry.field === id && entry.field !== current)
 

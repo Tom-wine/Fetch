@@ -94,7 +94,10 @@ export function stripBom(text: string): { text: string; hadBom: boolean } {
  * guess shown in the Select.
  */
 export function guessDelimiter(text: string): string {
-  const sample = text.split(/\r\n|\r|\n/).slice(0, 10).join('\n')
+  const sample = text
+    .split(/\r\n|\r|\n/)
+    .slice(0, 10)
+    .join('\n')
   let best = ','
   let bestScore = -1
 

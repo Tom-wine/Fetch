@@ -3,7 +3,13 @@
 import * as React from 'react'
 
 import { Prose } from '@/components/ui/typography'
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { ManualEntryForm } from '@/components/import/ManualEntryForm'
 import type { Account } from '@/lib/types'
 

@@ -2,7 +2,17 @@
 
 import * as React from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { AlertTriangle, Check, Eye, Loader2, RotateCw, Undo2, Wand2, X, XCircle } from 'lucide-react'
+import {
+  AlertTriangle,
+  Check,
+  Eye,
+  Loader2,
+  RotateCw,
+  Undo2,
+  Wand2,
+  X,
+  XCircle,
+} from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -399,7 +409,12 @@ function PreviewTable({
                   ? 'Nothing has been left out of this import.'
                   : 'No row is ready yet — every row still has something to fix.'}
           </Prose>
-          <Button type="button" variant="secondary" label="Show every row" onClick={onClearFilter} />
+          <Button
+            type="button"
+            variant="secondary"
+            label="Show every row"
+            onClick={onClearFilter}
+          />
         </div>
       ) : (
         <div ref={scrollRef} className="max-h-[46vh] min-h-[220px] overflow-auto">
@@ -657,14 +672,20 @@ function PreviewCell({
 
   if (!issue) {
     return (
-      <div style={{ width, minWidth: width }} className="shrink-0 border-r border-border/60 last:border-0">
+      <div
+        style={{ width, minWidth: width }}
+        className="shrink-0 border-r border-border/60 last:border-0"
+      >
         {body}
       </div>
     )
   }
 
   return (
-    <div style={{ width, minWidth: width }} className="shrink-0 border-r border-border/60 last:border-0">
+    <div
+      style={{ width, minWidth: width }}
+      className="shrink-0 border-r border-border/60 last:border-0"
+    >
       <TooltipProvider delayDuration={150}>
         <Tooltip>
           <TooltipTrigger asChild>{body}</TooltipTrigger>
@@ -691,7 +712,11 @@ function PreviewCell({
 function ClubValue({ value }: { value: string }) {
   const match = resolveClub(value)
   if (match.status !== 'exact') {
-    return <span className="min-w-0 flex-1 truncate">{value || <span className="text-faint">—</span>}</span>
+    return (
+      <span className="min-w-0 flex-1 truncate">
+        {value || <span className="text-faint">—</span>}
+      </span>
+    )
   }
   return <ClubBadge club={match.club.id} variant="short" size="sm" className="min-w-0 flex-1" />
 }
