@@ -158,6 +158,11 @@ curl '/api/v1/accounts?__fail=500'
 # {"data":null,"meta":null,"error":{"code":"INJECTED_FAILURE","message":"…"}}
 ```
 
+Demonstrate `?__fail=` with the tab in the FOREGROUND. TanStack Query pauses retries
+while `document.visibilityState === 'hidden'`, so in a background tab a failed query
+sits paused and the error state never renders — on every screen, by design. Nothing is
+broken; the screen is waiting for you to come back.
+
 ---
 
 ## Endpoints
