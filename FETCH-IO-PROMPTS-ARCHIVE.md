@@ -1260,3 +1260,60 @@ Committing:
 - `git status` before every commit; if a file you do not own appears, stop and ask.
 - Commit and push your own branch only. Do NOT merge into main — Tom does that after review.
 ```
+
+---
+
+## Part 10 — Remaining routes, settings, ⌘K palette
+
+```
+SOLO, on main, in the Fetch folder. No worktrees, no parallel session — the fan-out is over.
+
+REPO STATE — main is at 6f87001 and contains every screen: /dashboard, /accounts, /accounts/import,
+/mytickets, /mytickets/fixture/[id], /mylistings, plus the mock API and the shared layer. Relevant:
+- lib/format/ holds the ONLY formatters: money.ts (integer minor units), date.ts (incl. formatMonth),
+  locale.ts + LocaleProvider, text.ts (the §3.3b grammar helpers). Preferences must drive LocaleProvider
+  and nothing else — do not add a second settings store.
+- lib/url-state.ts is the one URL-state helper. /settings should persist to it or to a provider, not
+  to a fourth mechanism.
+- GET /search?q= already exists and returns mixed-type results (account | fixture | listing |
+  navigation). It is untouched since Part 3 — read it before wiring the palette, and extend the route
+  if the shape does not fit rather than reshaping results in the component.
+- The empty-state, ErrorState and GlyphMark primitives all exist. The "Coming soon" pages should use
+  them, not bespoke markup.
+
+Housekeeping first, in the same session:
+- Add to .gitignore: `*.pdf` (the seat-sheet downloads land in the repo root when testing) and
+  `fetch-sync.md` if it ever moves inside the repo. Commit `FETCH-IO-PROMPTS-ARCHIVE.md` and the
+  updated `FETCH-IO-CLAUDE-CODE-PROMPTS.md` — they have been sitting untracked/modified for a while.
+- The worktrees are finished: `git worktree remove ../fetch-a && git worktree remove ../fetch-b`,
+  then delete the six merged part branches. `git worktree list` should show one entry when done.
+
+Then build:
+
+- /settings with four tabs: General (name, avatar), Preferences, Subscription (static), API.
+  Preferences holds the SINGLE locale, timezone and display-currency setting that drives every date
+  and money format in the app — wire it to the LocaleProvider from Part 2 and prove that changing it
+  updates /mylistings and /mytickets. Also: table density, default rows per page, reduced motion.
+  The API tab displays the current NEXT_PUBLIC_API_BASE_URL and a token field — the visible seam to
+  the future backend.
+- Every remaining nav route (/mylinks, /fixtures, /onsales, /insights, /salestracker) gets a real
+  "Coming soon" page: the section icon, a one-line honest description of what it will do, and a CTA
+  back to a screen that works today. No dead nav items, no blank pages.
+- CommandPalette (⌘K / Ctrl+K, and the topbar trigger): searches accounts (by email, name, membership
+  ID), fixtures (by team names), listings (by listing ID) and navigation, grouped by type with icons,
+  keyboard navigable, Enter opens the record. Backed by GET /search?q=, debounced, with recent items
+  when the query is empty.
+
+Stop and show me the palette open with results from all four groups.
+
+FINISH BY PUSHING
+- Commit first (message as specified above), then push. `git status` must be clean afterwards.
+- The remote is https://github.com/Tom-wine/Fetch.git. If `git remote -v` shows no `origin`, add it:
+  `git remote add origin https://github.com/Tom-wine/Fetch.git`
+- Push ONLY this repository — the Fetch folder. There is a separate, unrelated git repo one level up
+  at Documents\1; never run a git command from there, and never `git add` a path outside this folder.
+- On the main branch:      `git push -u origin main`
+- In a parallel worktree:   `git push -u origin <this part's branch>` — then tell me the branch name
+  so I can merge it, and do NOT merge into main yourself.
+- Report the pushed commit SHA and confirm the working tree is clean.
+```

@@ -52,8 +52,8 @@
 | 7 | Détail fixture (écran cœur) | ✅ poussé | `831c168` |
 | 9 | Dashboard | ✅ poussé | `6c4016e` |
 | 9.5 | Merge wave 4 + passe de cohérence | ✅ | `6f87001` |
-| **10** | **Routes restantes, settings, ⌘K** | ⏳ **à faire maintenant** · solo · `Fetch` | — |
-| 11 | Polish, vérification, handoff | ⏳ solo · `Fetch` | — |
+| 10 | Routes restantes, settings, ⌘K | ✅ | `985cb75` |
+| **11** | **Polish, vérification, handoff** | ⏳ **dernière partie** · solo · `Fetch` | — |
 | 12 | Optionnel, après §11 | — | — |
 
 Les waves parallèles sont terminées. Les Parts 10 et 11 tournent seules sur `main`, dans `Fetch`.
@@ -64,68 +64,33 @@ Les parties terminées ont été déplacées dans `FETCH-IO-PROMPTS-ARCHIVE.md`.
 
 ---
 
-## Part 10 — Remaining routes, settings, ⌘K palette
-
-```
-SOLO, on main, in the Fetch folder. No worktrees, no parallel session — the fan-out is over.
-
-REPO STATE — main is at 6f87001 and contains every screen: /dashboard, /accounts, /accounts/import,
-/mytickets, /mytickets/fixture/[id], /mylistings, plus the mock API and the shared layer. Relevant:
-- lib/format/ holds the ONLY formatters: money.ts (integer minor units), date.ts (incl. formatMonth),
-  locale.ts + LocaleProvider, text.ts (the §3.3b grammar helpers). Preferences must drive LocaleProvider
-  and nothing else — do not add a second settings store.
-- lib/url-state.ts is the one URL-state helper. /settings should persist to it or to a provider, not
-  to a fourth mechanism.
-- GET /search?q= already exists and returns mixed-type results (account | fixture | listing |
-  navigation). It is untouched since Part 3 — read it before wiring the palette, and extend the route
-  if the shape does not fit rather than reshaping results in the component.
-- The empty-state, ErrorState and GlyphMark primitives all exist. The "Coming soon" pages should use
-  them, not bespoke markup.
-
-Housekeeping first, in the same session:
-- Add to .gitignore: `*.pdf` (the seat-sheet downloads land in the repo root when testing) and
-  `fetch-sync.md` if it ever moves inside the repo. Commit `FETCH-IO-PROMPTS-ARCHIVE.md` and the
-  updated `FETCH-IO-CLAUDE-CODE-PROMPTS.md` — they have been sitting untracked/modified for a while.
-- The worktrees are finished: `git worktree remove ../fetch-a && git worktree remove ../fetch-b`,
-  then delete the six merged part branches. `git worktree list` should show one entry when done.
-
-Then build:
-
-- /settings with four tabs: General (name, avatar), Preferences, Subscription (static), API.
-  Preferences holds the SINGLE locale, timezone and display-currency setting that drives every date
-  and money format in the app — wire it to the LocaleProvider from Part 2 and prove that changing it
-  updates /mylistings and /mytickets. Also: table density, default rows per page, reduced motion.
-  The API tab displays the current NEXT_PUBLIC_API_BASE_URL and a token field — the visible seam to
-  the future backend.
-- Every remaining nav route (/mylinks, /fixtures, /onsales, /insights, /salestracker) gets a real
-  "Coming soon" page: the section icon, a one-line honest description of what it will do, and a CTA
-  back to a screen that works today. No dead nav items, no blank pages.
-- CommandPalette (⌘K / Ctrl+K, and the topbar trigger): searches accounts (by email, name, membership
-  ID), fixtures (by team names), listings (by listing ID) and navigation, grouped by type with icons,
-  keyboard navigable, Enter opens the record. Backed by GET /search?q=, debounced, with recent items
-  when the query is empty.
-
-Stop and show me the palette open with results from all four groups.
-
-FINISH BY PUSHING
-- Commit first (message as specified above), then push. `git status` must be clean afterwards.
-- The remote is https://github.com/Tom-wine/Fetch.git. If `git remote -v` shows no `origin`, add it:
-  `git remote add origin https://github.com/Tom-wine/Fetch.git`
-- Push ONLY this repository — the Fetch folder. There is a separate, unrelated git repo one level up
-  at Documents\1; never run a git command from there, and never `git add` a path outside this folder.
-- On the main branch:      `git push -u origin main`
-- In a parallel worktree:   `git push -u origin <this part's branch>` — then tell me the branch name
-  so I can merge it, and do NOT merge into main yourself.
-- Report the pushed commit SHA and confirm the working tree is clean.
-```
-
----
-
 ## Part 11 — Polish, verification, backend handoff
 
 ```
-Final pass. Work through this as a checklist and report which items were already correct and which
-you had to fix.
+SOLO, on main, in the Fetch folder. This is the last part: the app is feature-complete at 985cb75 and
+nothing new gets built here. Work through the checklist and report, item by item, what was already
+correct and what you had to fix.
+
+REPO STATE — every screen exists: /dashboard, /accounts, /accounts/import, /mytickets,
+/mytickets/fixture/[id], /mylistings, /settings, five honest "coming soon" pages, /kitchen-sink, and
+the ⌘K palette. One worktree, one branch, one local repo. Preferences drive LocaleProvider, which
+drives every date, number and money in the app, plus density and default rows-per-page.
+
+Three .next traps have bitten this project already — all three are the same shared-directory problem
+seen from different angles. Before ANY verification run: stop every dev server (check for stale
+listeners on 3000-3003 that outlived the session that started them), `rm -rf .next`, then start one
+server. Never run `npm run build` while a dev server is live in the same worktree.
+
+Known-and-correct, do NOT "fix" these:
+- ?__fail= appears to hang in a background tab: TanStack Query pauses retries while
+  document.visibilityState === 'hidden'. Demo it with the tab in the foreground.
+- `Download wallet pass` is disabled by design — a .pkpass is a signed bundle, a Google pass a signed
+  JWT; neither can be minted in a browser. Its tooltip says so.
+- cmdk's client-side filter is deliberately off in the palette: the server matches on fields that are
+  not in the visible title, so cmdk would hide correct results.
+- The CSV error report contains passwords on purpose — it is a subset of a file the operator supplied
+  a minute earlier, and blanking them would make it un-re-importable. export-csv.ts, which exports
+  from Fetch.io's own store, correctly never does.
 
 Accessibility & keyboard
 - Every icon-only control has an aria-label and a tooltip.
@@ -171,13 +136,26 @@ The seam acceptance check — read this before running it
   .next: `rm -rf .next && NEXT_PUBLIC_API_BASE_URL=http://localhost:9999/v1 npm run dev`, confirm the
   ErrorState names the variable, then clear .next again before restoring.
 
-Handoff
+Documents
 - Write docs/BACKEND-HANDOFF.md: how the seam works, the one env var to change, the full endpoint
   contract with request/response examples, the envelope and error shapes, the money-as-minor-units
-  and ISO-date conventions, the auth header, which endpoints are security-sensitive (credential
-  storage must be encrypted at rest; /accounts/:id/reveal must be audit-logged and rate-limited),
-  and a "delete app/api/v1 when you're ready" note.
-- Update README.md with screenshots of the five screens.
+  and ISO-date conventions, the auth header, and a "delete app/api/v1 when you're ready" note.
+  It must carry these decisions explicitly, because a backend that gets them wrong breaks the frontend
+  silently rather than loudly:
+  · Credentials are encrypted at rest. The API returns passwordMasked ONLY, and the mask is a
+    CONSTANT width — one bullet per character publishes every password's length across a whole table.
+  · POST /accounts/:id/reveal returns plaintext once, audit-logged (account id, never the secret),
+    rate-limited, Cache-Control: no-store. It is deliberately not a cacheable mutation.
+  · Enum-keyed maps (byStatus, byClub) are SPARSE — absent means no rows, not zero. The schemas use
+    z.partialRecord and the types are Partial<Record<…>>.
+  · Money is integer minor units everywhere, on the wire and in the store. Never a float.
+  · Sorting is server-side on every list. A column is only offered when the API can order by it.
+    Normalised-currency sorting on /mylistings is a BACKEND capability — the API orders by native
+    currency, which is why the UI shows a "sorted by native currency" note instead of faking it.
+  · club-exchange is a platform a listing can arrive at by resale, never one a listing is created on.
+  · The revenue series is the ledger and the ticket store is current inventory. They are allowed to
+    disagree in volume; they must not disagree about money.
+- Update README.md with screenshots of the six built screens and a one-line "what works today".
 
 Then run npm run check and npm run build, and give me a final report against the §11 acceptance
 criteria in the plan — item by item, pass or fail, with the fix for anything failing.
