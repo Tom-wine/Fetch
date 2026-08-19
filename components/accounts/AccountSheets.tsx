@@ -1,136 +1,62 @@
 'use client'
 
 import * as React from 'react'
-import Link from 'next/link'
-import { FileUp, UserPlus } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
-import { Prose, SectionLabel } from '@/components/ui/typography'
-import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
+import { Prose } from '@/components/ui/typography'
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { ManualEntryForm } from '@/components/import/ManualEntryForm'
+import type { Account } from '@/lib/types'
 
 /**
- * Shells only — Part 5 builds the manual form and the four-step CSV wizard (§8.3)
- * and mounts them here.
+ * `Add account` / `Edit account` — the §8.3 manual-entry form in a right-hand Sheet.
  *
- * They open as a right-hand Sheet because `components/ui/` has `alert-dialog` and
- * `sheet` but no plain centred Dialog, and `components/ui/**` is shared with the
- * parallel session this week (see the ASK in fetch-sync.md). Swapping to a centred
- * modal later is a two-line change in this file.
+ * The form itself lives in `components/import/` because it is Tab A of the import
+ * wizard: the same component, the same validation and the same live duplicate check
+ * whether it is reached from the toolbar's ADD_ACCOUNT or from the Manual entry tab
+ * inside IMPORT. Two forms that collect the same eleven fields would drift, and the
+ * one that drifts is always the one the operator is using.
  *
- * The copy says what is missing rather than pretending — §9 rule 5, no placeholder
- * strings shipped.
+ * A Sheet rather than a centred modal: one column of fields does not need 1180px, and
+ * a panel that slides in beside the table leaves the row the operator was looking at
+ * on screen. The CSV wizard is the one that earns a modal (see
+ * components/import/ImportDialog.tsx).
  */
-
-function ShellBody({
-  icon: Icon,
-  label,
-  children,
-}: {
-  icon: typeof UserPlus
-  label: string
-  children: React.ReactNode
-}) {
-  return (
-    <div className="mt-6 flex flex-col gap-4">
-      <span className="flex size-12 items-center justify-center rounded-md bg-fetch-gradient">
-        <Icon className="size-5 text-white" aria-hidden="true" />
-      </span>
-      <SectionLabel>{label}</SectionLabel>
-      {children}
-    </div>
-  )
-}
-
 export function AddAccountSheet({
   open,
   onOpenChange,
   /** Set when the sheet was opened from a row's Edit action. */
-  editingEmail,
+  account,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
-  editingEmail?: string | null
+  account?: Account | null
 }) {
-  const editing = Boolean(editingEmail)
+  const editing = Boolean(account)
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full border-border bg-surface sm:max-w-md">
-        <SheetHeader>
+      <SheetContent className="flex w-full flex-col gap-0 border-border bg-surface p-0 sm:max-w-lg">
+        <SheetHeader className="border-b border-border px-6 py-4">
           <SheetTitle className="font-mono text-title uppercase">
             {editing ? 'Edit account' : 'Add account'}
           </SheetTitle>
           <SheetDescription asChild>
             <Prose className="text-muted">
               {editing
-                ? `Editing ${editingEmail}.`
+                ? `Editing ${account!.email}. Leave the password empty to keep the stored one.`
                 : 'One account, entered by hand. For a club spreadsheet, use Import instead.'}
             </Prose>
           </SheetDescription>
         </SheetHeader>
 
-        <ShellBody icon={UserPlus} label="lands_in_part_5">
-          <Prose className="text-muted">
-            The keyboard-first form goes here: club, email, password, membership type, client
-            reference, name, phone, loyalty points, proxy, tags and notes — with a live duplicate
-            check on the email field and a “Save &amp; add another” footer that keeps the club and
-            clears the identity fields.
-          </Prose>
-          <div className="flex flex-wrap gap-2">
-            <SheetClose asChild>
-              <Button variant="secondary" label="Close" />
-            </SheetClose>
-          </div>
-        </ShellBody>
-      </SheetContent>
-    </Sheet>
-  )
-}
-
-export function ImportSheet({
-  open,
-  onOpenChange,
-}: {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-}) {
-  return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full border-border bg-surface sm:max-w-lg">
-        <SheetHeader>
-          <SheetTitle className="font-mono text-title uppercase">Import accounts</SheetTitle>
-          <SheetDescription asChild>
-            <Prose className="text-muted">A CSV of club accounts, up to 5000 rows.</Prose>
-          </SheetDescription>
-        </SheetHeader>
-
-        <ShellBody icon={FileUp} label="lands_in_part_5">
-          <Prose className="text-muted">
-            The four-step wizard goes here: upload with a downloadable template, column mapping with
-            fuzzy auto-match, per-row validation you can fix inline, then the commit with a summary
-            and an error report. Parsing runs in a web worker so 5000 rows never freeze the page.
-          </Prose>
-          <div className="flex flex-wrap gap-2">
-            {/* One <a>, not a button wrapping a link, so it is middle-clickable and
-                keyboard-navigable like any other link. `label` supplies the caption,
-                so the slotted element carries only the icon. */}
-            <Button asChild variant="secondary" label="Open full page">
-              <Link href="/accounts/import">
-                <FileUp className="size-4" aria-hidden="true" />
-              </Link>
-            </Button>
-            <SheetClose asChild>
-              <Button variant="ghost" label="Close" />
-            </SheetClose>
-          </div>
-        </ShellBody>
+        {/* Remounted per account so the form's defaults are re-read rather than
+            reset in an effect — the operator can open Edit on two rows in a row and
+            the second one is not showing the first one's values. */}
+        <ManualEntryForm
+          key={account?.id ?? 'new'}
+          account={account}
+          onDone={() => onOpenChange(false)}
+        />
       </SheetContent>
     </Sheet>
   )

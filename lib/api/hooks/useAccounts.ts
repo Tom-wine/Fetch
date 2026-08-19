@@ -1,10 +1,22 @@
 'use client'
 
-import { useQuery, type UseQueryResult } from '@tanstack/react-query'
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type UseQueryResult,
+} from '@tanstack/react-query'
 import { ApiError, type ApiResult } from '../client'
 import { accountsApi, type AccountFilters } from '../endpoints'
 import type { AccountCreate, AccountPatch } from '../schemas'
-import type { Account, AccountStats, AccountStatus, ClubId } from '@/lib/types'
+import type {
+  Account,
+  AccountStats,
+  AccountStatus,
+  BulkImportResult,
+  ClubId,
+  ImportRowVerdict,
+} from '@/lib/types'
 import { qk } from './keys'
 import { patchInList, removeFromList, useOptimisticMutation } from './useOptimisticMutation'
 
@@ -288,6 +300,114 @@ export function useAccountFacets() {
 
         return { total: rows.length, byStatus, byClub }
       }
+    },
+  })
+}
+
+/* ---------------------------------------------------------------- import */
+
+/**
+ * The live duplicate check behind the manual-entry form's email field (§8.3).
+ *
+ * `GET /accounts?q=` substring-matches the email column, so one request answers
+ * "does this address already have an account?" without loading the whole list. The
+ * caller debounces; this only refuses to run until the address is plausibly complete,
+ * because a query for `j` matches sixty rows and tells the operator nothing.
+ */
+export function useEmailDuplicate(email: string) {
+  const normalised = email.trim().toLowerCase()
+  const plausible = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(normalised)
+
+  return useQuery<Account | null, ApiError>({
+    queryKey: [...qk.accounts.lists(), 'email', normalised],
+    queryFn: async () => {
+      const result = await accountsApi.list({ q: normalised, pageSize: 5 })
+      return result.data.find((a) => a.email.toLowerCase() === normalised) ?? null
+    },
+    enabled: plausible,
+    // An address that has an account keeps having one; this need not be fresh to
+    // the second, and the field is typed in character by character.
+    staleTime: 30_000,
+  })
+}
+
+/**
+ * The step-3 server dry run — `POST /accounts/import/validate`.
+ *
+ * The wizard validates every §8.3 rule client-side so the counters stay live while
+ * the operator edits. This call exists for the one question the client cannot answer
+ * from the page it is on: which of these emails ALREADY have an account. It returns
+ * that set, so the duplicate rule can then be re-evaluated locally on every edit
+ * without another round trip.
+ */
+export function useImportDryRun() {
+  return useMutation<
+    { verdicts: ImportRowVerdict[]; existingEmails: Map<string, string> },
+    ApiError,
+    { rows: Array<Record<string, string | null>> }
+  >({
+    mutationFn: async ({ rows }) => {
+      const result = await accountsApi.validateImport(rows)
+      const existingEmails = new Map<string, string>()
+
+      for (const verdict of result.data) {
+        // The endpoint phrases it as "An account with this email already exists."
+        if (verdict.email && verdict.messages.some((m) => m.includes('already exists'))) {
+          existingEmails.set(verdict.email.toLowerCase(), verdict.email)
+        }
+      }
+
+      return { verdicts: result.data, existingEmails }
+    },
+  })
+}
+
+/** How many rows go up in one `POST /accounts/bulk`. */
+const IMPORT_CHUNK = 200
+
+export interface BulkImportInput {
+  rows: unknown[]
+  onDuplicate: 'skip' | 'update'
+  /** Called after each chunk lands, so step 4's bar reports real progress. */
+  onProgress?: (done: number, total: number) => void
+}
+
+/**
+ * The commit (§8.3 step 4).
+ *
+ * Posted in chunks rather than as one 5000-row body, for two reasons that both show
+ * up on a real backend: a single request gives the progress bar nothing to report
+ * except "waiting", and one oversized body is the request a proxy in front of the API
+ * drops at exactly the wrong moment. The chunk boundary is invisible in the result —
+ * the counts are summed and every error's row number is shifted back onto the row it
+ * has in the operator's file, so "row 314" means line 315 of their CSV.
+ */
+export function useBulkImport() {
+  const queryClient = useQueryClient()
+
+  return useMutation<BulkImportResult, ApiError, BulkImportInput>({
+    mutationFn: async ({ rows, onDuplicate, onProgress }) => {
+      const total = rows.length
+      const summary: BulkImportResult = { created: 0, updated: 0, skipped: 0, errors: [] }
+
+      for (let start = 0; start < total; start += IMPORT_CHUNK) {
+        const chunk = rows.slice(start, start + IMPORT_CHUNK)
+        const result = await accountsApi.bulkCreate(chunk, onDuplicate)
+
+        summary.created += result.data.created
+        summary.updated += result.data.updated
+        summary.skipped += result.data.skipped
+        for (const error of result.data.errors) {
+          summary.errors.push({ ...error, row: error.row + start })
+        }
+
+        onProgress?.(Math.min(start + chunk.length, total), total)
+      }
+
+      return summary
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: qk.accounts.all })
     },
   })
 }

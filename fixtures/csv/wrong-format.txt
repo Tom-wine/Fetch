@@ -1,0 +1,9 @@
+Fetch.io account notes — NOT a CSV.
+
+Reminder: the Arsenal accounts need re-logging in before Saturday.
+Julien has the Spurs list on his laptop; ask him for it.
+Do not import this file: it has no header row and no delimiter.
+
+TODO
+  - chase the club about the two locked memberships
+  - renew the three that expire this month

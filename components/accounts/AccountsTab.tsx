@@ -18,6 +18,7 @@ import {
   useTagAccounts,
 } from '@/lib/api/hooks/useAccounts'
 import { useProxies, useTestProxy } from '@/lib/api/hooks/useDashboard'
+import { ImportWizardModal } from '@/components/import/ImportWizard'
 import { getClub } from '@/lib/registries/clubs'
 import type { Account, Proxy } from '@/lib/types'
 
@@ -25,7 +26,7 @@ import { AccountCard } from './AccountCard'
 import { AccountRowActions } from './AccountRowActions'
 import { AccountsBulkBar } from './AccountsBulkBar'
 import { AccountsToolbar, AccountsToolbarActions } from './AccountsToolbar'
-import { AddAccountSheet, ImportSheet } from './AccountSheets'
+import { AddAccountSheet } from './AccountSheets'
 import { ClubTabs } from './ClubTabs'
 import { NoAccountsMatch, NoAccountsYet } from './AccountsEmpty'
 import { StatusFilterChips } from './StatusFilterChips'
@@ -205,7 +206,7 @@ export function AccountsTab() {
 
   const [deletingRow, setDeletingRow] = React.useState<Account | null>(null)
   const [addOpen, setAddOpen] = React.useState(false)
-  const [editingEmail, setEditingEmail] = React.useState<string | null>(null)
+  const [editingAccount, setEditingAccount] = React.useState<Account | null>(null)
   const [importOpen, setImportOpen] = React.useState(false)
 
   /**
@@ -232,7 +233,7 @@ export function AccountsTab() {
         onAction={(action) => accountAction.mutate({ id: account.id, action })}
         onTestProxy={() => account.proxyId && testProxy.mutate({ id: account.proxyId })}
         onEdit={() => {
-          setEditingEmail(account.email)
+          setEditingAccount(account)
           setAddOpen(true)
         }}
         onCopyCredentials={() => void copyCredentials(account)}
@@ -260,7 +261,7 @@ export function AccountsTab() {
           <NoAccountsYet
             onImport={() => setImportOpen(true)}
             onAddManually={() => {
-              setEditingEmail(null)
+              setEditingAccount(null)
               setAddOpen(true)
             }}
           />
@@ -268,7 +269,7 @@ export function AccountsTab() {
         <Sheets
           addOpen={addOpen}
           setAddOpen={setAddOpen}
-          editingEmail={editingEmail}
+          editingAccount={editingAccount}
           importOpen={importOpen}
           setImportOpen={setImportOpen}
         />
@@ -395,7 +396,7 @@ export function AccountsTab() {
             onCheckAll={() => void checkAllMatching()}
             checking={checkAccounts.isPending}
             onAdd={() => {
-              setEditingEmail(null)
+              setEditingAccount(null)
               setAddOpen(true)
             }}
             onImport={() => setImportOpen(true)}
@@ -425,7 +426,7 @@ export function AccountsTab() {
       <Sheets
         addOpen={addOpen}
         setAddOpen={setAddOpen}
-        editingEmail={editingEmail}
+        editingAccount={editingAccount}
         importOpen={importOpen}
         setImportOpen={setImportOpen}
       />
@@ -436,20 +437,22 @@ export function AccountsTab() {
 function Sheets({
   addOpen,
   setAddOpen,
-  editingEmail,
+  editingAccount,
   importOpen,
   setImportOpen,
 }: {
   addOpen: boolean
   setAddOpen: (open: boolean) => void
-  editingEmail: string | null
+  editingAccount: Account | null
   importOpen: boolean
   setImportOpen: (open: boolean) => void
 }) {
   return (
     <>
-      <AddAccountSheet open={addOpen} onOpenChange={setAddOpen} editingEmail={editingEmail} />
-      <ImportSheet open={importOpen} onOpenChange={setImportOpen} />
+      <AddAccountSheet open={addOpen} onOpenChange={setAddOpen} account={editingAccount} />
+      {/* The toolbar's IMPORT and the /accounts/import route render the SAME
+          ImportWizard — see components/import/ImportWizard.tsx. */}
+      <ImportWizardModal open={importOpen} onOpenChange={setImportOpen} />
     </>
   )
 }
