@@ -30,6 +30,11 @@ import type {
  *
  * A real backend would push these transitions from actual workers. The shapes on the
  * wire are the same either way, which is the point.
+ *
+ * THE SECOND IDEA: events are SORTED BY WHEN THEY HAPPENED BEFORE THEY ARE NUMBERED.
+ * The sweep walks tasks in task order while the tasks themselves run concurrently, so
+ * the order transitions are produced in is not the order they occurred in. `seq` is
+ * handed out at flush time, from a batch sorted by `at` -- see `flushEvents`.
  */
 
 /* ------------------------------------------------------------------ outcomes */
@@ -102,6 +107,11 @@ export interface RunState {
   pausedAt?: number
   /** How far the engine has already materialised, in task-slots. */
   materialised: number
+  /**
+   * Events that have happened but have not been given their `seq` yet. Never on the
+   * wire, and empty between calls -- see `flushEvents`.
+   */
+  pending?: PendingEvent[]
 }
 
 /** One task's whole timeline, decided up front from the run's own seed. */
@@ -163,8 +173,35 @@ function settleOffset(plan: Plan): number {
   return plan.startOffset + plan.durationMs + (plan.retries ? plan.retryDurationMs + 600 : 0)
 }
 
+/**
+ * A plan offset is VIRTUAL time -- it excludes whatever the run spent paused. The log
+ * is wall-clock, so every offset is mapped back through `pausedMs` before it becomes
+ * an `at`. Without this, an event materialised after a pause would carry a timestamp
+ * from before the pause, which is the same lie in a different disguise.
+ */
+function wallClock(state: RunState, offset: number): number {
+  return Date.parse(state.run.startedAt) + offset + state.pausedMs
+}
+
 /* -------------------------------------------------------------------- events */
 
+/**
+ * An event that has happened but has not taken its place in the log yet.
+ *
+ * `tick` is the order the sweep produced it in, and it only ever breaks ties: two
+ * events on the same millisecond keep the order they were materialised in.
+ */
+interface PendingEvent {
+  atMs: number
+  tick: number
+  level: EventLevel
+  code: string
+  message: string
+  taskId?: string
+  httpStatus?: number
+}
+
+/** Record that something happened. It gets no `seq` here -- see `flushEvents`. */
 function pushEvent(
   state: RunState,
   at: number,
@@ -174,19 +211,68 @@ function pushEvent(
   taskId?: string,
   httpStatus?: number,
 ): void {
-  const seq = state.run.lastEventSeq + 1
-  state.run.lastEventSeq = seq
-  state.events.push({
-    id: `evt_${state.run.id}_${seq}`,
-    seq,
-    runId: state.run.id,
-    taskId,
-    at: new Date(at).toISOString(),
+  const pending = (state.pending ??= [])
+  // Floored, because the plan's offsets are fractional and `at` on the wire is whole
+  // milliseconds. Sorting on the fractional value would order two events the reader
+  // sees as simultaneous by a difference that never reaches them -- and it did:
+  // RUN_COMPLETED, whose time is read back off a task's ISO timestamp, sorted 0.2ms
+  // ahead of the confirmation it is meant to follow. Sort on what ships.
+  pending.push({
+    atMs: Math.floor(at),
+    tick: pending.length,
     level,
     code,
     message,
+    taskId,
     httpStatus,
   })
+}
+
+/**
+ * Close the batch: sort by the time each event actually happened, THEN hand out the
+ * `seq` numbers in that order.
+ *
+ * WHY THIS EXISTS. The sweep materialises transitions task by task, in task order,
+ * but the tasks run CONCURRENTLY. A slow worker's 19:28:52 event is therefore produced
+ * after a fast worker's 19:28:53 one, and numbering at production time pinned that
+ * accident into the log: the cursor stayed monotonic while `at` walked backwards, on
+ * the one screen whose whole job is explaining a failure.
+ *
+ * Sorting before numbering makes the two orders agree -- `seq` ascending is `at`
+ * non-decreasing. It holds ACROSS batches too, because a sweep is exhaustive: it emits
+ * every event up to the clock it was handed, so anything appearing in a later batch
+ * cannot have happened before something already in the log.
+ */
+function flushEvents(state: RunState): void {
+  const pending = state.pending
+  if (!pending?.length) return
+  state.pending = []
+
+  pending.sort((a, b) => a.atMs - b.atMs || a.tick - b.tick)
+
+  for (const p of pending) {
+    const seq = state.run.lastEventSeq + 1
+    state.run.lastEventSeq = seq
+    state.events.push({
+      id: `evt_${state.run.id}_${seq}`,
+      seq,
+      runId: state.run.id,
+      taskId: p.taskId,
+      at: new Date(p.atMs).toISOString(),
+      level: p.level,
+      code: p.code,
+      message: p.message,
+      httpStatus: p.httpStatus,
+    })
+  }
+}
+
+/** When an event with this code first happened -- committed, or still pending. */
+function firstEventTime(state: RunState, code: string): number | undefined {
+  const committed = state.events.find((e) => e.code === code)
+  if (committed) return Date.parse(committed.at)
+  const times = (state.pending ?? []).filter((p) => p.code === code).map((p) => p.atMs)
+  return times.length ? Math.min(...times) : undefined
 }
 
 /* ------------------------------------------------------------------- advance */
@@ -196,10 +282,20 @@ function pushEvent(
  * millisecond is a no-op, which is what makes it safe to call from every handler.
  */
 export function advance(state: RunState, now = Date.now()): RunState {
+  sweep(state, now)
+  flushEvents(state)
+  return state
+}
+
+/**
+ * The sweep itself. It emits into the pending buffer and never numbers anything;
+ * `advance`, the only public door, is what closes the batch.
+ */
+function sweep(state: RunState, now: number): void {
   const { run, profile } = state
 
   if (run.status === 'COMPLETED' || run.status === 'STOPPED' || run.status === 'FAILED') {
-    return state
+    return
   }
 
   const startedAt = Date.parse(run.startedAt)
@@ -216,8 +312,8 @@ export function advance(state: RunState, now = Date.now()): RunState {
     if (isTerminal(task.status)) continue
 
     const plan = planFor(run.id, i, profile)
-    const taskStart = startedAt + plan.startOffset
-    const settled = startedAt + settleOffset(plan)
+    const taskStart = wallClock(state, plan.startOffset)
+    const settled = wallClock(state, settleOffset(plan))
 
     // Not this task's turn yet — and lanes run in order, so nothing after it is either.
     if (elapsed < plan.startOffset) continue
@@ -238,8 +334,9 @@ export function advance(state: RunState, now = Date.now()): RunState {
     }
 
     // The retry, when there is one, lands between the first attempt and the settle.
-    const retryAt = startedAt + plan.startOffset + plan.durationMs + 600
-    if (plan.retries && task.attempt === 1 && elapsed >= retryAt - startedAt) {
+    const retryOffset = plan.startOffset + plan.durationMs + 600
+    const retryAt = wallClock(state, retryOffset)
+    if (plan.retries && task.attempt === 1 && elapsed >= retryOffset) {
       task.status = 'RETRYING'
       task.attempt = 2
       task.lastHttpStatus = plan.failure.httpStatus
@@ -266,12 +363,14 @@ export function advance(state: RunState, now = Date.now()): RunState {
   // stopOnRateLimit: the first 429 ends the run rather than letting it burn through
   // the rest of the pool at the same rate.
   if (profile.stopOnRateLimit && run.status === 'RUNNING') {
-    const limited = state.events.find((e) => e.code === 'RATE_LIMITED')
-    if (limited) {
+    // The 429 may still be sitting in the pending buffer -- it has happened, it just
+    // has no `seq` yet -- so both halves of the log are searched.
+    const limitedAt = firstEventTime(state, 'RATE_LIMITED')
+    if (limitedAt !== undefined) {
       // freezeAsStopped, not stop(): stop() advances first, and advance() is what
       // called us. Going through it would recurse until the stack gave out.
-      freezeAsStopped(state, Date.parse(limited.at), 'RATE_LIMITED')
-      return state
+      freezeAsStopped(state, limitedAt, 'RATE_LIMITED')
+      return
     }
   }
 
@@ -287,8 +386,6 @@ export function advance(state: RunState, now = Date.now()): RunState {
       `Run finished. ${run.counts.success} entered, ${run.counts.failed} failed.`,
     )
   }
-
-  return state
 }
 
 function settle(state: RunState, task: BallotTask, plan: Plan, at: number): void {
@@ -390,6 +487,7 @@ export function pause(state: RunState, now = Date.now()): RunState {
   state.run.status = 'PAUSED'
   state.pausedAt = now
   pushEvent(state, now, 'info', 'RUN_PAUSED', 'Run paused. Nothing new is being submitted.')
+  flushEvents(state)
   return state
 }
 
@@ -410,7 +508,9 @@ export function resume(state: RunState, now = Date.now()): RunState {
  */
 export function stop(state: RunState, now = Date.now(), reason = 'STOPPED'): RunState {
   if (state.run.status === 'RUNNING' || state.run.status === 'QUEUED') advance(state, now)
-  return freezeAsStopped(state, now, reason)
+  freezeAsStopped(state, now, reason)
+  flushEvents(state)
+  return state
 }
 
 /**
