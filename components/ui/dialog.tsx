@@ -31,8 +31,15 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
+    /**
+     * The corner X. Defaults on, so every existing caller is unaffected. Off for a
+     * dialog whose whole body is one control — the command palette — where an X in
+     * the corner is a second way out competing with Escape for no gain.
+     */
+    showCloseButton?: boolean
+  }
+>(({ className, children, showCloseButton = true, ...props }, ref) => (
   <DialogPortal>
     <DialogOverlay />
     <DialogPrimitive.Content
@@ -51,10 +58,12 @@ const DialogContent = React.forwardRef<
       {...props}
     >
       {children}
-      <DialogPrimitive.Close className="absolute top-4 right-4 flex size-8 items-center justify-center rounded-md text-faint transition-colors duration-150 hover:bg-surface-hover hover:text-text disabled:pointer-events-none">
-        <X className="size-4" aria-hidden="true" />
-        <span className="sr-only">Close</span>
-      </DialogPrimitive.Close>
+      {showCloseButton && (
+        <DialogPrimitive.Close className="absolute top-4 right-4 flex size-8 items-center justify-center rounded-md text-faint transition-colors duration-150 hover:bg-surface-hover hover:text-text disabled:pointer-events-none">
+          <X className="size-4" aria-hidden="true" />
+          <span className="sr-only">Close</span>
+        </DialogPrimitive.Close>
+      )}
     </DialogPrimitive.Content>
   </DialogPortal>
 ))

@@ -12,10 +12,30 @@ import type { SearchResult } from '@/lib/types'
 const NAVIGATION: SearchResult[] = [
   { id: 'nav_dashboard', type: 'navigation', title: 'Dashboard', href: '/dashboard' },
   { id: 'nav_accounts', type: 'navigation', title: 'Account Manager', href: '/accounts' },
+  { id: 'nav_proxies', type: 'navigation', title: 'Proxies', href: '/accounts?tab=proxies' },
   { id: 'nav_import', type: 'navigation', title: 'Import accounts', href: '/accounts/import' },
   { id: 'nav_tickets', type: 'navigation', title: 'My Tickets', href: '/mytickets' },
   { id: 'nav_listings', type: 'navigation', title: 'My Listings', href: '/mylistings' },
+  { id: 'nav_links', type: 'navigation', title: 'My Links', href: '/mylinks' },
+  { id: 'nav_fixtures', type: 'navigation', title: 'Fixtures Calendar', href: '/fixtures' },
+  { id: 'nav_onsales', type: 'navigation', title: 'On-Sales', href: '/onsales' },
+  { id: 'nav_insights', type: 'navigation', title: 'Insights', href: '/insights' },
+  { id: 'nav_salestracker', type: 'navigation', title: 'Sales Tracker', href: '/salestracker' },
   { id: 'nav_settings', type: 'navigation', title: 'Settings', href: '/settings' },
+  {
+    id: 'nav_settings_preferences',
+    type: 'navigation',
+    title: 'Preferences',
+    subtitle: 'Language, timezone, currency',
+    href: '/settings?tab=preferences',
+  },
+  {
+    id: 'nav_settings_api',
+    type: 'navigation',
+    title: 'API settings',
+    subtitle: 'Base URL and access token',
+    href: '/settings?tab=api',
+  },
 ]
 
 const LIMIT_PER_TYPE = 5
@@ -29,7 +49,11 @@ export async function GET(request: Request) {
 
     for (const a of store.accounts) {
       if (results.filter((r) => r.type === 'account').length >= LIMIT_PER_TYPE) break
-      const haystack = `${a.email} ${a.firstName ?? ''} ${a.lastName ?? ''} ${a.membershipId}`
+      // The club is part of the haystack because it is how an operator thinks about
+      // an account. Typing `arsenal` and getting fixtures and listings but none of
+      // the twelve Arsenal accounts reads as a broken search, not a narrow one.
+      const club = getClub(a.club)
+      const haystack = `${a.email} ${a.firstName ?? ''} ${a.lastName ?? ''} ${a.membershipId} ${club.name} ${club.short}`
       if (haystack.toLowerCase().includes(q)) {
         results.push({
           id: a.id,
@@ -70,8 +94,11 @@ export async function GET(request: Request) {
       }
     }
 
+    // Subtitles are matched as well as titles, so `currency` reaches Preferences and
+    // `token` reaches the API tab — the words an operator actually has in mind are
+    // rarely the name of the screen.
     for (const nav of NAVIGATION) {
-      if (nav.title.toLowerCase().includes(q)) results.push(nav)
+      if (`${nav.title} ${nav.subtitle ?? ''}`.toLowerCase().includes(q)) results.push(nav)
     }
 
     return ok(results)

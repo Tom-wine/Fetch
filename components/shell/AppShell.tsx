@@ -4,6 +4,7 @@ import * as React from 'react'
 import { usePathname } from 'next/navigation'
 
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
+import { CommandPalette } from './CommandPalette'
 import { SIDEBAR_COOKIE } from './constants'
 import { SidebarNav } from './SidebarNav'
 import { Topbar } from './Topbar'
@@ -21,10 +22,29 @@ export function AppShell({
 }) {
   const [collapsed, setCollapsed] = React.useState(defaultCollapsed)
   const [mobileOpen, setMobileOpen] = React.useState(false)
+  const [searchOpen, setSearchOpen] = React.useState(false)
   const pathname = usePathname()
 
   // A drawer that survives navigation would cover the page the user just chose.
   React.useEffect(() => setMobileOpen(false), [pathname])
+
+  /**
+   * ⌘K / Ctrl+K, bound on the shell so it works from every screen.
+   *
+   * Bound on `document` in the capture phase so it fires before a focused input can
+   * swallow it — the palette is most useful from the middle of a filter box, which is
+   * exactly where a bubbling listener would never see the key. It toggles rather than
+   * only opening, so the same chord that summoned it dismisses it.
+   */
+  React.useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key.toLowerCase() !== 'k' || !(event.metaKey || event.ctrlKey)) return
+      event.preventDefault()
+      setSearchOpen((open) => !open)
+    }
+    document.addEventListener('keydown', onKeyDown, true)
+    return () => document.removeEventListener('keydown', onKeyDown, true)
+  }, [])
 
   const toggle = React.useCallback(() => {
     setCollapsed((prev) => {
@@ -47,9 +67,11 @@ export function AppShell({
       </Sheet>
 
       <div className="relative flex min-w-0 flex-1 flex-col">
-        <Topbar onOpenNav={() => setMobileOpen(true)} />
+        <Topbar onOpenNav={() => setMobileOpen(true)} onOpenSearch={() => setSearchOpen(true)} />
         <main className="min-h-0 flex-1 overflow-y-auto px-4 pt-14 pb-10 sm:px-6">{children}</main>
       </div>
+
+      <CommandPalette open={searchOpen} onOpenChange={setSearchOpen} />
     </div>
   )
 }
