@@ -268,7 +268,9 @@ export function advance(state: RunState, now = Date.now()): RunState {
   if (profile.stopOnRateLimit && run.status === 'RUNNING') {
     const limited = state.events.find((e) => e.code === 'RATE_LIMITED')
     if (limited) {
-      stop(state, Date.parse(limited.at), 'RATE_LIMITED')
+      // freezeAsStopped, not stop(): stop() advances first, and advance() is what
+      // called us. Going through it would recurse until the stack gave out.
+      freezeAsStopped(state, Date.parse(limited.at), 'RATE_LIMITED')
       return state
     }
   }
@@ -408,6 +410,16 @@ export function resume(state: RunState, now = Date.now()): RunState {
  */
 export function stop(state: RunState, now = Date.now(), reason = 'STOPPED'): RunState {
   if (state.run.status === 'RUNNING' || state.run.status === 'QUEUED') advance(state, now)
+  return freezeAsStopped(state, now, reason)
+}
+
+/**
+ * The settle half of `stop`, without the `advance` call.
+ *
+ * `advance` needs this when `stopOnRateLimit` trips mid-sweep, and it must not call
+ * `stop` to get it: `stop` advances first, and advancing is what got us here.
+ */
+function freezeAsStopped(state: RunState, now: number, reason: string): RunState {
   if (
     state.run.status === 'COMPLETED' ||
     state.run.status === 'STOPPED' ||

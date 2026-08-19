@@ -56,10 +56,14 @@ const ACCOUNTS_PER_CLUB: Partial<Record<ClubId, number>> = {
   'man-utd': 6,
   chelsea: 5,
   newcastle: 4,
+  // The seven ballot clubs carry more accounts than the rest: they are the ones a run
+  // draws from, and a pool of two makes every run look like a rounding error.
+  leeds: 7,
+  'nottingham-forest': 6,
+  everton: 5,
   'aston-villa': 3,
   brighton: 2,
   'west-ham': 2,
-  everton: 2,
   fulham: 1,
   brentford: 1,
   wolves: 1,
@@ -698,6 +702,23 @@ export const ballotProfiles: BallotProfile[] = [
     updatedAt: ago(9 * DAY),
   },
   {
+    id: 'bpf_overnight',
+    name: 'Overnight',
+    delayMinMs: 20000,
+    delayMaxMs: 40000,
+    concurrency: 2,
+    maxRetries: 2,
+    timeoutMs: 60000,
+    proxyGroupId: 'grp_1',
+    otpSource: 'manual',
+    // Deliberately false: an overnight run should carry on past a single refusal
+    // rather than stopping at 3am with nobody watching.
+    stopOnRateLimit: false,
+    notes: 'Two at a time, long gaps. For leaving running while you sleep.',
+    createdAt: ago(30 * DAY),
+    updatedAt: ago(4 * DAY),
+  },
+  {
     id: 'bpf_fast',
     name: 'Fast pool',
     delayMinMs: 800,
@@ -776,7 +797,17 @@ export const ballotRuns: SeededRun[] = [
   seededRun('run_a1f3c2', 'Arsenal · Chelsea — members sale', ['arsenal', 'chelsea'], ballotProfiles[0]!, 42, 3 * DAY),
   seededRun('run_b7e214', 'Liverpool — Anfield ballot', ['liverpool'], ballotProfiles[1]!, 18, 26 * HOUR),
   // In flight: started recently enough that most tasks are still ahead of the clock.
-  seededRun('run_c92d55', 'Newcastle · Leeds — away scheme', ['newcastle', 'leeds'], ballotProfiles[2]!, 64, 40 * MINUTE),
+  // In flight on purpose: the slow profile (concurrency 3, 6–14s between tasks) over the
+  // whole pool, started seconds before boot. It arrives part-way through and keeps
+  // moving on wall-clock time alone, which is what gives the monitor something to watch.
+  seededRun(
+    'run_c92d55',
+    'Newcastle · Leeds · Forest — away scheme',
+    ['newcastle', 'leeds', 'nottingham-forest', 'everton'],
+    ballotProfiles.find((p) => p.id === 'bpf_overnight')!,
+    64,
+    25 * 1000,
+  ),
 ]
 
 /* --------------------------------------------------------------- passwords */

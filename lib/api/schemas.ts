@@ -275,6 +275,14 @@ export const metaSchema = z.object({
   pageSize: z.int().positive(),
   total: z.int().nonnegative(),
   totalPages: z.int().nonnegative(),
+  /**
+   * Cursor into an append-only feed, present only on `/ballots/runs/:id/events`
+   * (§B4). It is the seq of the last event in THIS response, so a truncated page
+   * resumes exactly where it stopped; `hasMore` says whether to ask again straight
+   * away rather than waiting for the next poll.
+   */
+  lastSeq: z.int().nonnegative().optional(),
+  hasMore: z.boolean().optional(),
 })
 
 export type Meta = z.infer<typeof metaSchema>
