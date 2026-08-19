@@ -133,6 +133,18 @@ Read FETCH-IO-BALLOTS-SPEC.md end to end — it is authoritative for this module
 Build everything except the live run monitor, which is Part 14. Order matters: the engine first,
 because nothing else has anything to show without it.
 
+0. Two carry-overs from Part 12, first, in their own commit.
+   - Delete app/(app)/(soon)/fixtures/ and app/(app)/(soon)/onsales/. Part 12 removed their nav items
+     but left the routes reachable by direct URL. They were discovery features for the resale product;
+     ballots replaces them. /mytickets keeps the fixture concept — this only removes the two orphan
+     "coming soon" pages.
+   - Give each seed builder its OWN seeded RNG stream, keyed by name (`rngFor('accounts')`,
+     `rngFor('runs')`, …) instead of drawing from one shared sequence. Removing buildListings() in
+     Part 12 shortened the shared sequence and shifted every downstream draw, so the dashboard's
+     figures moved. This part adds three more builders (runs, tasks, events) and would shift them
+     again. Per-builder streams make the seed edit-order-independent: add a builder, and every other
+     builder's data stays byte-identical. Note the current figures before and after to prove it.
+
 1. Registry + types.
    - Add `leeds` to lib/registries/clubs.ts with a generated crest — it is not in the 2025-26 set the
      registry was seeded from, and four of the seven ballot clubs are already there.

@@ -36,6 +36,35 @@ export function rng(seed: number) {
 }
 
 /**
+ * The seed every stream is derived from. One number, so the whole dataset is one
+ * decision.
+ */
+const BASE_SEED = 0x5e7c4
+
+/**
+ * A PRNG stream of its own, keyed by name.
+ *
+ * Every builder in seed.ts used to draw from ONE shared sequence, which made the data
+ * depend on the order the builders happened to run in. Deleting `buildListings()` in
+ * Part 12 shortened that sequence and silently moved every figure downstream of it —
+ * the dashboard's totals changed because a builder three sections away was removed.
+ *
+ * Keying the stream by name makes the seed edit-order-independent: add, remove or
+ * reorder a builder and every OTHER builder's output is byte-identical, because its
+ * stream never saw the change. The name is hashed with FNV-1a and mixed into the base
+ * seed, so `rngFor('runs')` is stable across processes and `rngFor('tasks')` is
+ * uncorrelated with it.
+ */
+export function rngFor(name: string) {
+  let h = 0x811c9dc5
+  for (let i = 0; i < name.length; i++) {
+    h ^= name.charCodeAt(i)
+    h = Math.imul(h, 0x01000193) >>> 0
+  }
+  return rng((BASE_SEED ^ h) >>> 0)
+}
+
+/**
  * The clock anchor. Every seeded timestamp is an offset from server start, so a
  * `lastCheckedAt` can never drift into the future and a kickoff "in 3 days" stays
  * three days away however long the process has been running.

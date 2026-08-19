@@ -16,7 +16,7 @@ import type {
   RevenuePoint,
   Ticket,
 } from '@/lib/types'
-import { DAY, HOUR, MINUTE, SEED_NOW, ago, ahead, rng } from './rng'
+import { DAY, HOUR, MINUTE, SEED_NOW, ago, ahead, rngFor } from './rng'
 
 /**
  * The seeded dataset (§5 volumes), built once at module load from a fixed seed.
@@ -26,8 +26,6 @@ import { DAY, HOUR, MINUTE, SEED_NOW, ago, ahead, rng } from './rng'
  *
  * All money is integer MINOR UNITS.
  */
-
-const r = rng(0x5e7c4)
 
 const PROVIDER_IDS = PROVIDERS.map((p) => p.id)
 
@@ -152,6 +150,7 @@ function membershipPrefix(club: ClubId): string {
 }
 
 function buildAccounts(): Account[] {
+  const r = rngFor('accounts')
   const statuses = r.shuffle(STATUS_POOL)
   const out: Account[] = []
   let i = 0
@@ -315,6 +314,7 @@ const FIXTURE_SPECS: FixtureSpec[] = [
 ]
 
 function buildFixtures(): Fixture[] {
+  const r = rngFor('fixtures')
   return FIXTURE_SPECS.map((spec, i) => {
     const home = getClub(spec.home)
     const total = r.int(4, 26)
@@ -376,6 +376,7 @@ const BLOCKS: Record<string, string[]> = {
 const LEVELS = ['Lower Tier', 'Upper Tier', 'Executive', 'Family Stand']
 
 function buildTickets(): Ticket[] {
+  const r = rngFor('tickets')
   const out: Ticket[] = []
   const accountsByClub = new Map<ClubId, Account[]>()
   for (const a of accounts) {
@@ -461,21 +462,23 @@ export const tickets: Ticket[] = buildTickets()
 
 const PROXY_COUNTRIES = ['GB', 'GB', 'GB', 'IE', 'DE', 'NL', 'FR']
 
+const proxyRng = rngFor('proxies')
+
 export const proxies: Proxy[] = Array.from({ length: 18 }, (_, i) => {
-  const country = r.pick(PROXY_COUNTRIES)
-  const status: Proxy['status'] = r.chance(0.72) ? 'ok' : r.chance(0.5) ? 'untested' : 'dead'
+  const country = proxyRng.pick(PROXY_COUNTRIES)
+  const status: Proxy['status'] = proxyRng.chance(0.72) ? 'ok' : proxyRng.chance(0.5) ? 'untested' : 'dead'
   return {
     id: `prx_${String(i + 1).padStart(2, '0')}`,
-    groupId: `grp_${r.int(1, 3)}`,
+    groupId: `grp_${proxyRng.int(1, 3)}`,
     label: `${country.toLowerCase()}-res-${String(i + 1).padStart(2, '0')}`,
-    host: `${r.int(10, 250)}.${r.int(10, 250)}.${r.int(10, 250)}.${r.int(10, 250)}`,
-    port: r.pick([8080, 3128, 9000, 10000, 31280]),
-    username: `fetch${r.int(1000, 9999)}`,
-    passwordMasked: '•'.repeat(r.int(8, 12)),
+    host: `${proxyRng.int(10, 250)}.${proxyRng.int(10, 250)}.${proxyRng.int(10, 250)}.${proxyRng.int(10, 250)}`,
+    port: proxyRng.pick([8080, 3128, 9000, 10000, 31280]),
+    username: `fetch${proxyRng.int(1000, 9999)}`,
+    passwordMasked: '•'.repeat(proxyRng.int(8, 12)),
     country,
     status,
-    lastTestedAt: status === 'untested' ? undefined : ago(r.int(5, 4000) * MINUTE),
-    latencyMs: status === 'ok' ? r.int(38, 480) : undefined,
+    lastTestedAt: status === 'untested' ? undefined : ago(proxyRng.int(5, 4000) * MINUTE),
+    latencyMs: status === 'ok' ? proxyRng.int(38, 480) : undefined,
   }
 })
 
@@ -499,6 +502,8 @@ export const proxies: Proxy[] = Array.from({ length: 18 }, (_, i) => {
  * the totals match the ticket table, they are not supposed to — change the tile's
  * label, not its source.
  */
+const revenueRng = rngFor('revenue')
+
 export const revenue: RevenuePoint[] = Array.from({ length: 12 }, (_, i) => {
   // Stepped by calendar month, not by a fixed 30-day block. A fixed stride drifts
   // about five days a year, so depending on the date it can land twice inside one
@@ -507,11 +512,11 @@ export const revenue: RevenuePoint[] = Array.from({ length: 12 }, (_, i) => {
   const now = new Date(SEED_NOW)
   const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (11 - i), 1))
   const period = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`
-  const ticketsSold = r.int(24, 140)
+  const ticketsSold = revenueRng.int(24, 140)
   return {
     period,
     // £180–£520 average per seat, in minor units.
-    revenue: ticketsSold * r.int(18000, 52000),
+    revenue: ticketsSold * revenueRng.int(18000, 52000),
     ticketsSold,
     currency: 'GBP' as Currency,
   }
@@ -602,10 +607,12 @@ const ACTIVITY_TEMPLATES: Array<Pick<ActivityEntry, 'kind' | 'source' | 'title' 
   },
 ]
 
+const activityRng = rngFor('activity')
+
 export const activity: ActivityEntry[] = ACTIVITY_TEMPLATES.map((t, i) => ({
   id: `act_${String(i + 1).padStart(3, '0')}`,
   ...t,
-  at: ago(r.int(5, 20000) * MINUTE),
+  at: ago(activityRng.int(5, 20000) * MINUTE),
 })).sort((a, b) => b.at.localeCompare(a.at))
 
 /* ----------------------------------------------------------- notifications */
@@ -639,10 +646,12 @@ const NOTIFICATION_TEMPLATES: Array<Pick<AppNotification, 'kind' | 'title' | 'bo
   },
 ]
 
+const notificationRng = rngFor('notifications')
+
 export const notifications: AppNotification[] = NOTIFICATION_TEMPLATES.map((t, i) => ({
   id: `ntf_${String(i + 1).padStart(3, '0')}`,
   ...t,
-  at: ago(r.int(3, 6000) * MINUTE),
+  at: ago(notificationRng.int(3, 6000) * MINUTE),
   unread: i < 3,
 })).sort((a, b) => b.at.localeCompare(a.at))
 
@@ -653,8 +662,10 @@ export const notifications: AppNotification[] = NOTIFICATION_TEMPLATES.map((t, i
  * Only POST /accounts/:id/reveal reads it. A real backend would hold these encrypted
  * at rest and audit every read — see docs/BACKEND-HANDOFF.md.
  */
+const passwordRng = rngFor('passwords')
+
 export const passwords = new Map<string, string>(
-  accounts.map((a) => [a.id, `Fetch-${a.membershipId}-${r.int(1000, 9999)}`]),
+  accounts.map((a) => [a.id, `Fetch-${a.membershipId}-${passwordRng.int(1000, 9999)}`]),
 )
 
 export { HOUR, MINUTE, DAY }
