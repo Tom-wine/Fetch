@@ -9,7 +9,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ConfirmDialog } from '@/components/domain/ConfirmDialog'
 import type { Account } from '@/lib/types'
 import { BulkImportTab } from './BulkImportTab'
-import { ImportDialog } from './ImportDialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { ManualEntryForm } from './ManualEntryForm'
 
 /**
@@ -126,23 +132,39 @@ export function ImportWizardModal({
 
   return (
     <>
-      <ImportDialog
+      <Dialog
         open={open}
-        onOpenChange={onOpenChange}
-        title="Import accounts"
-        description="Add one account by hand, or bring in a whole club export as CSV."
-        onRequestClose={() => {
-          if (!busy) return true
-          setConfirming(true)
-          return false
+        onOpenChange={(next) => {
+          // Closing mid-import warns first; the confirm owns the actual close.
+          if (!next && busy) {
+            setConfirming(true)
+            return
+          }
+          onOpenChange(next)
         }}
       >
-        <ImportWizard
-          defaultTab={defaultTab}
-          onBusyChange={setBusy}
-          onDone={() => onOpenChange(false)}
-        />
-      </ImportDialog>
+        {/*
+          Wider than the shared default: step 3 previews a fifteen-column table over
+          500 rows, and a table you must scroll sideways to reach the cell you are
+          fixing is not fixable.
+        */}
+        <DialogContent className="w-[min(1180px,calc(100vw-2rem))] max-w-none">
+          <DialogHeader>
+            <div className="min-w-0">
+              <DialogTitle>Import accounts</DialogTitle>
+              <DialogDescription className="mt-1">
+                Add one account by hand, or bring in a whole club export as CSV.
+              </DialogDescription>
+            </div>
+          </DialogHeader>
+
+          <ImportWizard
+            defaultTab={defaultTab}
+            onBusyChange={setBusy}
+            onDone={() => onOpenChange(false)}
+          />
+        </DialogContent>
+      </Dialog>
 
       <ConfirmDialog
         open={confirming}

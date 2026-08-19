@@ -25,7 +25,7 @@ import type { Account } from '@/lib/types'
  * A Sheet rather than a centred modal: one column of fields does not need 1180px, and
  * a panel that slides in beside the table leaves the row the operator was looking at
  * on screen. The CSV wizard is the one that earns a modal (see
- * components/import/ImportDialog.tsx).
+ * components/ui/dialog.tsx).
  */
 export function AddAccountSheet({
   open,
