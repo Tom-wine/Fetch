@@ -60,11 +60,18 @@ export function flowDelta(current?: number, previous?: number): number | undefin
 
 /**
  * Month-on-month change of a RUNNING TOTAL — what this month added, over what the
- * total stood at before it. `undefined` when the "before" figure is not positive,
- * which also covers the case where the two numbers come from sources that disagree
- * (the seeded revenue series and the seeded ticket store are generated
- * independently, so `addedThisMonth` can exceed `total`; a chip derived from that
- * would be nonsense, so there is no chip).
+ * total stood at before it.
+ *
+ * `undefined` (no chip) when the "before" figure is not positive. That is the honest
+ * answer for a tenant whose first month is the only month: there is no prior total to
+ * have moved from, and any percentage would be invented.
+ *
+ * It used to fire for a second reason. `/kpis` drew its total from the ticket store
+ * and its month from the revenue series — two independently seeded sources — so
+ * `addedThisMonth` could exceed `total` and `before` went negative, suppressing both
+ * running-total chips on every load. Both figures now come from the revenue series
+ * (see `app/api/v1/kpis/route.ts`), so the guard is back to meaning only what it
+ * says.
  */
 export function totalDelta(total: number, addedThisMonth: number): number | undefined {
   const before = total - addedThisMonth

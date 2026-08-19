@@ -19,7 +19,7 @@ import type {
   RevenuePoint,
   Ticket,
 } from '@/lib/types'
-import { DAY, HOUR, MINUTE, ago, ahead, rng } from './rng'
+import { DAY, HOUR, MINUTE, SEED_NOW, ago, ahead, rng } from './rng'
 
 /**
  * The seeded dataset (§5 volumes), built once at module load from a fixed seed.
@@ -534,9 +534,31 @@ export const proxies: Proxy[] = Array.from({ length: 18 }, (_, i) => {
 
 /* ----------------------------------------------------------------- revenue */
 
-/** 12 month buckets ending with the current month. */
+/**
+ * Twelve month buckets ending with the current month — and the ONLY ledger of money
+ * earned. Everything `/kpis` reports about money is summed from here.
+ *
+ * WHY NOT THE TICKET STORE
+ *
+ * `tickets` above is CURRENT INVENTORY: the seats held right now, for fixtures that
+ * have not been played yet. It is not a historical ledger. A seat sold eight months
+ * ago left that array long ago, and nothing in it remembers the sale — so summing its
+ * `sold` rows answers "what have I sold out of what I am holding today", not "what
+ * have I earned". The two are different questions with different answers.
+ *
+ * `/kpis` used to mix them: an all-time total summed from the ticket store, and a
+ * month taken from this series. Two seeds, two stories, and the dashboard's own
+ * first row said "this month" was nine times "all time". If you are here to make
+ * the totals match the ticket table, they are not supposed to — change the tile's
+ * label, not its source.
+ */
 export const revenue: RevenuePoint[] = Array.from({ length: 12 }, (_, i) => {
-  const d = new Date(Date.parse(ago((11 - i) * 30 * DAY)))
+  // Stepped by calendar month, not by a fixed 30-day block. A fixed stride drifts
+  // about five days a year, so depending on the date it can land twice inside one
+  // month and skip the next — which would leave `/kpis` picking a "current month"
+  // bucket that is not this month.
+  const now = new Date(SEED_NOW)
+  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (11 - i), 1))
   const period = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`
   const ticketsSold = r.int(24, 140)
   return {
@@ -547,6 +569,14 @@ export const revenue: RevenuePoint[] = Array.from({ length: 12 }, (_, i) => {
     currency: 'GBP' as Currency,
   }
 })
+
+/** The whole series, folded once. `/kpis` reads these rather than re-summing. */
+export const revenueTotals = {
+  revenue: revenue.reduce((sum, p) => sum + p.revenue, 0),
+  ticketsSold: revenue.reduce((sum, p) => sum + p.ticketsSold, 0),
+  /** The last bucket is the current month — see the stride note above. */
+  currentMonth: revenue.at(-1) ?? null,
+}
 
 /* ---------------------------------------------------------------- activity */
 
