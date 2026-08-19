@@ -4,6 +4,8 @@ import * as React from 'react'
 
 import { cn } from '@/lib/utils'
 import { upperSnake } from '@/lib/format/text'
+import { formatMonth } from '@/lib/format/date'
+import { useLocale } from '@/lib/format/LocaleProvider'
 import { ErrorState } from '@/components/data/states'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
@@ -38,11 +40,14 @@ const METRICS: Array<{ id: Metric; label: string; name: string }> = [
  * response and no request is made when it flips — so there is nothing to bookmark
  * and nothing to re-fetch.
  *
- * The x value is the API's own bucket key (`2026-08`). There is no month formatter
- * in `lib/format/date.ts` and no component may format a date itself (§9 rule 6), so
- * rather than opening a second date seam this renders the key verbatim: it is
- * unambiguous, locale-independent, and it makes a year change visible in a way that
- * `Aug` would not. There is an ASK in fetch-sync.md for `formatMonth`.
+ * The x value is the API's own bucket key (`2026-08`), rendered through
+ * `formatMonth` — the one date seam (§9 rule 6), never `Intl` from here. The label
+ * is formatted onto the datum rather than through a recharts `tickFormatter` so the
+ * tooltip heading and the axis cannot drift apart: the key is a bucket identifier,
+ * not a value, and it is only ever shown to a human.
+ *
+ * The short style keeps the year (`Aug 2026`, not `Aug`), because twelve buckets span
+ * a year boundary and a bare month name would put two Augusts on one axis.
  */
 export function RevenueCard({
   revenue,
@@ -58,8 +63,16 @@ export function RevenueCard({
   className?: string
 }) {
   const [metric, setMetric] = React.useState<Metric>('revenue')
+  const { settings } = useLocale()
 
-  const data = React.useMemo(() => toChartData(revenue), [revenue])
+  const data = React.useMemo(
+    () =>
+      toChartData(revenue).map((point) => ({
+        ...point,
+        period: formatMonth(point.period, settings),
+      })),
+    [revenue, settings],
+  )
   const currency = revenue[0]?.currency ?? 'GBP'
   const active = METRICS.find((option) => option.id === metric) ?? METRICS[0]
 

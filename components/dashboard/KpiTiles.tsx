@@ -5,6 +5,8 @@ import { Banknote, CalendarRange, Ticket } from 'lucide-react'
 import { ErrorState, SkeletonCard } from '@/components/data/states'
 import { StatTile } from '@/components/domain/StatTile'
 import { Money, Num } from '@/components/domain/Money'
+import { formatMonth } from '@/lib/format/date'
+import { useLocale } from '@/lib/format/LocaleProvider'
 import type { KpiSet, RevenuePoint } from '@/lib/types'
 import { flowDelta, lastTwoMonths, totalDelta } from './metrics'
 
@@ -30,6 +32,8 @@ export function KpiTiles({
   error: string | null
   onRetry: () => void
 }) {
+  const { settings } = useLocale()
+
   if (error) {
     return (
       <div className="rounded-lg border border-border bg-surface lg:col-span-3">
@@ -72,11 +76,10 @@ export function KpiTiles({
 
       <StatTile
         icon={CalendarRange}
-        // The bucket key from GET /revenue, not a formatted month — there is no
-        // month formatter in lib/format yet and no component may format a date
-        // itself (§9 rule 6). See the ASK in fetch-sync.md; the chart's x-axis
-        // carries the same key, so the tile and the last bar read alike.
-        label={current ? `${current.period} revenue` : 'This month revenue'}
+        // The bucket key from GET /revenue, through the one date seam (§9 rule 6).
+        // The chart's x-axis renders the same keys the same way, so the tile and the
+        // last bar still read alike.
+        label={current ? `${formatMonth(current.period, settings)} revenue` : 'This month revenue'}
         // A monthly flow, so this one is the classic this-month-vs-last-month.
         delta={flowDelta(current?.revenue, previous?.revenue)}
       >

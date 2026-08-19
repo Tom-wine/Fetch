@@ -68,6 +68,42 @@ export function formatDateLong(iso: string | Date, s: LocaleSettings): string {
   ).format(toDate(iso))
 }
 
+/**
+ * `Aug 2026` / `August 2026`, from the API's `YYYY-MM` month bucket.
+ *
+ * A month bucket is a CALENDAR LABEL, not an instant, so this is the one formatter
+ * here that ignores `settings.timeZone` and reads the key in UTC. The bucket was cut
+ * in UTC (`getUTCMonth` in the seed, and any real backend grouping by month does the
+ * same), and `2026-08` at midnight UTC is still July in New York — honouring the
+ * user's zone would relabel a whole column of the revenue chart by one month. The
+ * locale still applies: it decides the language and the word order.
+ *
+ * Anything that is not `YYYY-MM` comes back verbatim. A bad key should read as the
+ * unformatted thing it is rather than as `Invalid Date` or a thrown render.
+ */
+export function formatMonth(
+  period: string,
+  s: LocaleSettings,
+  style: 'short' | 'long' = 'short',
+): string {
+  const match = /^(\d{4})-(\d{2})$/.exec(period)
+  if (!match) return period
+
+  const year = Number(match[1])
+  const month = Number(match[2])
+  if (month < 1 || month > 12) return period
+
+  return fmt(
+    `m|${style}|${s.locale}`,
+    () =>
+      new Intl.DateTimeFormat(s.locale, {
+        timeZone: 'UTC',
+        month: style,
+        year: 'numeric',
+      }),
+  ).format(new Date(Date.UTC(year, month - 1, 1)))
+}
+
 const MINUTE = 60_000
 const HOUR = 60 * MINUTE
 const DAY = 24 * HOUR
