@@ -161,6 +161,15 @@ export interface RunEvent {
 }
 ```
 
+```ts
+export interface ImapAccount {
+  id: string; email: string
+  host: string; port: number
+  status: 'ok' | 'unreachable' | 'auth_failed'
+  lastCheckedAt?: string
+}
+```
+
 **Les comptes ballot sont des `Account` ordinaires**, restreints aux sept clubs. Pas de second modèle :
 le pool réutilise `/accounts`, ce qui donne gratuitement le masquage des mots de passe, le reveal
 audité, les proxies et l'import CSV de la Part 5.
@@ -184,6 +193,8 @@ Mêmes conventions qu'en §6 du plan : enveloppe `{data, meta, error}`, minor un
 | GET | `/ballots/runs/:id/tasks` | tâches, paginées + filtrables (`status`, `clubId`, `q`) |
 | GET | `/ballots/runs/:id/events?since=<seq>&limit=200` | **flux append-only par curseur** |
 | GET | `/ballots/runs/:id/export` | CSV des résultats |
+| GET | `/ballots/imap` | boîtes IMAP disponibles + leur santé — requis pour que le champ `IMAP account ▾` de §B5.2 soit satisfiable et que le blocage de §B5.4 puisse se déclencher |
+| GET | `/ballots/accounts/results` | dernier run + dernier résultat par compte, en une requête — la jointure appartient au serveur, pas au composant |
 
 ### Le flux d'événements
 
@@ -332,6 +343,10 @@ d'horloge**, sinon aucun des états live n'est réellement construit.
 3. **Aucun message d'erreur préfixé `//`** (§3.3b) : un run qui échoue doit se lire en clair.
    `RATE_LIMITED` est un code, pas une explication — chaque code a une phrase lisible à côté.
 4. **Aucun intervalle de poll ne survit à un statut terminal**, ni au démontage de l'écran.
+4b. **Un panneau large et un dialogue étroit sont deux composants, pas un `lg:hidden`.** Un dialogue
+   Radix masqué en CSS monte quand même son overlay, piège le focus et verrouille le scroll — la mise
+   en page large se retrouve derrière une modale invisible. Utiliser `lib/use-media-query.ts` et n'en
+   monter qu'un seul.
 5. **Le curseur d'événements ne recule jamais.** Pas de déduplication côté client : si le client doit
    dédupliquer, c'est que le serveur a menti.
 6. **Toute action destructive ou irréversible nomme son ampleur** : « Stop this run? 47 tasks are

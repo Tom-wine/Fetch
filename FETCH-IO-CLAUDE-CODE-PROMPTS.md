@@ -214,6 +214,17 @@ FINISH BY PUSHING — commit per numbered step, push main, report the SHAs.
 Read FETCH-IO-BALLOTS-SPEC.md §B5.5, §B4 (cadence de polling) and §B7. This is the screen the operator
 watches for twenty minutes — it is to this module what the fixture-detail screen was to the last one.
 
+REPO STATE — Part 13 shipped the engine, the pool, the profiles, the history and the launcher.
+Three things exist that §B4 did not originally list; the spec has been updated and you must document
+them, not re-invent them:
+- `GET /ballots/imap` + a thin `ImapAccount` — without it §B5.2's required IMAP field was unsatisfiable
+  and §B5.4's block could never fire. Two mailboxes are seeded, one healthy and one unreachable.
+- `GET /ballots/accounts/results` — the last-run / last-result join for the pool table, done once on
+  the server instead of one request per run in the component.
+- `lib/use-media-query.ts` — a Radix dialog hidden with `lg:hidden` still mounts its overlay, traps
+  focus and locks scroll. Wide panel and narrow dialog are two components; mount one. Reuse this hook
+  for the monitor's two-pane / stacked switch rather than doing it in CSS.
+
 Build /ballots/run/[id].
 
 - Header per §B5.5: breadcrumb `Ballots / run_7f3a…`, h1 = the run label, RUN_ID in mono with a copy
