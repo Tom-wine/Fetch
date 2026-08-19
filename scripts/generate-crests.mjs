@@ -27,6 +27,7 @@ const CLUBS = [
   ['everton', 'Everton', '#003399'],
   ['fulham', 'Fulham', '#1B1B1B'],
   ['ipswich', 'Ipswich', '#3A64A3'],
+  ['leeds', 'Leeds', '#1D428A'],
   ['leicester', 'Leicester', '#003090'],
   ['liverpool', 'Liverpool', '#C8102E'],
   ['man-city', 'Man City', '#6CABDD'],

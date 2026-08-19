@@ -29,6 +29,7 @@ export const clubIdSchema = z.enum([
   'everton',
   'fulham',
   'ipswich',
+  'leeds',
   'leicester',
   'liverpool',
   'man-city',
@@ -348,6 +349,167 @@ export const accountPatchSchema = accountCreateSchema.partial().extend({
 })
 
 export type AccountPatch = z.infer<typeof accountPatchSchema>
+
+/* ------------------------------------------------------------------ ballots */
+
+export const ballotClubIdSchema = z.enum([
+  'arsenal',
+  'chelsea',
+  'liverpool',
+  'newcastle',
+  'leeds',
+  'nottingham-forest',
+  'everton',
+])
+
+export const runStatusSchema = z.enum([
+  'QUEUED',
+  'RUNNING',
+  'PAUSED',
+  'COMPLETED',
+  'STOPPED',
+  'FAILED',
+])
+
+export const taskStatusSchema = z.enum([
+  'QUEUED',
+  'RUNNING',
+  'RETRYING',
+  'SUCCESS',
+  'FAILED',
+  'NEEDS_OTP',
+  'SKIPPED',
+])
+
+export const eventLevelSchema = z.enum(['info', 'success', 'warn', 'error'])
+
+export const otpSourceSchema = z.enum(['imap', 'manual', 'none'])
+
+export const ballotProfileSchema = z.object({
+  id: z.string(),
+  name: z.string().min(1),
+  delayMinMs: z.int().nonnegative(),
+  delayMaxMs: z.int().nonnegative(),
+  concurrency: z.int().min(1).max(50),
+  maxRetries: z.int().min(0).max(5),
+  timeoutMs: z.int().positive(),
+  proxyGroupId: z.string().optional(),
+  otpSource: otpSourceSchema,
+  imapId: z.string().optional(),
+  stopOnRateLimit: z.boolean(),
+  webhookUrl: z.string().optional(),
+  notes: z.string().optional(),
+  createdAt: isoDate,
+  updatedAt: isoDate,
+})
+
+/**
+ * The writable half of a profile. `delayMin <= delayMax` and the IMAP requirement are
+ * checked here rather than in the form, so the rule holds for any caller — the API is
+ * the boundary, not the dialog.
+ */
+export const ballotProfileInputSchema = z
+  .object({
+    name: z.string().min(1),
+    delayMinMs: z.int().nonnegative(),
+    delayMaxMs: z.int().nonnegative(),
+    concurrency: z.int().min(1).max(50),
+    maxRetries: z.int().min(0).max(5),
+    timeoutMs: z.int().positive(),
+    proxyGroupId: z.string().optional(),
+    otpSource: otpSourceSchema,
+    imapId: z.string().optional(),
+    stopOnRateLimit: z.boolean(),
+    webhookUrl: z.union([z.url(), z.literal('')]).optional(),
+    notes: z.string().optional(),
+  })
+  .refine((v) => v.delayMinMs <= v.delayMaxMs, {
+    message: 'The minimum delay cannot be longer than the maximum.',
+    path: ['delayMinMs'],
+  })
+  .refine((v) => v.otpSource !== 'imap' || Boolean(v.imapId), {
+    message: 'Choose the IMAP account that receives the codes.',
+    path: ['imapId'],
+  })
+
+export type BallotProfileInput = z.infer<typeof ballotProfileInputSchema>
+
+export const ballotRunSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  clubIds: z.array(ballotClubIdSchema),
+  profileId: z.string(),
+  profileName: z.string(),
+  status: runStatusSchema,
+  counts: z.object({
+    total: z.int().nonnegative(),
+    queued: z.int().nonnegative(),
+    running: z.int().nonnegative(),
+    success: z.int().nonnegative(),
+    failed: z.int().nonnegative(),
+    needsOtp: z.int().nonnegative(),
+    skipped: z.int().nonnegative(),
+  }),
+  startedAt: isoDate,
+  finishedAt: isoDate.optional(),
+  ratePerMin: z.number().nonnegative(),
+  etaSeconds: z.int().nonnegative().optional(),
+  lastEventSeq: z.int().nonnegative(),
+})
+
+export const ballotTaskSchema = z.object({
+  id: z.string(),
+  runId: z.string(),
+  accountId: z.string(),
+  accountEmail: z.string(),
+  clubId: ballotClubIdSchema,
+  status: taskStatusSchema,
+  attempt: z.int().nonnegative(),
+  maxAttempts: z.int().nonnegative(),
+  lastHttpStatus: z.int().optional(),
+  lastMessage: z.string().optional(),
+  proxyLabel: z.string().optional(),
+  durationMs: z.int().nonnegative().optional(),
+  entryRef: z.string().optional(),
+  startedAt: isoDate.optional(),
+  updatedAt: isoDate,
+})
+
+export const runEventSchema = z.object({
+  id: z.string(),
+  seq: z.int().nonnegative(),
+  runId: z.string(),
+  taskId: z.string().optional(),
+  at: isoDate,
+  level: eventLevelSchema,
+  code: z.string(),
+  message: z.string(),
+  httpStatus: z.int().optional(),
+})
+
+/** `POST /ballots/runs`. The account set is resolved server-side from these. */
+export const runCreateSchema = z.object({
+  clubIds: z.array(ballotClubIdSchema).min(1),
+  profileId: z.string().min(1),
+  /** Explicit account ids. Absent means every eligible account in `clubIds`. */
+  accountIds: z.array(z.string()).optional(),
+  label: z.string().optional(),
+})
+
+export type RunCreate = z.infer<typeof runCreateSchema>
+
+/**
+ * `POST /ballots/accounts/paste`. The raw block is sent ONCE and never stored: §B7
+ * rule 2 keeps passwords out of localStorage, the URL, the console and every event
+ * payload, so the client clears the field the moment this resolves.
+ */
+export const accountPasteSchema = z.object({
+  club: ballotClubIdSchema,
+  /** One `email:password` per line. `,` and `;` are accepted too. */
+  text: z.string().min(1),
+})
+
+export type AccountPaste = z.infer<typeof accountPasteSchema>
 
 export const idsSchema = z.object({ ids: z.array(z.string()).min(1) })
 

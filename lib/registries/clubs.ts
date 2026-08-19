@@ -54,6 +54,9 @@ export const CLUBS: Club[] = [
   club('everton', 'Everton', 'Everton', 'Hill Dickinson Stadium', 'Liverpool', '#003399'),
   club('fulham', 'Fulham', 'Fulham', 'Craven Cottage', 'London', '#1B1B1B'),
   club('ipswich', 'Ipswich Town', 'Ipswich', 'Portman Road', 'Ipswich', '#3A64A3'),
+  // Not in the 2025-26 set this registry was seeded from. Added for the ballots module:
+  // four of the seven ballot clubs were already here, Leeds was the one that was not.
+  club('leeds', 'Leeds United', 'Leeds', 'Elland Road', 'Leeds', '#1D428A'),
   club('leicester', 'Leicester City', 'Leicester', 'King Power Stadium', 'Leicester', '#003090'),
   club('liverpool', 'Liverpool', 'Liverpool', 'Anfield', 'Liverpool', '#C8102E'),
   club('man-city', 'Manchester City', 'Man City', 'Etihad Stadium', 'Manchester', '#6CABDD'),

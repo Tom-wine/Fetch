@@ -20,6 +20,7 @@ export type ClubId =
   | 'everton'
   | 'fulham'
   | 'ipswich'
+  | 'leeds'
   | 'leicester'
   | 'liverpool'
   | 'man-city'
@@ -166,6 +167,132 @@ export interface KpiSet {
   accountsNeedAction: number
   /** Minor units. */
   valueAtRisk: number
+}
+
+
+/* ------------------------------------------------------------------ ballots */
+
+/**
+ * The seven clubs the ballot module supports. A SUBSET of ClubId, not a parallel
+ * union: a ballot account is an ordinary Account whose club happens to be one of
+ * these, which is what gives the pool password masking, the audited reveal, proxies
+ * and the Part 5 CSV import for free.
+ */
+export type BallotClubId =
+  | 'arsenal'
+  | 'chelsea'
+  | 'liverpool'
+  | 'newcastle'
+  | 'leeds'
+  | 'nottingham-forest'
+  | 'everton'
+
+export const BALLOT_CLUB_IDS: BallotClubId[] = [
+  'arsenal',
+  'chelsea',
+  'liverpool',
+  'newcastle',
+  'leeds',
+  'nottingham-forest',
+  'everton',
+]
+
+export type RunStatus = 'QUEUED' | 'RUNNING' | 'PAUSED' | 'COMPLETED' | 'STOPPED' | 'FAILED'
+
+export type TaskStatus =
+  | 'QUEUED'
+  | 'RUNNING'
+  | 'RETRYING'
+  | 'SUCCESS'
+  | 'FAILED'
+  | 'NEEDS_OTP'
+  | 'SKIPPED'
+
+export type EventLevel = 'info' | 'success' | 'warn' | 'error'
+
+export interface BallotProfile {
+  id: string
+  name: string
+  /** Pause between two tasks on the same worker. */
+  delayMinMs: number
+  /** Drawn uniformly from [delayMinMs, delayMaxMs]. */
+  delayMaxMs: number
+  /** Simultaneous workers, 1–50. */
+  concurrency: number
+  /** 0–5. */
+  maxRetries: number
+  timeoutMs: number
+  /** Absent means no proxy. */
+  proxyGroupId?: string
+  otpSource: 'imap' | 'manual' | 'none'
+  /** Required when otpSource is `imap`. */
+  imapId?: string
+  /** 429 stops the run instead of carrying on. */
+  stopOnRateLimit: boolean
+  webhookUrl?: string
+  notes?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface BallotRun {
+  id: string
+  label: string
+  clubIds: BallotClubId[]
+  profileId: string
+  /** Denormalised: a profile can be renamed after the run. */
+  profileName: string
+  status: RunStatus
+  counts: {
+    total: number
+    queued: number
+    running: number
+    success: number
+    failed: number
+    needsOtp: number
+    skipped: number
+  }
+  startedAt: string
+  finishedAt?: string
+  ratePerMin: number
+  etaSeconds?: number
+  /** Cursor into the event stream. */
+  lastEventSeq: number
+}
+
+export interface BallotTask {
+  id: string
+  runId: string
+  accountId: string
+  /** Denormalised so the table does not need a second request. */
+  accountEmail: string
+  clubId: BallotClubId
+  status: TaskStatus
+  attempt: number
+  maxAttempts: number
+  lastHttpStatus?: number
+  /** A short readable sentence, never a stack trace. */
+  lastMessage?: string
+  proxyLabel?: string
+  durationMs?: number
+  /** The club's entry reference, on success. */
+  entryRef?: string
+  startedAt?: string
+  updatedAt: string
+}
+
+export interface RunEvent {
+  id: string
+  /** Strictly increasing per run — this is the cursor. */
+  seq: number
+  runId: string
+  taskId?: string
+  at: string
+  level: EventLevel
+  /** SUBMITTED · OTP_REQUIRED · RATE_LIMITED · PROXY_DEAD · ENTRY_CONFIRMED … */
+  code: string
+  message: string
+  httpStatus?: number
 }
 
 /* --------------------------------------------------------------------------
