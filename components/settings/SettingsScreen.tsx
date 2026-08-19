@@ -1,6 +1,7 @@
 'use client'
 
 import { snake } from '@/lib/format/text'
+import { useOverflowFade } from '@/lib/use-overflow-fade'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ApiTab } from './ApiTab'
 import { GeneralTab } from './GeneralTab'
@@ -18,10 +19,15 @@ import { SETTINGS_TABS, useSettingsUrlState, type SettingsTabId } from './url-st
  */
 export function SettingsScreen() {
   const { tab, setTab } = useSettingsUrlState()
+  const fade = useOverflowFade<HTMLDivElement>()
 
   return (
     <Tabs value={tab} onValueChange={(value) => setTab(value as SettingsTabId)} className="w-full">
-      <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-none border-b border-border bg-transparent p-0 text-muted">
+      <TabsList
+        ref={fade.ref}
+        style={fade.style}
+        className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-none border-b border-border bg-transparent p-0 text-muted"
+      >
         {SETTINGS_TABS.map(({ id, label }) => (
           <TabsTrigger
             key={id}

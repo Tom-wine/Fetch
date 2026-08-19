@@ -3,6 +3,7 @@
 import * as React from 'react'
 
 import { snake } from '@/lib/format/text'
+import { useOverflowFade } from '@/lib/use-overflow-fade'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { AccountsTab } from './AccountsTab'
 import { ProxiesTab } from './ProxiesTab'
@@ -23,6 +24,7 @@ import { ACCOUNT_TABS, useAccountsUrlState, type AccountsTabId } from './url-sta
  * makes an on-sale morning slower.
  */
 export function AccountsScreen() {
+  const fade = useOverflowFade<HTMLDivElement>()
   const { tab, set } = useAccountsUrlState()
 
   return (
@@ -31,7 +33,11 @@ export function AccountsScreen() {
       onValueChange={(value) => set({ tab: value as AccountsTabId })}
       className="w-full"
     >
-      <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-none border-b border-border bg-transparent p-0 text-muted">
+      <TabsList
+        ref={fade.ref}
+        style={fade.style}
+        className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-none border-b border-border bg-transparent p-0 text-muted"
+      >
         {ACCOUNT_TABS.map(({ id, label }) => (
           <TabsTrigger
             key={id}

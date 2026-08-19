@@ -4,6 +4,7 @@
 import * as React from 'react'
 
 import { cn } from '@/lib/utils'
+import { useOverflowFade } from '@/lib/use-overflow-fade'
 import { getClub } from '@/lib/registries/clubs'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { ClubId } from '@/lib/types'
@@ -20,6 +21,9 @@ import type { ClubId } from '@/lib/types'
  *
  * Clubs with no accounts are omitted rather than shown as zero: a tab that filters to
  * nothing is a dead control.
+ *
+ * The scrolled edge is faded rather than cut, so the strip says it continues — see
+ * `useOverflowFade`.
  */
 export function ClubTabs({
   counts,
@@ -36,6 +40,8 @@ export function ClubTabs({
   loading?: boolean
   className?: string
 }) {
+  const fade = useOverflowFade<HTMLDivElement>()
+
   const ranked = React.useMemo(
     () =>
       (Object.entries(counts) as Array<[ClubId, number]>)
@@ -56,6 +62,8 @@ export function ClubTabs({
 
   return (
     <div
+      ref={fade.ref}
+      style={fade.style}
       role="tablist"
       aria-label="Filter by club"
       // -mx/px pair so the scrolled edge bleeds to the page gutter instead of

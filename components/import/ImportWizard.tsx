@@ -5,6 +5,7 @@ import { FileSpreadsheet, UserPlus } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import { snake } from '@/lib/format/text'
+import { useOverflowFade } from '@/lib/use-overflow-fade'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ConfirmDialog } from '@/components/domain/ConfirmDialog'
 import type { Account } from '@/lib/types'
@@ -45,6 +46,7 @@ export function ImportWizard({
   className?: string
 }) {
   const [tab, setTab] = React.useState<ImportTab>(account ? 'manual' : defaultTab)
+  const fade = useOverflowFade<HTMLDivElement>()
 
   return (
     <Tabs
@@ -52,7 +54,11 @@ export function ImportWizard({
       onValueChange={(value) => setTab(value as ImportTab)}
       className={cn('flex min-h-0 flex-1 flex-col', className)}
     >
-      <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-none border-b border-border bg-transparent px-6 py-0 text-muted">
+      <TabsList
+        ref={fade.ref}
+        style={fade.style}
+        className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-none border-b border-border bg-transparent px-6 py-0 text-muted"
+      >
         {(
           [
             { id: 'manual', label: 'Manual entry', icon: UserPlus },

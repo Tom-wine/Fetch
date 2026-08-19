@@ -119,10 +119,28 @@ export function ticketColumns({
 }
 
 /**
- * `LEVEL` ships hidden. Mono runs ~12% wider than a proportional face, and this table
- * has to share 1280px with a 36% context panel, so nine columns plus a checkbox do
- * not fit (§9 rule 3). The level is the least load-bearing of them — a block name
- * already tells an operator which tier they are looking at — and it is one click away
- * in the view options.
+ * What ships visible: `BLOCK`, `ROW`, `SEAT`, `PRICE`, `STATUS`. Where the seat is,
+ * what it cost, and what state it is in.
+ *
+ * §9 rule 3 is not "hide the least useful column", it is "the DEFAULT SET FITS". At
+ * 1280px this table shares the width with a 36% context panel and gets 604px; the nine
+ * columns want 912px, and mono runs ~12% wider than a proportional face, so five of
+ * them were being cut off the right edge — `VISIBILITY` rendered as `V…` and a status
+ * chip was sectioned by the card border. That is the Tikey defect this rebuild set out
+ * to fix, reproduced.
+ *
+ * So four are hidden by default, and none of them is a state or an identity:
+ *
+ *   · `LEVEL` — a block name already says which tier.
+ *   · `FACE`  — reference, not the operative number; `PRICE` is.
+ *   · `ACCOUNT` — the panel names the account for the selected seat, and the toolbar
+ *      filters by it. It is the one real casualty of a 604px pane.
+ *   · `VISIBILITY` — a state you set occasionally rather than read constantly, and
+ *      still settable on a selection through `Actions`.
+ *
+ * Measured, not guessed: select 48 · BLOCK 178 · ROW 54 · SEAT 62 · PRICE 87 · STATUS
+ * 95 = 524px, inside 604px at 1280 and 715px at 1440 with room for a longer block name
+ * than any fixture in the seed. All four are one click away in `VIEW`, which is what
+ * the control is for.
  */
-export const INITIALLY_HIDDEN = ['level']
+export const INITIALLY_HIDDEN = ['level', 'face', 'account', 'visibility']

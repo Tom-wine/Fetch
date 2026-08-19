@@ -5,6 +5,7 @@ import type { LucideIcon } from 'lucide-react'
 import { Banknote, Terminal, UserRound } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
+import { useOverflowFade } from '@/lib/use-overflow-fade'
 import { ErrorState } from '@/components/data/states'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
@@ -52,6 +53,7 @@ const KIND_ICON: Record<ActivityKind, LucideIcon> = {
 const PAGE_SIZE = 4
 
 export function ActivityCard({ className }: { className?: string }) {
+  const fade = useOverflowFade<HTMLDivElement>()
   const [source, setSource] = React.useState<SourceId>('fetch')
 
   const fail = useFailParam()
@@ -74,6 +76,8 @@ export function ActivityCard({ className }: { className?: string }) {
         // always on something has no empty state, so that click is a no-op.
         onValueChange={(value) => value && setSource(value as SourceId)}
         aria-label="Activity source"
+        ref={fade.ref}
+        style={fade.style}
         className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-md bg-surface-raised p-1"
       >
         {SOURCES.map((option) => (

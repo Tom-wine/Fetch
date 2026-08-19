@@ -3,6 +3,7 @@
 import * as React from 'react'
 
 import { snake } from '@/lib/format/text'
+import { useOverflowFade } from '@/lib/use-overflow-fade'
 import { PageHeader } from '@/components/shell/PageHeader'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAccounts } from '@/lib/api/hooks/useAccounts'
@@ -31,6 +32,7 @@ import { BALLOT_TABS, useBallotsUrlState, type BallotsTabId } from './url-state'
  * also raise.
  */
 export function BallotsScreen() {
+  const fade = useOverflowFade<HTMLDivElement>()
   const state = useBallotsUrlState()
 
   /** Non-null while the launcher is open. The array is the pre-chosen selection. */
@@ -54,7 +56,11 @@ export function BallotsScreen() {
         onValueChange={(value) => state.set({ tab: value as BallotsTabId })}
         className="w-full"
       >
-        <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-none border-b border-border bg-transparent p-0 text-muted">
+        <TabsList
+          ref={fade.ref}
+          style={fade.style}
+          className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-none border-b border-border bg-transparent p-0 text-muted"
+        >
           {BALLOT_TABS.map(({ id, label }) => (
             <TabsTrigger
               key={id}
