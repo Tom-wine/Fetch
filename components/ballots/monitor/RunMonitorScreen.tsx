@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { Hourglass, SearchX } from 'lucide-react'
 
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -50,7 +50,11 @@ import { sortFieldForColumn, useMonitorUrlState } from './url-state'
  * Polling lives entirely in lib/api/hooks/useRunMonitor.ts. Nothing on this screen owns
  * a timer except the header's elapsed clock, which stops when the run does.
  */
-export function RunMonitorScreen({ runId }: { runId: string }) {
+export function RunMonitorScreen() {
+  // Read here rather than awaited in the page: see the note in that route file. An
+  // `await params` in the page suspends the server render and renumbers every `useId`
+  // above this screen; `useParams` is synchronous on both renders.
+  const { id: runId } = useParams<{ id: string }>()
   const router = useRouter()
   const url = useMonitorUrlState()
   const wide = useMediaQuery(LG)

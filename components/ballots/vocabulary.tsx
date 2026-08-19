@@ -137,8 +137,15 @@ export function PulseDot({ className }: { className?: string }) {
  */
 export function RunProgress({
   counts,
+  label = 'Run progress',
   className,
 }: {
+  /**
+   * The accessible name. A `role="progressbar"` without one is an unnamed control —
+   * a screen reader announces a percentage with nothing to attach it to. In a table
+   * of runs each bar names its own run, so they can be told apart in a rotor list.
+   */
+  label?: string
   counts: {
     total: number
     queued: number
@@ -165,6 +172,7 @@ export function RunProgress({
     <div
       className={cn('flex h-1.5 w-full overflow-hidden rounded-full bg-border', className)}
       role="progressbar"
+      aria-label={label}
       aria-valuemin={0}
       aria-valuemax={counts.total}
       aria-valuenow={done}

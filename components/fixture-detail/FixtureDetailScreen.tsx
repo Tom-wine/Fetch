@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 import Link from 'next/link'
+import { useParams } from 'next/navigation'
 import { Armchair, SearchX } from 'lucide-react'
 
 import { DataTable, type SortSpec } from '@/components/data/DataTable'
@@ -39,7 +40,11 @@ import { useFixtureDetailUrlState } from './url-state'
  * Everything they are DOING — the selection — lives in React, because it changes on
  * every click and a history entry per click would bury the page they came from.
  */
-export function FixtureDetailScreen({ fixtureId }: { fixtureId: string }) {
+export function FixtureDetailScreen() {
+  // Read here rather than awaited in the page: see the note in that route file. An
+  // `await params` in the page suspends the server render and renumbers every
+  // `useId` above this screen; `useParams` is synchronous on both renders.
+  const { id: fixtureId } = useParams<{ id: string }>()
   const url = useFixtureDetailUrlState(fixtureId)
 
   const fixtureQuery = useFixture(fixtureId)

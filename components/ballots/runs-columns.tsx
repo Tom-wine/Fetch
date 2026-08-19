@@ -95,7 +95,7 @@ export function makeRunColumns({
       header: 'progress',
       cell: ({ row }) => (
         <div className="w-[120px] min-w-[80px]">
-          <RunProgress counts={row.original.counts} />
+          <RunProgress counts={row.original.counts} label={`Progress of ${row.original.label}`} />
         </div>
       ),
     },
