@@ -44,3 +44,10 @@ next-env.d.ts
 # local artefacts
 _to_delete/
 mitm_mcp_traffic.db
+
+# Seat sheets. `Actions -> Download PDF` writes to wherever the browser was pointed,
+# which when testing is the repo root.
+*.pdf
+
+# Cross-session scratchpad. Lives outside the repo; ignored in case it ever moves in.
+fetch-sync.md
