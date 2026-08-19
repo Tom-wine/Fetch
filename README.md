@@ -16,9 +16,56 @@ The app answers four questions, in order of how often they get asked:
 | What do I own, per fixture?                           | `/mytickets` → `/mytickets/fixture/[id]`   |
 | What is live on the market and at what price?         | `/mylistings`                              |
 
+**What works today:** all six screens are built and driven by a seeded mock API — accounts with
+bulk CSV import, per-fixture seat inventory with the full actions menu, live listings with inline
+repricing, a dashboard whose figures agree with each other, settings that drive every date and price
+in the app, and a ⌘K palette over all of it.
+
 **This repo is frontend only.** There is no backend. Every read and write goes through a typed,
 Zod-validated API client whose base URL is a single environment variable, so a real backend can be
-attached without touching a component.
+attached without touching a component — see
+**[`docs/BACKEND-HANDOFF.md`](./docs/BACKEND-HANDOFF.md)**.
+
+## The six screens
+
+### `/dashboard` — did anything sell, and what am I exposed to
+Three KPI tiles that agree with each other, account health at a glance, twelve months of revenue,
+and the activity feed.
+
+![Dashboard](./docs/screenshots/dashboard.jpg)
+
+### `/accounts` — are my accounts healthy
+Sixty-four memberships across twenty clubs, filterable by club, status, membership type and tag,
+with masked credentials and per-row actions.
+
+![Accounts](./docs/screenshots/accounts.jpg)
+
+### `/accounts/import` — manual entry and bulk CSV
+A four-step wizard: upload, map columns, validate and fix in place, import. Fuzzy club matching,
+a downloadable error report, and passwords that never touch storage.
+
+![Import accounts](./docs/screenshots/import.jpg)
+
+### `/mytickets` — what do I own, per fixture
+Every fixture you hold seats for, with listed / sold / transferred counts and the value still at
+risk on each one.
+
+![My tickets](./docs/screenshots/mytickets.jpg)
+
+### `/mytickets/fixture/[id]` — the seat-level screen
+Two panes: every seat on the left, and whatever is selected explained on the right. The actions
+menu groups, lists, associates, edits, transfers, resells at face value and shares.
+
+![Fixture detail](./docs/screenshots/fixture-detail.jpg)
+
+### `/mylistings` — what is live and at what price
+Every listing across every marketplace, with inline price editing, bulk repricing and a display
+currency that converts the whole column.
+
+![My listings](./docs/screenshots/mylistings.jpg)
+
+Plus `/settings` (four tabs, and the one place preferences are written), five honest "coming soon"
+pages, and `/kitchen-sink` — every component in every variant, in both themes.
 
 ## Running it
 
@@ -39,7 +86,8 @@ Other scripts:
 | `npm run typecheck`    | `tsc --noEmit`                                |
 | `npm run format`       | Prettier write                                |
 | `npm run format:check` | Prettier check, no writes                     |
-| `npm run check`        | `lint` + `typecheck` — the quality gate       |
+| `npm run check`        | `lint` + `typecheck` + `check:contrast` — the quality gate |
+| `npm run check:contrast` | WCAG contrast gate over the tokens in both themes |
 | `npm run ui -- <name>` | add a shadcn/ui primitive into `components/ui` |
 
 ## Environment
@@ -64,4 +112,9 @@ Dark-first theme, with a fully correct light theme.
 
 Everything — brand tokens, data model, API contract, component inventory, screen specs, acceptance
 criteria and the 12-part build order — lives in **[`FETCH-IO-BUILD-PLAN.md`](./FETCH-IO-BUILD-PLAN.md)**.
-Read it before adding anything. This repo is currently at **Part 0: repo scaffold**.
+Read it before adding anything. All twelve parts are built; §11's acceptance checklist is green.
+
+Also in `docs/`: [`BACKEND-HANDOFF.md`](./docs/BACKEND-HANDOFF.md) (what a real backend must get
+right), [`API-CONTRACT.md`](./docs/API-CONTRACT.md) and [`openapi.json`](./docs/openapi.json) (the
+wire format, generated from the Zod schemas), and
+[`DESIGN-TOKENS.md`](./docs/DESIGN-TOKENS.md) (the palette and its contrast ledger).
