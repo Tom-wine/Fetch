@@ -1,4 +1,12 @@
-import type { Account, AppNotification, BallotProfile, Fixture, Proxy, Ticket } from '@/lib/types'
+import type {
+  Account,
+  AppNotification,
+  BallotProfile,
+  Fixture,
+  ImapAccount,
+  Proxy,
+  Ticket,
+} from '@/lib/types'
 import { buildTasks, type RunState } from './ballot-engine'
 import * as seed from './seed'
 
@@ -21,6 +29,7 @@ interface Store {
   notifications: AppNotification[]
   passwords: Map<string, string>
   ballotProfiles: BallotProfile[]
+  imapAccounts: ImapAccount[]
   /**
    * Keyed by run id. The engine mutates these in place on every read, which is what
    * makes a run advance without a timer -- see lib/mock/ballot-engine.ts.
@@ -41,6 +50,7 @@ function create(): Store {
     notifications: seed.notifications.map((n) => ({ ...n })),
     passwords: new Map(seed.passwords),
     ballotProfiles: seed.ballotProfiles.map((p) => ({ ...p })),
+    imapAccounts: seed.imapAccounts.map((a) => ({ ...a })),
     ballotRuns: seedRuns(),
     sequence: 1000,
   }

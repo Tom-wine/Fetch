@@ -442,6 +442,14 @@ export const ballotProfileInputSchema = z
 
 export type BallotProfileInput = z.infer<typeof ballotProfileInputSchema>
 
+export const imapAccountSchema = z.object({
+  id: z.string(),
+  email: z.string(),
+  host: z.string(),
+  status: z.enum(['ok', 'error']),
+  lastCheckedAt: isoDate.optional(),
+})
+
 export const ballotRunSchema = z.object({
   id: z.string(),
   label: z.string(),
@@ -518,6 +526,23 @@ export const accountPasteSchema = z.object({
 })
 
 export type AccountPaste = z.infer<typeof accountPasteSchema>
+
+/**
+ * `GET /ballots/accounts/results` — one row per account that has been attempted at
+ * least once, for the pool table's `LAST_RUN` and `LAST_RESULT` columns.
+ */
+export const accountResultSchema = z.object({
+  accountId: z.string(),
+  runId: z.string(),
+  runLabel: z.string(),
+  at: isoDate,
+  status: taskStatusSchema,
+  httpStatus: z.int().optional(),
+  message: z.string().optional(),
+  entryRef: z.string().optional(),
+})
+
+export type AccountResult = z.infer<typeof accountResultSchema>
 
 export const idsSchema = z.object({ ids: z.array(z.string()).min(1) })
 

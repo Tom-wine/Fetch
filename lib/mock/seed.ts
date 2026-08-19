@@ -13,6 +13,7 @@ import type {
   Competition,
   Currency,
   Fixture,
+  ImapAccount,
   MembershipType,
   Proxy,
   ProviderId,
@@ -663,6 +664,28 @@ export const notifications: AppNotification[] = NOTIFICATION_TEMPLATES.map((t, i
 })).sort((a, b) => b.at.localeCompare(a.at))
 
 /* ------------------------------------------------------------------ ballots */
+
+/**
+ * The mailboxes a profile can read two-factor codes from. Two: one working, one that
+ * stopped answering, because a profile pointed at a broken mailbox is a real state and
+ * the launcher has to be able to warn about it.
+ */
+export const imapAccounts: ImapAccount[] = [
+  {
+    id: 'acc_imap_1',
+    email: 'ballots@fetch.io',
+    host: 'imap.fastmail.com',
+    status: 'ok',
+    lastCheckedAt: ago(2 * HOUR),
+  },
+  {
+    id: 'acc_imap_2',
+    email: 'codes@fetch.io',
+    host: 'imap.gmail.com',
+    status: 'error',
+    lastCheckedAt: ago(6 * DAY),
+  },
+]
 
 /**
  * One `default` profile ships and cannot be deleted (§B5.2), plus two the operator

@@ -1,6 +1,6 @@
 'use client'
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-query'
 import type { ApiError, ApiResult } from '../client'
 import {
   ballotsApi,
@@ -9,10 +9,11 @@ import {
   type RunFilters,
   type TaskFilters,
 } from '../endpoints'
-import type { BallotProfileInput, RunCreate } from '../schemas'
+import type { AccountResult, BallotProfileInput, RunCreate } from '../schemas'
 import type {
   BallotClubId,
   BallotProfile,
+  ImapAccount,
   BallotRun,
   BallotTask,
   RunEvent,
@@ -29,6 +30,18 @@ import { removeFromList, useOptimisticMutation } from './useOptimisticMutation'
  * property of the screen watching a run, not of the run itself. A `refetchInterval`
  * baked in here would tick on /accounts too, for a run nobody is looking at.
  */
+
+/**
+ * The mailboxes a profile can read codes from. Cached hard: mailboxes are configured
+ * once and this list is read by the profile form and the launcher on every open.
+ */
+export function useImapAccounts() {
+  return useQuery<ApiResult<ImapAccount[]>, ApiError>({
+    queryKey: qk.ballots.imap(),
+    queryFn: () => ballotsApi.imap(),
+    staleTime: 5 * 60_000,
+  })
+}
 
 /* ------------------------------------------------------------------ profiles */
 
@@ -53,16 +66,15 @@ export function useCreateBallotProfile() {
 }
 
 export function useUpdateBallotProfile() {
-  return useOptimisticMutation<
-    { id: string; input: BallotProfileInput },
-    ApiResult<BallotProfile>
-  >({
-    mutationFn: ({ id, input }) => ballotsApi.updateProfile(id, input),
-    // Runs denormalise `profileName`, so an existing run's label does not change —
-    // but the launcher reads the profile's settings live, so its cache must clear too.
-    keys: () => [qk.ballots.profiles.all, qk.ballots.runs.lists()],
-    successMessage: (result) => `${result.data.name} updated.`,
-  })
+  return useOptimisticMutation<{ id: string; input: BallotProfileInput }, ApiResult<BallotProfile>>(
+    {
+      mutationFn: ({ id, input }) => ballotsApi.updateProfile(id, input),
+      // Runs denormalise `profileName`, so an existing run's label does not change —
+      // but the launcher reads the profile's settings live, so its cache must clear too.
+      keys: () => [qk.ballots.profiles.all, qk.ballots.runs.lists()],
+      successMessage: (result) => `${result.data.name} updated.`,
+    },
+  )
 }
 
 export function useDeleteBallotProfile() {
@@ -129,6 +141,22 @@ export function usePasteAccounts() {
   })
 }
 
+/**
+ * The pool table's `LAST_RUN` and `LAST_RESULT`, keyed by account id.
+ *
+ * One request for the whole join rather than one per visible page: it is a small map
+ * that does not grow with the table, so paging through the pool costs nothing.
+ */
+export function useAccountResults() {
+  return useQuery<Map<string, AccountResult>, ApiError>({
+    queryKey: qk.ballots.accountResults(),
+    queryFn: async () => {
+      const result = await ballotsApi.accountResults()
+      return new Map(result.data.map((row) => [row.accountId, row]))
+    },
+  })
+}
+
 /* ---------------------------------------------------------------------- runs */
 
 export function useBallotRuns(filters: RunFilters = {}) {
@@ -142,8 +170,11 @@ export function useBallotRuns(filters: RunFilters = {}) {
   })
 }
 
-export function useBallotRunsTable(filters: RunFilters = {}): TableState<BallotRun> {
-  return toTableState(useBallotRuns(filters))
+export function useBallotRunsTable(filters: RunFilters = {}): TableState<BallotRun> & {
+  query: UseQueryResult<ApiResult<BallotRun[]>, ApiError>
+} {
+  const query = useBallotRuns(filters)
+  return { ...toTableState(query), query }
 }
 
 export function useBallotRun(id: string | null) {

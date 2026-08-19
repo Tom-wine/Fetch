@@ -67,6 +67,9 @@ export const qk = {
   },
   ballots: {
     all: ['ballots'] as const,
+    /** The last-result-per-account join behind the pool table's two extra columns. */
+    accountResults: () => ['ballots', 'account-results'] as const,
+    imap: () => ['ballots', 'imap'] as const,
     profiles: {
       all: ['ballots', 'profiles'] as const,
       list: (filters: ListParams) => [...qk.ballots.profiles.all, 'list', filters] as const,

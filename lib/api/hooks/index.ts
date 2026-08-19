@@ -42,6 +42,7 @@ export {
 } from './useDashboard'
 export {
   toProfileInput,
+  useAccountResults,
   useBallotProfiles,
   useBallotProfilesTable,
   useBallotRun,
@@ -53,6 +54,7 @@ export {
   useDeleteBallotProfile,
   useDeleteRun,
   useDuplicateBallotProfile,
+  useImapAccounts,
   usePasteAccounts,
   useRunAction,
   useRunEventsFetcher,

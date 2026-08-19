@@ -3,6 +3,7 @@ import { API_BASE_URL, apiFetch, type QueryParams } from './client'
 import {
   accountSchema,
   accountStatsSchema,
+  accountResultSchema,
   activityEntrySchema,
   ballotProfileSchema,
   ballotRunSchema,
@@ -11,6 +12,7 @@ import {
   bulkImportResultSchema,
   clubRefSchema,
   fixtureSchema,
+  imapAccountSchema,
   importRowVerdictSchema,
   kpiSetSchema,
   notificationSchema,
@@ -240,9 +242,7 @@ const pasteResultSchema = z.object({
   created: z.int().nonnegative(),
   updated: z.int().nonnegative(),
   skipped: z.int().nonnegative(),
-  errors: z.array(
-    z.object({ row: z.int(), email: z.string().optional(), message: z.string() }),
-  ),
+  errors: z.array(z.object({ row: z.int(), email: z.string().optional(), message: z.string() })),
 })
 
 const removedSchema = z.object({ id: z.string() })
@@ -276,6 +276,13 @@ export const ballotsApi = {
       body: { club, text },
       schema: pasteResultSchema,
     }),
+
+  /** The mailboxes `otpSource: 'imap'` can point at. */
+  imap: () => apiFetch('/ballots/imap', { schema: z.array(imapAccountSchema) }),
+
+  /** The `LAST_RUN` / `LAST_RESULT` join, for the whole pool at once. */
+  accountResults: () =>
+    apiFetch('/ballots/accounts/results', { schema: z.array(accountResultSchema) }),
 
   /* ----------------------------------------------------------------- runs */
 

@@ -281,6 +281,22 @@ export interface BallotTask {
   updatedAt: string
 }
 
+/**
+ * A mailbox a run can read two-factor codes out of, for `otpSource: 'imap'`.
+ *
+ * Deliberately thin. /accounts has an `Email / IMAP` tab that is still a coming-soon
+ * page, and this is not that: it is the minimum a profile needs to name a mailbox and
+ * a launcher needs to check the mailbox still exists. When the real screen arrives it
+ * owns the credentials; this stays the reference.
+ */
+export interface ImapAccount {
+  id: string
+  email: string
+  host: string
+  status: 'ok' | 'error'
+  lastCheckedAt?: string
+}
+
 export interface RunEvent {
   id: string
   /** Strictly increasing per run — this is the cursor. */

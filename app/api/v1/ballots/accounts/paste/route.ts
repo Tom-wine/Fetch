@@ -64,7 +64,11 @@ export async function POST(request: Request) {
       // already in Fetch.io — they are different mistakes and need different fixes.
       if (seen.has(email)) {
         skipped++
-        errors.push({ row, email, message: 'Repeated earlier in this paste. Only the first was used.' })
+        errors.push({
+          row,
+          email,
+          message: 'Repeated earlier in this paste. Only the first was used.',
+        })
         return
       }
       seen.add(email)
