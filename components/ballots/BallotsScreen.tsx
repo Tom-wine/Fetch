@@ -11,6 +11,7 @@ import { BALLOT_CLUB_IDS, type Account } from '@/lib/types'
 import { PoolTab } from './PoolTab'
 import { ProfilesTab } from './ProfilesTab'
 import { RunsTab } from './RunsTab'
+import { StartRunDialog } from './StartRunDialog'
 import { BALLOT_TABS, useBallotsUrlState, type BallotsTabId } from './url-state'
 
 /**
@@ -34,7 +35,6 @@ export function BallotsScreen() {
 
   /** Non-null while the launcher is open. The array is the pre-chosen selection. */
   const [launching, setLaunching] = React.useState<{ accounts: Account[] | null } | null>(null)
-  void launching
 
   /**
    * Whether the pool has anything in it at all — what disables START_RUN before the
@@ -83,8 +83,13 @@ export function BallotsScreen() {
         </TabsContent>
       </Tabs>
 
-      {/* The launcher itself is the next step. Until it lands, START_RUN records
-          what was chosen and opens nothing. */}
+      {/* Raised from both the pool tab and the run history, so it lives here rather
+          than inside either one. */}
+      <StartRunDialog
+        open={launching !== null}
+        onOpenChange={(open) => !open && setLaunching(null)}
+        selection={launching?.accounts ?? null}
+      />
     </div>
   )
 }

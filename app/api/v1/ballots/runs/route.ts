@@ -25,9 +25,17 @@ export async function GET(request: Request) {
     const statuses = url.searchParams.getAll('status').filter(Boolean)
     const filtered = statuses.length ? rows.filter((r) => statuses.includes(r.status)) : rows
 
-    const { data, meta } = paginate(filtered, listQuery(url), {
+    // `paginate` sorts ascending unless the caller says otherwise, which for a
+    // history means oldest first -- the run someone is looking for is always the one
+    // that is furthest down. Absent an explicit sort, this list is newest first.
+    const query = listQuery(url)
+    if (!url.searchParams.get('sort')) {
+      query.sort = 'startedAt'
+      query.order = 'desc'
+    }
+
+    const { data, meta } = paginate(filtered, query, {
       searchable: ['label', 'id', 'profileName'],
-      defaultSort: 'startedAt',
     })
     return ok(data, meta)
   })

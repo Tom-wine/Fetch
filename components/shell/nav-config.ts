@@ -67,8 +67,8 @@ export const NAV: NavEntry[] = [
       // §9 rule 4 — no two nav icons look alike. A ballot is a draw, so `Dices`; a run
       // history is a log, so `History`. Deliberately neither the calendar nor the clock
       // this group replaces, which read as "when" rather than "what happened".
-      { label: 'Ballot Entries', href: '/ballots', icon: Dices, soon: true },
-      { label: 'Run History', href: '/ballots?tab=runs', icon: History, soon: true },
+      { label: 'Ballot Entries', href: '/ballots', icon: Dices },
+      { label: 'Run History', href: '/ballots?tab=runs', icon: History },
     ],
   },
   { label: 'Insights', href: '/insights', icon: BarChart3, soon: true },
