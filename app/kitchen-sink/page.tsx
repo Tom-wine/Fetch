@@ -38,6 +38,7 @@ import {
   ACCOUNT_STATUSES,
   LISTING_STATUSES,
 } from '@/components/domain/StatusChip'
+import { AccountPicker } from '@/components/domain/AccountPicker'
 import { ClubBadge } from '@/components/domain/ClubBadge'
 import { PlatformBadge, ProviderBadge } from '@/components/domain/PlatformBadge'
 import { FixtureIdentity } from '@/components/domain/FixtureIdentity'
@@ -530,7 +531,28 @@ function DomainSection() {
           ))}
         </div>
       </Panel>
+
+      <Panel label="account picker — searchable, shared by two screens">
+        <AccountPickerDemo />
+        <Prose className="text-[12px] text-muted">
+          A plain Select cannot do this job: sixty-four accounts are all name@domain, so the list is
+          unscannable without a filter. Lives in components/domain/ because /mytickets and
+          /mylistings both use it.
+        </Prose>
+      </Panel>
     </Section>
+  )
+}
+
+function AccountPickerDemo() {
+  const [account, setAccount] = React.useState(ALL)
+  return (
+    <Row>
+      <AccountPicker value={account} onChange={setAccount} />
+      <span className="text-caption text-faint">
+        selected: {account === ALL ? 'all accounts' : account}
+      </span>
+    </Row>
   )
 }
 

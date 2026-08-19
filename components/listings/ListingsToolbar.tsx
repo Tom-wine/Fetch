@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/select'
 import { ALL, FilterSelect, type FilterOption } from '@/components/data/FilterSelect'
 import { Toolbar, ToolbarSearch } from '@/components/data/Toolbar'
-import { AccountPicker } from '@/components/fixtures/AccountPicker'
+import { AccountPicker } from '@/components/domain/AccountPicker'
 import { LISTING_STATUSES } from '@/components/domain/StatusChip'
 import type { ListingStatus } from '@/lib/types'
 import { CurrencySelect } from './CurrencySelect'
@@ -68,10 +68,7 @@ export function ListingsToolbar({
               value={state.platforms}
               onChange={(platforms) => state.set({ platforms })}
             />
-            <AccountPicker
-              value={state.account}
-              onChange={(account) => state.set({ account })}
-            />
+            <AccountPicker value={state.account} onChange={(account) => state.set({ account })} />
             <FilterSelect
               noun="statuses"
               options={STATUS_OPTIONS}
@@ -86,10 +83,7 @@ export function ListingsToolbar({
       />
 
       <div className="flex flex-wrap items-center gap-3">
-        <PlatformChips
-          value={state.platforms}
-          onChange={(platforms) => state.set({ platforms })}
-        />
+        <PlatformChips value={state.platforms} onChange={(platforms) => state.set({ platforms })} />
         <CurrencySelect
           value={state.show}
           onChange={(show) => state.set({ show })}
