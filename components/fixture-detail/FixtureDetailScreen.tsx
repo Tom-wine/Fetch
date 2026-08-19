@@ -14,7 +14,7 @@ import {
   useFixtureFacets,
   useFixtureTicketsPage,
   useRefreshTickets,
-  useRevealTickets,
+  useSetTicketVisibility,
 } from '@/lib/api/hooks/useFixtureDetail'
 import type { Ticket } from '@/lib/types'
 import { DetailPanel } from './DetailPanel'
@@ -50,19 +50,24 @@ export function FixtureDetailScreen({ fixtureId }: { fixtureId: string }) {
   const accounts = useAccountBook()
 
   const { refresh, refreshing } = useRefreshTickets()
-  const reveal = useRevealTickets()
+  const visibility = useSetTicketVisibility()
   const maintenance = useAccountMaintenance()
 
   const selection = useSeatSelection(tickets.rows, url.autoGroup)
 
-  const onReveal = React.useCallback(
-    (ticket: Ticket) => reveal.mutate({ ids: [ticket.id] }),
-    [reveal],
+  const onToggleVisibility = React.useCallback(
+    (ticket: Ticket) => visibility.toggle(ticket),
+    [visibility],
   )
 
   const columns = React.useMemo(
-    () => ticketColumns({ accounts: accounts.byId, onReveal, revealing: reveal.isPending }),
-    [accounts.byId, onReveal, reveal.isPending],
+    () =>
+      ticketColumns({
+        accounts: accounts.byId,
+        onToggleVisibility,
+        visibilityBusy: visibility.isPending,
+      }),
+    [accounts.byId, onToggleVisibility, visibility.isPending],
   )
 
   /**
@@ -223,8 +228,8 @@ export function FixtureDetailScreen({ fixtureId }: { fixtureId: string }) {
               <TicketCard
                 ticket={ticket}
                 account={accounts.byId.get(ticket.accountId)}
-                onReveal={onReveal}
-                revealing={reveal.isPending}
+                onToggleVisibility={onToggleVisibility}
+                visibilityBusy={visibility.isPending}
               />
             )}
             toolbar={toolbar}

@@ -59,71 +59,72 @@ export function TicketStatusChip({ status }: { status: TicketStatus }) {
 /* ------------------------------------------------------------ visibility */
 
 /**
- * The VISIBILITY eye.
+ * The VISIBILITY eye — a two-way toggle.
  *
- * A hidden seat is a live button: one click makes it visible to buyers through
- * `POST /tickets/share`, optimistically, with a toast and a rollback if the write
- * fails. A visible seat is an INDICATOR, not a button — the API has no way to hide a
- * seat again (ASK 1 in fetch-sync.md), and a control that flips a value the server
- * will put straight back is worse than one that says so.
+ * It was one-way for a while, and honestly so: `POST /tickets/share` was the only
+ * write that touched `visibility` and it only ever set `visible`, so a revealed seat
+ * could not be hidden again and this rendered that state as an indicator rather than
+ * as a button that would flip a value the server put straight back. `PATCH
+ * /tickets/:id` exists now, so both directions are real and both are a button.
  *
- * Both states carry the same tooltip grammar, so the difference reads as a fact about
- * the seat rather than as a disabled control the operator has to work out.
+ * The two states keep their own colours — hidden is the warning amber it always was,
+ * because a seat buyers cannot see is a seat that will not sell — and the tooltip
+ * names the click's outcome rather than the current state, which is the one thing the
+ * icon cannot say on its own.
  */
 export function VisibilityCell({
   ticket,
-  onReveal,
+  onToggle,
   busy = false,
 }: {
   ticket: Ticket
-  onReveal: (ticket: Ticket) => void
+  onToggle: (ticket: Ticket) => void
   busy?: boolean
 }) {
   const hidden = ticket.visibility === 'hidden'
-
-  const icon = hidden ? (
-    <EyeOff className="size-4" aria-hidden="true" />
-  ) : (
-    <Eye className="size-4" aria-hidden="true" />
-  )
 
   return (
     <TooltipProvider delayDuration={200}>
       <Tooltip>
         <TooltipTrigger asChild>
-          {hidden ? (
-            <button
-              type="button"
-              disabled={busy}
-              // The checkbox column stops propagation for the same reason: acting on a
-              // row must not also change which row the panel is describing.
-              onClick={(event) => {
-                event.stopPropagation()
-                onReveal(ticket)
-              }}
-              aria-label={`Make seat ${ticket.seat} visible to buyers`}
-              className={cn(
-                'flex size-8 items-center justify-center rounded-md border border-warning/30 bg-warning/12 text-warning-ink transition-colors duration-150',
-                busy ? 'opacity-50' : 'hover:bg-warning/20',
-              )}
-            >
-              {icon}
-            </button>
-          ) : (
-            <span
-              tabIndex={0}
-              role="img"
-              aria-label="Visible to buyers"
-              className="flex size-8 items-center justify-center rounded-md text-faint"
-            >
-              {icon}
-            </span>
-          )}
+          <button
+            type="button"
+            disabled={busy}
+            // The checkbox column stops propagation for the same reason: acting on a
+            // row must not also change which row the panel is describing.
+            onClick={(event) => {
+              event.stopPropagation()
+              onToggle(ticket)
+            }}
+            aria-label={
+              hidden
+                ? `Make seat ${ticket.seat} visible to buyers`
+                : `Hide seat ${ticket.seat} from buyers`
+            }
+            aria-pressed={!hidden}
+            className={cn(
+              'flex size-8 items-center justify-center rounded-md border transition-colors duration-150',
+              hidden
+                ? 'border-warning/30 bg-warning/12 text-warning-ink'
+                : 'border-transparent text-faint',
+              busy
+                ? 'opacity-50'
+                : hidden
+                  ? 'hover:bg-warning/20'
+                  : 'hover:bg-surface-hover hover:text-text',
+            )}
+          >
+            {hidden ? (
+              <EyeOff className="size-4" aria-hidden="true" />
+            ) : (
+              <Eye className="size-4" aria-hidden="true" />
+            )}
+          </button>
         </TooltipTrigger>
         <TooltipContent className="max-w-[260px] font-prose text-prose">
           {hidden
             ? 'Hidden from buyers. Click to make this seat visible.'
-            : 'Visible to buyers. Fetch.io cannot hide a seat again yet.'}
+            : 'Visible to buyers. Click to hide it again.'}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

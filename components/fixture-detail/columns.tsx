@@ -23,12 +23,12 @@ import { SORTABLE_COLUMN_IDS } from './sorting'
  */
 export function ticketColumns({
   accounts,
-  onReveal,
-  revealing,
+  onToggleVisibility,
+  visibilityBusy,
 }: {
   accounts: Map<string, Account>
-  onReveal: (ticket: Ticket) => void
-  revealing: boolean
+  onToggleVisibility: (ticket: Ticket) => void
+  visibilityBusy: boolean
 }): FetchColumnDef<Ticket>[] {
   const columns: FetchColumnDef<Ticket>[] = [
     {
@@ -101,7 +101,7 @@ export function ticketColumns({
       accessorKey: 'visibility',
       header: 'visibility',
       cell: ({ row }) => (
-        <VisibilityCell ticket={row.original} onReveal={onReveal} busy={revealing} />
+        <VisibilityCell ticket={row.original} onToggle={onToggleVisibility} busy={visibilityBusy} />
       ),
     },
     {

@@ -21,6 +21,7 @@ import {
   type AccountPatch,
   type ListingBulk,
   type ListingPatch,
+  type TicketPatch,
 } from './schemas'
 import type {
   AccountStatus,
@@ -146,11 +147,22 @@ const ticketActionResultSchema = z.object({
   listings: z.array(listingSchema),
 })
 
+export type TicketActionName =
+  'group' | 'list' | 'associate-listing' | 'resell-face-value' | 'transfer' | 'share'
+
 export const ticketsApi = {
   action: (
-    action: 'group' | 'list' | 'transfer' | 'share',
-    body: { ids: string[]; platform?: Platform; price?: number },
+    action: TicketActionName,
+    body: { ids: string[]; platform?: Platform; price?: number; listingId?: string },
   ) => apiFetch(`/tickets/${action}`, { method: 'POST', body, schema: ticketActionResultSchema }),
+
+  /**
+   * `query` exists so `?__fail=500` can be forced on a write, the same as
+   * `listingsApi.patch` — it is how the optimistic rollback on the seat table is
+   * demonstrated (§6.2 failure injection). A real backend ignores it.
+   */
+  patch: (id: string, body: TicketPatch, query?: QueryParams) =>
+    apiFetch(`/tickets/${id}`, { method: 'PATCH', body, query, schema: ticketSchema }),
 
   remove: (ids: string[]) =>
     apiFetch('/tickets', { method: 'DELETE', body: { ids }, schema: bulkActionResultSchema }),

@@ -103,3 +103,58 @@ export function formatPercent(value: number, settings: LocaleSettings): string {
     signDisplay: 'exceptZero',
   })
 }
+
+/* ------------------------------------------------------- input conversion */
+
+/**
+ * Money in, money out — the two halves of an editable price field.
+ *
+ * They live beside `formatMoney` rather than on a screen because three screens now
+ * edit money: /mylistings edits a listing price inline and in bulk, and the seat
+ * table's Edit dialog edits a ticket price. Parsing what an operator types is exactly
+ * the kind of thing that must have one answer.
+ */
+
+/**
+ * Minor units → the plain string an <input> holds. Deliberately NOT locale-formatted:
+ * a grouped, symbol-prefixed value is a nuisance to edit, and the field has the
+ * currency code beside it so there is nothing to infer.
+ */
+export function toMajorInput(amount: number, currency: Currency): string {
+  const exp = minorUnitExponent(currency)
+  return (amount / 10 ** exp).toFixed(exp)
+}
+
+/**
+ * The inverse, tolerant of what an operator actually types: `48.50`, `£48.50`,
+ * `1,234.56`, `1.234,56`, `48`. Returns null for anything that is not a number, so
+ * the caller can refuse the commit rather than PATCHing a NaN.
+ */
+export function toMinor(raw: string, currency: Currency): number | null {
+  const cleaned = raw.trim().replace(/[^\d.,-]/g, '')
+  if (!cleaned || !/\d/.test(cleaned)) return null
+
+  const lastDot = cleaned.lastIndexOf('.')
+  const lastComma = cleaned.lastIndexOf(',')
+
+  let decimalAt = -1
+  if (lastDot >= 0 && lastComma >= 0) {
+    // Both present: the rightmost is the decimal separator, the other groups.
+    decimalAt = Math.max(lastDot, lastComma)
+  } else if (lastDot >= 0 || lastComma >= 0) {
+    const at = Math.max(lastDot, lastComma)
+    const trailing = cleaned.length - at - 1
+    const only = cleaned.indexOf(cleaned[at]!) === at
+    // `1,234` is a thousand, `12,34` is twelve and a bit. One separator with one or
+    // two digits behind it is a decimal point; anything else is grouping.
+    if (only && trailing > 0 && trailing <= 2) decimalAt = at
+  }
+
+  const whole = (decimalAt >= 0 ? cleaned.slice(0, decimalAt) : cleaned).replace(/[.,]/g, '')
+  const fraction = decimalAt >= 0 ? cleaned.slice(decimalAt + 1).replace(/[.,]/g, '') : ''
+
+  const value = Number(`${whole || '0'}.${fraction || '0'}`)
+  if (!Number.isFinite(value)) return null
+
+  return Math.round(value * 10 ** minorUnitExponent(currency))
+}

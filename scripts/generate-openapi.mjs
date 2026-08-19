@@ -39,6 +39,8 @@ const COMPONENTS = {
   AccountPatch: S.accountPatchSchema,
   ListingPatch: S.listingPatchSchema,
   ListingBulk: S.listingBulkSchema,
+  TicketAction: S.ticketActionSchema,
+  TicketPatch: S.ticketPatchSchema,
 }
 
 /**
@@ -285,17 +287,54 @@ const spec = {
     '/tickets': {
       delete: { summary: 'Bulk delete tickets', responses: responses('BulkActionResult') },
     },
-    '/tickets/{action}': {
-      post: {
-        summary: 'Ticket action',
+    /*
+     * One path template, two methods, and the segment means something different to
+     * each: an action name to POST, a ticket id to PATCH. `/tickets/share` and
+     * `/tickets/tkt_014` are the same shape, so a router — and OpenAPI — gets one
+     * entry for both. Splitting them into `/tickets/{action}` and `/tickets/{id}`
+     * would be two identical templates, which is not a valid document.
+     */
+    '/tickets/{segment}': {
+      patch: {
+        summary: 'Edit one ticket',
+        description:
+          'The segment is a ticket id here. The only write that moves `visibility` in both directions; POST /tickets/share only ever reveals. Strict: an unrecognised key is a 422.',
         parameters: [
           {
-            name: 'action',
+            name: 'segment',
             in: 'path',
             required: true,
-            schema: { type: 'string', enum: ['group', 'list', 'transfer', 'share'] },
+            schema: { type: 'string' },
+            description: 'Ticket id.',
           },
         ],
+        requestBody: body('TicketPatch'),
+        responses: responses('Ticket'),
+      },
+      post: {
+        summary: 'Ticket action',
+        description:
+          'The segment is an action name here. `list` creates a listing and mints its own marketplace id; `associate-listing` links one that already exists and 422s if the id is unknown or belongs to another fixture. `resell-face-value` takes no price and no platform — it lists on `club-exchange` at each ticket’s faceValue.',
+        parameters: [
+          {
+            name: 'segment',
+            in: 'path',
+            required: true,
+            schema: {
+              type: 'string',
+              enum: [
+                'group',
+                'list',
+                'associate-listing',
+                'resell-face-value',
+                'transfer',
+                'share',
+              ],
+            },
+            description: 'Action name.',
+          },
+        ],
+        requestBody: body('TicketAction'),
         responses: {
           200: {
             description: 'Updated tickets, plus any listings created',

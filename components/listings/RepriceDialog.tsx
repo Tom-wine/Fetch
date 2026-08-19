@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 import { upperSnake } from '@/lib/format/text'
 import { useLocale } from '@/lib/format/LocaleProvider'
 import { convertMinor, type Currency } from '@/lib/format/locale'
-import { formatMoney } from '@/lib/format/money'
+import { formatMoney, toMajorInput, toMinor } from '@/lib/format/money'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,7 +20,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { SectionLabel } from '@/components/ui/typography'
 import type { Listing } from '@/lib/types'
-import { ORIGINAL, toMajorInput, toMinor, type DisplayCurrency } from './currency'
+import { ORIGINAL, type DisplayCurrency } from './currency'
 
 /**
  * §8.6's reprice dialog: `set to` / `adjust by ±%` / `adjust by ±amount`, with a

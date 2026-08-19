@@ -7,6 +7,7 @@ import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { upperSnake, withCount } from '@/lib/format/text'
 import { Prose } from '@/components/ui/typography'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,6 +47,13 @@ export interface ActionItem {
   /** Appended as ` (N)` outside the snake, e.g. `GROUP (4)`. */
   count?: number
   disabled?: boolean
+  /**
+   * Hover text. Written for the item that is DISABLED and stays that way — the
+   * description says what the item does, and this says why it cannot. A disabled
+   * `DropdownMenuItem` takes no pointer events, so the trigger is the wrapper around
+   * it rather than the item itself.
+   */
+  tooltip?: string
   onSelect?: () => void
 }
 
@@ -103,6 +111,24 @@ export function ActionsMenu({
 }
 
 function Item({ item }: { item: ActionItem }) {
+  const row = <Row item={item} />
+  if (!item.tooltip) return row
+
+  return (
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="block">{row}</span>
+        </TooltipTrigger>
+        <TooltipContent side="left" className="max-w-[260px] font-prose text-prose">
+          {item.tooltip}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  )
+}
+
+function Row({ item }: { item: ActionItem }) {
   const Icon = item.icon
   return (
     <DropdownMenuItem

@@ -1474,12 +1474,99 @@
         }
       }
     },
-    "/tickets/{action}": {
-      "post": {
-        "summary": "Ticket action",
+    "/tickets/{segment}": {
+      "patch": {
+        "summary": "Edit one ticket",
+        "description": "The segment is a ticket id here. The only write that moves `visibility` in both directions; POST /tickets/share only ever reveals. Strict: an unrecognised key is a 422.",
         "parameters": [
           {
-            "name": "action",
+            "name": "segment",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Ticket id."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TicketPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta",
+                    "error"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Ticket"
+                    },
+                    "meta": {
+                      "oneOf": [
+                        {
+                          "$ref": "#/components/schemas/Meta"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "error": {
+                      "type": "null"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta",
+                    "error"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "null"
+                    },
+                    "meta": {
+                      "type": "null"
+                    },
+                    "error": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Ticket action",
+        "description": "The segment is an action name here. `list` creates a listing and mints its own marketplace id; `associate-listing` links one that already exists and 422s if the id is unknown or belongs to another fixture. `resell-face-value` takes no price and no platform — it lists on `club-exchange` at each ticket’s faceValue.",
+        "parameters": [
+          {
+            "name": "segment",
             "in": "path",
             "required": true,
             "schema": {
@@ -1487,12 +1574,25 @@
               "enum": [
                 "group",
                 "list",
+                "associate-listing",
+                "resell-face-value",
                 "transfer",
                 "share"
               ]
-            }
+            },
+            "description": "Action name."
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TicketAction"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Updated tickets, plus any listings created",
@@ -3023,7 +3123,8 @@
                 "stubhub",
                 "ticombo",
                 "gigsberg",
-                "fanpass"
+                "fanpass",
+                "club-exchange"
               ]
             }
           },
@@ -3125,6 +3226,9 @@
           "groupId": {
             "type": "string"
           },
+          "listingId": {
+            "type": "string"
+          },
           "orderId": {
             "type": "string"
           },
@@ -3168,7 +3272,8 @@
               "stubhub",
               "ticombo",
               "gigsberg",
-              "fanpass"
+              "fanpass",
+              "club-exchange"
             ]
           },
           "accountId": {
@@ -3393,15 +3498,7 @@
               "type": "integer",
               "minimum": 0,
               "maximum": 9007199254740991
-            },
-            "required": [
-              "active",
-              "needs_login",
-              "needs_otp",
-              "locked",
-              "expired",
-              "error"
-            ]
+            }
           },
           "byClub": {
             "type": "object",
@@ -3434,29 +3531,7 @@
               "type": "integer",
               "minimum": 0,
               "maximum": 9007199254740991
-            },
-            "required": [
-              "arsenal",
-              "aston-villa",
-              "bournemouth",
-              "brentford",
-              "brighton",
-              "chelsea",
-              "crystal-palace",
-              "everton",
-              "fulham",
-              "ipswich",
-              "leicester",
-              "liverpool",
-              "man-city",
-              "man-utd",
-              "newcastle",
-              "nottingham-forest",
-              "southampton",
-              "tottenham",
-              "west-ham",
-              "wolves"
-            ]
+            }
           }
         },
         "required": [
@@ -3528,7 +3603,8 @@
                   "stubhub",
                   "ticombo",
                   "gigsberg",
-                  "fanpass"
+                  "fanpass",
+                  "club-exchange"
                 ]
               }
             ]
@@ -4132,6 +4208,72 @@
           "ids",
           "action"
         ],
+        "additionalProperties": false
+      },
+      "TicketAction": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "viagogo",
+              "stubhub",
+              "ticombo",
+              "gigsberg",
+              "fanpass",
+              "club-exchange"
+            ]
+          },
+          "price": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "listingId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "ids"
+        ],
+        "additionalProperties": false
+      },
+      "TicketPatch": {
+        "type": "object",
+        "properties": {
+          "price": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "block": {
+            "type": "string",
+            "minLength": 1
+          },
+          "row": {
+            "type": "string",
+            "minLength": 1
+          },
+          "seat": {
+            "type": "string",
+            "minLength": 1
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "visible",
+              "hidden"
+            ]
+          }
+        },
         "additionalProperties": false
       }
     }

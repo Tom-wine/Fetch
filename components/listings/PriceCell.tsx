@@ -7,7 +7,8 @@ import { cn } from '@/lib/utils'
 import { useLocale } from '@/lib/format/LocaleProvider'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import type { Listing } from '@/lib/types'
-import { displayMoney, toMajorInput, toMinor, type DisplayCurrency } from './currency'
+import { toMajorInput, toMinor } from '@/lib/format/money'
+import { displayMoney, type DisplayCurrency } from './currency'
 
 /**
  * The §8.6 inline price edit.

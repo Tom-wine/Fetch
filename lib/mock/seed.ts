@@ -1,5 +1,5 @@
 import { CLUBS, getClub } from '@/lib/registries/clubs'
-import { PLATFORMS } from '@/lib/registries/platforms'
+import { MARKETPLACES } from '@/lib/registries/platforms'
 import { PROVIDERS } from '@/lib/registries/providers'
 import type {
   Account,
@@ -33,7 +33,10 @@ import { DAY, HOUR, MINUTE, SEED_NOW, ago, ahead, rng } from './rng'
 
 const r = rng(0x5e7c4)
 
-const PLATFORM_IDS = PLATFORMS.map((p) => p.id)
+// Marketplaces only. `club-exchange` is a real platform, but a seat only reaches it
+// by being resold at face value through the Actions menu — seeding listings there
+// would put inventory on a channel nobody chose.
+const PLATFORM_IDS = MARKETPLACES.map((p) => p.id)
 const PROVIDER_IDS = PROVIDERS.map((p) => p.id)
 
 export const clubs: ClubRef[] = CLUBS.map((c) => ({

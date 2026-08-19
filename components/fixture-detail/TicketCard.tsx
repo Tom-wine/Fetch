@@ -17,13 +17,13 @@ import { TicketStatusChip, VisibilityCell } from './cells'
 export function TicketCard({
   ticket,
   account,
-  onReveal,
-  revealing,
+  onToggleVisibility,
+  visibilityBusy,
 }: {
   ticket: Ticket
   account?: Account
-  onReveal: (ticket: Ticket) => void
-  revealing: boolean
+  onToggleVisibility: (ticket: Ticket) => void
+  visibilityBusy: boolean
 }) {
   return (
     <div className="space-y-2">
@@ -44,7 +44,7 @@ export function TicketCard({
           {account?.email ?? ticket.accountId}
         </span>
         <div className="flex shrink-0 items-center gap-2">
-          <VisibilityCell ticket={ticket} onReveal={onReveal} busy={revealing} />
+          <VisibilityCell ticket={ticket} onToggle={onToggleVisibility} busy={visibilityBusy} />
           <span className="text-right">
             <Money
               amount={ticket.price}

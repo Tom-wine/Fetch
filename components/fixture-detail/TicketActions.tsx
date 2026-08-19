@@ -20,31 +20,40 @@ import { useLocale } from '@/lib/format/LocaleProvider'
 import { ActionsMenu, type ActionItem } from '@/components/domain/ActionsMenu'
 import { ConfirmDialog } from '@/components/domain/ConfirmDialog'
 import { useDeleteTickets, useTicketAction } from '@/lib/api/hooks/useFixtures'
-import { useRevealTickets } from '@/lib/api/hooks/useFixtureDetail'
+import {
+  useAssociateListing,
+  useResellAtFaceValue,
+  useSetTicketVisibility,
+  useUpdateTickets,
+} from '@/lib/api/hooks/useFixtureDetail'
 import type { Account, Fixture, Platform, Ticket } from '@/lib/types'
+import { AssociateListingDialog } from './AssociateListingDialog'
+import { EditTicketsDialog } from './EditTicketsDialog'
 import { MarketplacePickerModal } from './MarketplacePickerModal'
 import { buildSeatSheet, downloadBlob, seatSheetFilename } from './seat-sheet'
 
 /**
  * The §8.5 Actions menu, reproduced item for item.
  *
- * Seven items are fully live — optimistic update, toast, and a rollback if the write
- * is refused. Four are rendered DISABLED because the API has nothing for them to
- * call, which is the same idiom as the `Coming soon` tiles in the marketplace picker
- * and `fanpass`'s `available: false` in the registry:
+ * Ten of the eleven items are fully live — optimistic update, toast, and a rollback if
+ * the write is refused. Three of them arrived late, once the routes they needed
+ * existed:
  *
- *   Associate listing   needs a route that LINKS an existing marketplace listing.
- *                       `POST /tickets/list` creates a new one and mints its own id,
- *                       so it would throw away the reference the operator typed in.
- *   Edit                needs `PATCH /tickets/:id`. There is no ticket PATCH at all.
- *   Resell at face      needs a club-exchange target. `Platform` is the four
- *                       marketplaces plus fanpass; any of them would be the wrong one.
- *   Wallet pass         needs a signature. A .pkpass is a signed bundle and a Google
- *                       Wallet pass is a signed JWT; neither can be made in a browser.
+ *   Associate listing   `POST /tickets/associate-listing` LINKS a listing that already
+ *                       exists. `POST /tickets/list` mints a new marketplace id, which
+ *                       would throw away the reference the operator typed in.
+ *   Edit                `PATCH /tickets/:id`, fanned out over the selection. The same
+ *                       route is what made the VISIBILITY eye a two-way toggle.
+ *   Resell at face      `POST /tickets/resell-face-value` lists on the club's own
+ *                       exchange at the price printed on the ticket. That channel is
+ *                       `club-exchange` in the platform registry, whose `kind` keeps it
+ *                       out of the List picker — it has no price to choose.
  *
- * All four are one small change each once the endpoint lands — see ASK 2 in
- * fetch-sync.md. Their labels and descriptions are §8.5's, unchanged, because a menu
- * that renames an item while it is unavailable teaches the wrong name.
+ * `Download wallet pass` is the one that stays disabled, and it is not waiting for a
+ * route. A .pkpass is a signed bundle and a Google Wallet pass is a signed JWT; both
+ * need a private key that a browser must never hold. It keeps §8.5's label and
+ * description, and carries a tooltip saying what it needs, because an item that says
+ * why it cannot act is an honest empty hand and a renamed one teaches the wrong name.
  */
 export function TicketActions({
   fixture,
@@ -65,12 +74,23 @@ export function TicketActions({
 
   const action = useTicketAction()
   const remove = useDeleteTickets()
-  const reveal = useRevealTickets()
+  const visibility = useSetTicketVisibility()
+  const update = useUpdateTickets()
+  const associate = useAssociateListing()
+  const resell = useResellAtFaceValue()
 
   const [listOpen, setListOpen] = React.useState(false)
+  const [editOpen, setEditOpen] = React.useState(false)
+  const [associateOpen, setAssociateOpen] = React.useState(false)
   const [confirmOpen, setConfirmOpen] = React.useState(false)
 
-  const busy = action.isPending || remove.isPending || reveal.isPending
+  const busy =
+    action.isPending ||
+    remove.isPending ||
+    visibility.isPending ||
+    update.isPending ||
+    associate.isPending ||
+    resell.isPending
 
   const onDownloadPdf = React.useCallback(() => {
     try {
@@ -107,14 +127,16 @@ export function TicketActions({
       label: 'Associate listing',
       description: 'Link a supported listing or record one manually',
       tone: 'success',
-      disabled: true,
+      disabled: busy,
+      onSelect: () => defer(() => setAssociateOpen(true)),
     },
     {
       id: 'edit',
       icon: Pencil,
       label: 'Edit',
       description: 'Edit ticket details',
-      disabled: true,
+      disabled: busy,
+      onSelect: () => defer(() => setEditOpen(true)),
     },
     {
       id: 'transfer',
@@ -131,7 +153,10 @@ export function TicketActions({
       label: 'Resell at face value',
       description: 'Resell at face value (club exchange)',
       tone: 'success',
-      disabled: true,
+      disabled: busy,
+      // No picker and no price field: face value is the price, and the club exchange
+      // is the only channel that sells at it.
+      onSelect: () => resell.mutate({ ids }),
     },
     {
       id: 'pdf',
@@ -148,6 +173,8 @@ export function TicketActions({
       description: 'Apple / Google Wallet pass',
       tone: 'violet',
       disabled: true,
+      tooltip:
+        'Needs a signing backend. A .pkpass is a signed bundle and a Google Wallet pass is a signed JWT — the key that signs them cannot live in a browser.',
     },
     {
       id: 'public',
@@ -156,10 +183,10 @@ export function TicketActions({
       description: 'Make ticket public',
       tone: 'primary',
       disabled: busy,
-      // `Public` and `Share` reach the same endpoint, because `POST /tickets/share` is
-      // the only write that touches visibility. They are kept apart because the
-      // operator's intent differs, and so does what they are told happened.
-      onSelect: () => reveal.mutate({ ids }),
+      // `Public` states an outcome, so it PATCHes visibility directly rather than
+      // going through `share`, which reveals a seat as a side effect of publishing a
+      // QR link. Same field, different intent, different toast.
+      onSelect: () => visibility.setVisibility(ids, 'visible'),
     },
     {
       id: 'share',
@@ -197,6 +224,29 @@ export function TicketActions({
         onConfirm={(platform: Platform) => {
           setListOpen(false)
           action.mutate({ action: 'list', ids, platform })
+        }}
+      />
+
+      <AssociateListingDialog
+        open={associateOpen}
+        onOpenChange={setAssociateOpen}
+        count={count}
+        fixtureId={fixture.id}
+        busy={associate.isPending}
+        onConfirm={(listingId) => {
+          setAssociateOpen(false)
+          associate.mutate({ ids, listingId })
+        }}
+      />
+
+      <EditTicketsDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        tickets={tickets}
+        busy={update.isPending}
+        onConfirm={(patch) => {
+          setEditOpen(false)
+          update.mutate({ ids, patch })
         }}
       />
 

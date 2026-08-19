@@ -13,7 +13,8 @@ import {
   type ListingFilters,
   type TicketFilters,
 } from '../endpoints'
-import type { Account, Listing, Ticket } from '@/lib/types'
+import type { TicketPatch } from '../schemas'
+import type { Account, Listing, Ticket, TicketVisibility } from '@/lib/types'
 import { qk } from './keys'
 import { useOptimisticMutation } from './useOptimisticMutation'
 import { toTableState, type TableState } from './useAccounts'
@@ -137,26 +138,109 @@ export function useAccountBook(): { byId: Map<string, Account>; loading: boolean
 /* ------------------------------------------------------------ mutations */
 
 /**
- * The VISIBILITY eye.
+ * `PATCH /tickets/:id`, fanned out over a selection.
  *
- * `POST /tickets/share` is the only write that touches `visibility`, and it only ever
- * sets it to `visible` — there is no `PATCH /tickets/:id`, so a seat cannot be hidden
- * again through the API (ASK 1 in fetch-sync.md). The hook therefore exposes exactly
- * the direction the server can honour; the cell renders the other one as an indicator
- * rather than as a button that would lie.
+ * The route takes one seat at a time, like `POST /accounts/:id/:action`, so the
+ * fan-out is here rather than pretended away with a bulk endpoint that does not
+ * exist. One optimistic update, one toast, one rollback for the whole set — an
+ * operator edited a selection, not four seats.
+ *
+ * This is the only write that can move a field in both directions, which is what
+ * makes the visibility eye a toggle instead of a one-way reveal.
  */
-export function useRevealTickets() {
+export function useUpdateTickets() {
+  return useOptimisticMutation<{ ids: string[]; patch: TicketPatch; label?: string }, Ticket[]>({
+    mutationFn: async ({ ids, patch }) => {
+      const results = await Promise.all(ids.map((id) => ticketsApi.patch(id, patch)))
+      return results.map((result) => result.data)
+    },
+    keys: () => [qk.fixtures.all],
+    optimistic: (previous, { ids, patch }) => patchTickets(previous, ids, patch),
+    successMessage: (tickets, { label }) => {
+      const n = tickets.length
+      const noun = n === 1 ? 'seat' : 'seats'
+      return label ? `${label} on ${n} ${noun}.` : `${n} ${noun} updated.`
+    },
+  })
+}
+
+/**
+ * The VISIBILITY eye — both directions.
+ *
+ * It used to be one-way: `POST /tickets/share` was the only write that touched
+ * `visibility` and it only ever set `visible`, so a revealed seat could not be hidden
+ * again and the cell rendered that state as an indicator rather than a button. With
+ * `PATCH /tickets/:id` the server can honour either direction, so the eye is a real
+ * toggle.
+ *
+ * `share` still exists and still reveals, because sharing is a different intent: it
+ * publishes a QR link and visibility is a side effect of that, not the point.
+ */
+export function useSetTicketVisibility() {
+  const update = useUpdateTickets()
+
+  const setVisibility = React.useCallback(
+    (ids: string[], visibility: TicketVisibility) =>
+      update.mutate({
+        ids,
+        patch: { visibility },
+        label: visibility === 'visible' ? 'Visible to buyers' : 'Hidden from buyers',
+      }),
+    [update],
+  )
+
+  const toggle = React.useCallback(
+    (ticket: Ticket) =>
+      setVisibility([ticket.id], ticket.visibility === 'visible' ? 'hidden' : 'visible'),
+    [setVisibility],
+  )
+
+  return { setVisibility, toggle, isPending: update.isPending }
+}
+
+/**
+ * `Associate listing`. Links seats to a listing that ALREADY exists on a marketplace
+ * — one an operator created by hand, or another tool did.
+ *
+ * Deliberately not `list`: that route mints a new marketplace id, which would throw
+ * away the reference the operator typed in and leave the same seats offered twice.
+ */
+export function useAssociateListing() {
+  return useOptimisticMutation<
+    { ids: string[]; listingId: string },
+    ApiResult<{ tickets: Ticket[]; listings: Listing[] }>
+  >({
+    mutationFn: ({ ids, listingId }) => ticketsApi.action('associate-listing', { ids, listingId }),
+    keys: () => [qk.fixtures.all],
+    // No optimistic write. The server decides whether the listing exists and whether
+    // it is for this fixture, and guessing `listed` here would flash a status that a
+    // 422 then takes away.
+    successMessage: (result, { ids }) => {
+      const listing = result.data.listings[0]
+      const n = ids.length
+      const noun = n === 1 ? 'seat' : 'seats'
+      return listing ? `${n} ${noun} linked to ${listing.listingId}.` : `${n} ${noun} linked.`
+    },
+  })
+}
+
+/**
+ * `Resell at face value`. Lists the seats on the club's own exchange at the price
+ * printed on the ticket — no marketplace to pick and no price to set, which is why
+ * it fires straight from the menu instead of opening the picker.
+ */
+export function useResellAtFaceValue() {
   return useOptimisticMutation<
     { ids: string[] },
     ApiResult<{ tickets: Ticket[]; listings: Listing[] }>
   >({
-    mutationFn: ({ ids }) => ticketsApi.action('share', { ids }),
-    keys: () => [qk.fixtures.all],
-    optimistic: (previous, { ids }) => patchTickets(previous, ids, { visibility: 'visible' }),
-    successMessage: (_result, { ids }) =>
-      ids.length === 1
-        ? 'The seat is now visible to buyers.'
-        : `${ids.length} seats are now visible to buyers.`,
+    mutationFn: ({ ids }) => ticketsApi.action('resell-face-value', { ids }),
+    keys: () => [qk.fixtures.all, qk.listings.all],
+    optimistic: (previous, { ids }) => patchTickets(previous, ids, { status: 'listed' }),
+    successMessage: (_result, { ids }) => {
+      const n = ids.length
+      return `${n} ${n === 1 ? 'seat' : 'seats'} listed on the club exchange at face value.`
+    },
   })
 }
 
@@ -242,6 +326,32 @@ export interface Comparables {
 
 function comparableFilters(fixtureId: string): ListingFilters {
   return { fixtureId: [fixtureId], page: 1, pageSize: 200, sort: 'price', order: 'asc' }
+}
+
+/**
+ * Every listing Fetch.io holds for one fixture, for the Associate dialog's preview.
+ *
+ * `null` until the dialog opens, for the same reason the comparables lookup waits for
+ * its button: the seat table does not need this, and a screen that fetches what it
+ * might use is a screen that is slow on the load nobody asked for. It shares
+ * `comparableFilters`, so if both are open React Query serves one request.
+ */
+export function useFixtureListings(fixtureId: string | null): {
+  listings: Listing[]
+  loading: boolean
+} {
+  const filters = React.useMemo(
+    () => (fixtureId ? comparableFilters(fixtureId) : null),
+    [fixtureId],
+  )
+
+  const query = useQuery<ApiResult<Listing[]>, ApiError>({
+    queryKey: qk.listings.list(filters ?? {}),
+    queryFn: () => listingsApi.list(filters!),
+    enabled: Boolean(filters),
+  })
+
+  return { listings: query.data?.data ?? [], loading: Boolean(filters) && query.isPending }
 }
 
 export function useComparables(params: ComparablesQuery | null): Comparables {

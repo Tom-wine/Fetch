@@ -49,7 +49,14 @@ export const providerIdSchema = z.enum([
   'stubhub-exchange',
 ])
 
-export const platformSchema = z.enum(['viagogo', 'stubhub', 'ticombo', 'gigsberg', 'fanpass'])
+export const platformSchema = z.enum([
+  'viagogo',
+  'stubhub',
+  'ticombo',
+  'gigsberg',
+  'fanpass',
+  'club-exchange',
+])
 export const currencySchema = z.enum(['GBP', 'EUR', 'USD'])
 export const competitionSchema = z.enum([
   'premier-league',
@@ -168,6 +175,7 @@ export const ticketSchema = z.object({
   visibility: ticketVisibilitySchema,
   status: ticketStatusSchema,
   groupId: z.string().optional(),
+  listingId: z.string().optional(),
   orderId: z.string(),
   purchasedAt: isoDate,
 })
@@ -404,10 +412,33 @@ export const idsSchema = z.object({ ids: z.array(z.string()).min(1) })
 
 export const ticketActionSchema = z.object({
   ids: z.array(z.string()).min(1),
-  /** `list` needs a platform and a price; the others ignore them. */
+  /** `list` needs a platform and a price; most of the others ignore them. */
   platform: platformSchema.optional(),
   price: minorUnits.positive().optional(),
+  /**
+   * `associate-listing` only: the marketplace-side id of a listing that ALREADY
+   * exists. This is the whole difference from `list`, which mints a new one.
+   */
+  listingId: z.string().min(1).optional(),
 })
+
+/**
+ * `PATCH /tickets/:id`. Every field optional — a patch says what changed, and an
+ * absent key means "leave it". `.strict()` so a typo'd field is a 422 rather than a
+ * write that silently does nothing.
+ */
+export const ticketPatchSchema = z
+  .object({
+    price: minorUnits.positive().optional(),
+    block: z.string().min(1).optional(),
+    row: z.string().min(1).optional(),
+    seat: z.string().min(1).optional(),
+    visibility: ticketVisibilitySchema.optional(),
+  })
+  .strict()
+  .refine((v) => Object.keys(v).length > 0, { message: 'A patch must change something.' })
+
+export type TicketPatch = z.infer<typeof ticketPatchSchema>
 
 export const proxyBulkSchema = z.object({
   /** Raw `host:port:user:pass` lines, as pasted. */

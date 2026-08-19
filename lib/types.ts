@@ -34,7 +34,14 @@ export type ClubId =
 export type ProviderId =
   'club-direct' | 'ticketmaster-uk' | 'eventim-uk' | 'seatgeek' | 'stubhub-exchange'
 
-export type Platform = 'viagogo' | 'stubhub' | 'ticombo' | 'gigsberg' | 'fanpass'
+/**
+ * Where a seat can be offered. The first five are secondary marketplaces; the last is
+ * the club's own resale exchange, which is a different kind of venue — it sells at
+ * face value, it is the only channel `POST /tickets/resell-face-value` targets, and it
+ * is never a choice in the `List` picker. `PlatformInfo.kind` in the registry is what
+ * tells the two apart; nothing branches on the id.
+ */
+export type Platform = 'viagogo' | 'stubhub' | 'ticombo' | 'gigsberg' | 'fanpass' | 'club-exchange'
 
 export type Currency = 'GBP' | 'EUR' | 'USD'
 
@@ -141,6 +148,12 @@ export interface Ticket {
   visibility: TicketVisibility
   status: TicketStatus
   groupId?: string
+  /**
+   * The marketplace-side id of the listing this seat is being sold through, once one
+   * exists — set by `POST /tickets/list`, `/associate-listing` and
+   * `/resell-face-value`. Absent on a seat that is only held.
+   */
+  listingId?: string
   orderId: string
   purchasedAt: string
 }
