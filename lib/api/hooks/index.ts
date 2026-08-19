@@ -40,3 +40,22 @@ export {
   useSearch,
   useTestProxy,
 } from './useDashboard'
+export {
+  toProfileInput,
+  useBallotProfiles,
+  useBallotProfilesTable,
+  useBallotRun,
+  useBallotRuns,
+  useBallotRunsTable,
+  useBallotTasks,
+  useCreateBallotProfile,
+  useCreateRun,
+  useDeleteBallotProfile,
+  useDeleteRun,
+  useDuplicateBallotProfile,
+  usePasteAccounts,
+  useRunAction,
+  useRunEventsFetcher,
+  useUpdateBallotProfile,
+  type PasteResult,
+} from './useBallots'

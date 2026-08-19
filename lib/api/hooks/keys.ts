@@ -3,6 +3,8 @@ import type {
   FixtureFilters,
   ListParams,
   ProxyFilters,
+  RunFilters,
+  TaskFilters,
   TicketFilters,
 } from '../endpoints'
 
@@ -62,5 +64,27 @@ export const qk = {
   search: {
     all: ['search'] as const,
     query: (q: string) => [...qk.search.all, q] as const,
+  },
+  ballots: {
+    all: ['ballots'] as const,
+    profiles: {
+      all: ['ballots', 'profiles'] as const,
+      list: (filters: ListParams) => [...qk.ballots.profiles.all, 'list', filters] as const,
+    },
+    runs: {
+      all: ['ballots', 'runs'] as const,
+      lists: () => [...qk.ballots.runs.all, 'list'] as const,
+      list: (filters: RunFilters) => [...qk.ballots.runs.lists(), filters] as const,
+      detail: (id: string) => [...qk.ballots.runs.all, 'detail', id] as const,
+      tasks: (id: string, filters: TaskFilters) =>
+        [...qk.ballots.runs.all, 'detail', id, 'tasks', filters] as const,
+      /**
+       * Deliberately NOT keyed by cursor. The feed is append-only, so its cache entry
+       * is the accumulated list and each poll extends it; putting `since` in the key
+       * would mint a fresh entry per tick and the log would restart from empty every
+       * time. Part 14 owns the polling that fills it.
+       */
+      events: (id: string) => [...qk.ballots.runs.all, 'detail', id, 'events'] as const,
+    },
   },
 } as const

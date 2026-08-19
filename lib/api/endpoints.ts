@@ -1,9 +1,12 @@
 import { z } from 'zod'
-import { apiFetch, type QueryParams } from './client'
+import { API_BASE_URL, apiFetch, type QueryParams } from './client'
 import {
   accountSchema,
   accountStatsSchema,
   activityEntrySchema,
+  ballotProfileSchema,
+  ballotRunSchema,
+  ballotTaskSchema,
   bulkActionResultSchema,
   bulkImportResultSchema,
   clubRefSchema,
@@ -14,13 +17,24 @@ import {
   proxySchema,
   revealSchema,
   revenuePointSchema,
+  runEventSchema,
   searchResultSchema,
   ticketSchema,
   type AccountCreate,
   type AccountPatch,
+  type BallotProfileInput,
+  type RunCreate,
   type TicketPatch,
 } from './schemas'
-import type { AccountStatus, ClubId, Competition, ProxyStatus } from '@/lib/types'
+import type {
+  AccountStatus,
+  BallotClubId,
+  ClubId,
+  Competition,
+  ProxyStatus,
+  RunStatus,
+  TaskStatus,
+} from '@/lib/types'
 
 /**
  * One thin typed function per §6.3 endpoint. These are the only callers of
@@ -62,6 +76,15 @@ export interface TicketFilters extends ListParams {
 export interface ProxyFilters extends ListParams {
   status?: ProxyStatus[]
   groupId?: string[]
+}
+
+export interface RunFilters extends ListParams {
+  status?: RunStatus[]
+}
+
+export interface TaskFilters extends ListParams {
+  status?: TaskStatus[]
+  clubId?: BallotClubId[]
 }
 
 /* -------------------------------------------------------------- accounts */
@@ -209,4 +232,87 @@ export const notificationsApi = {
 
 export const searchApi = {
   query: (q: string) => apiFetch('/search', { query: { q }, schema: z.array(searchResultSchema) }),
+}
+
+/* --------------------------------------------------------------- ballots */
+
+const pasteResultSchema = z.object({
+  created: z.int().nonnegative(),
+  updated: z.int().nonnegative(),
+  skipped: z.int().nonnegative(),
+  errors: z.array(
+    z.object({ row: z.int(), email: z.string().optional(), message: z.string() }),
+  ),
+})
+
+const removedSchema = z.object({ id: z.string() })
+
+export type RunAction = 'pause' | 'resume' | 'stop' | 'retry-failed'
+
+export const ballotsApi = {
+  /* ------------------------------------------------------------- profiles */
+
+  profiles: (params: ListParams = {}) =>
+    apiFetch('/ballots/profiles', { query: params, schema: z.array(ballotProfileSchema) }),
+
+  createProfile: (body: BallotProfileInput) =>
+    apiFetch('/ballots/profiles', { method: 'POST', body, schema: ballotProfileSchema }),
+
+  updateProfile: (id: string, body: BallotProfileInput) =>
+    apiFetch(`/ballots/profiles/${id}`, { method: 'PATCH', body, schema: ballotProfileSchema }),
+
+  deleteProfile: (id: string) =>
+    apiFetch(`/ballots/profiles/${id}`, { method: 'DELETE', schema: removedSchema }),
+
+  /* ----------------------------------------------------------------- pool */
+
+  /**
+   * The §B5.1 loader. The block goes up once and is never persisted anywhere on the
+   * client — no draft in localStorage, no copy in a query cache (§B7 rule 2).
+   */
+  paste: (club: BallotClubId, text: string) =>
+    apiFetch('/ballots/accounts/paste', {
+      method: 'POST',
+      body: { club, text },
+      schema: pasteResultSchema,
+    }),
+
+  /* ----------------------------------------------------------------- runs */
+
+  runs: (params: RunFilters = {}) =>
+    apiFetch('/ballots/runs', { query: params, schema: z.array(ballotRunSchema) }),
+
+  run: (id: string) => apiFetch(`/ballots/runs/${id}`, { schema: ballotRunSchema }),
+
+  createRun: (body: RunCreate) =>
+    apiFetch('/ballots/runs', { method: 'POST', body, schema: ballotRunSchema }),
+
+  deleteRun: (id: string) =>
+    apiFetch(`/ballots/runs/${id}`, { method: 'DELETE', schema: removedSchema }),
+
+  action: (id: string, action: RunAction) =>
+    apiFetch(`/ballots/runs/${id}/${action}`, { method: 'POST', schema: ballotRunSchema }),
+
+  tasks: (id: string, params: TaskFilters = {}) =>
+    apiFetch(`/ballots/runs/${id}/tasks`, {
+      query: params,
+      schema: z.array(ballotTaskSchema),
+    }),
+
+  /**
+   * The cursor feed. `since` is the `meta.lastSeq` of the previous response, so the
+   * caller appends what comes back and never deduplicates.
+   */
+  events: (id: string, since = 0, limit?: number) =>
+    apiFetch(`/ballots/runs/${id}/events`, {
+      query: { since, limit },
+      schema: z.array(runEventSchema),
+    }),
+
+  /**
+   * The CSV is a download, not a resource read — it comes back as a file rather than
+   * the envelope, so it is a plain href the browser handles, not an `apiFetch` whose
+   * result would have to be turned back into a Blob.
+   */
+  exportUrl: (id: string) => `${API_BASE_URL}/ballots/runs/${id}/export`,
 }
