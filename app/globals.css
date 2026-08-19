@@ -340,7 +340,13 @@
 }
 
 /* Motion: sidebar collapse is 300ms, everything else 150ms, and non-essential
-   transitions drop to 0ms when the user asks for reduced motion (§3.4). */
+   transitions drop to 0ms when the user asks for reduced motion (§3.4).
+
+   Two ways to ask, and they OR rather than override. The OS setting is the one that
+   matters most and is honoured whatever the app thinks; the in-app toggle
+   (Settings → Preferences, written onto the root element by LocaleProvider) exists for
+   someone who wants it here but not everywhere. Turning the app toggle off can never
+   put motion back for someone whose system asked for less. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -356,4 +362,18 @@
     animation: none !important;
     opacity: 1;
   }
+}
+
+[data-reduced-motion='true'] *,
+[data-reduced-motion='true'] *::before,
+[data-reduced-motion='true'] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+[data-reduced-motion='true'] .caret-blink {
+  animation: none !important;
+  opacity: 1;
 }

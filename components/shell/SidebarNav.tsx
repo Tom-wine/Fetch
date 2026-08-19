@@ -10,7 +10,8 @@ import { snake } from '@/lib/format/text'
 import { SectionLabel } from '@/components/ui/typography'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { initialsOf, useProfile } from '@/lib/format/LocaleProvider'
 import { CURRENT_USER, NAV, NAV_FOOTER, isGroup, type NavItem } from './nav-config'
 import { Logo } from './Logo'
 
@@ -97,6 +98,7 @@ export function SidebarNav({
   className?: string
 }) {
   const isActive = useIsActive()
+  const profile = useProfile()
 
   return (
     <TooltipProvider delayDuration={100}>
@@ -175,16 +177,15 @@ export function SidebarNav({
         <div className="shrink-0 border-t border-border p-3">
           <div className={cn('flex items-center gap-2.5', collapsed && 'justify-center')}>
             <Avatar className="size-8 shrink-0">
+              {profile.avatarUrl && <AvatarImage src={profile.avatarUrl} alt="" />}
               <AvatarFallback className="bg-surface-raised text-caption font-medium text-muted">
-                {CURRENT_USER.initials}
+                {initialsOf(profile.name)}
               </AvatarFallback>
             </Avatar>
             {!collapsed && (
               <div className="min-w-0">
                 {/* User data renders verbatim — never snake_cased (§3.3b guardrail). */}
-                <div className="truncate text-caption font-medium text-text">
-                  {CURRENT_USER.name}
-                </div>
+                <div className="truncate text-caption font-medium text-text">{profile.name}</div>
                 <div className="truncate text-caption text-faint">{CURRENT_USER.email}</div>
               </div>
             )}

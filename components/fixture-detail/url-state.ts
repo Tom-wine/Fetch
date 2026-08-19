@@ -4,6 +4,7 @@ import * as React from 'react'
 import { useSearchParams } from 'next/navigation'
 
 import { useUrlWriter } from '@/lib/url-state'
+import { useUiPreferences } from '@/lib/format/LocaleProvider'
 import { ALL } from '@/components/data/FilterSelect'
 import type { SortSpec } from '@/components/data/DataTable'
 import type { TicketFilters } from '@/lib/api/endpoints'
@@ -24,7 +25,6 @@ import { columnIdForField, DEFAULT_SORT_FIELD, isSortField } from './sorting'
  * merging into the last RENDERED params silently drops the sort.
  */
 
-export const DEFAULT_PAGE_SIZE = 25
 export const SEARCH_DEBOUNCE_MS = 250
 
 export type PanelTab = 'ticket' | 'fixture' | 'map'
@@ -61,7 +61,9 @@ export function useFixtureDetailUrlState(fixtureId: string) {
   const sortField = isSortField(rawSort) ? (rawSort as string) : DEFAULT_SORT_FIELD
   const order: 'asc' | 'desc' = params.get('order') === 'desc' ? 'desc' : 'asc'
   const page = Math.max(1, Number(params.get('page') ?? 1) || 1)
-  const size = Math.max(1, Number(params.get('size') ?? DEFAULT_PAGE_SIZE) || DEFAULT_PAGE_SIZE)
+  // Rows per page falls back to the operator's preference, like every other table.
+  const { pageSize: defaultSize } = useUiPreferences()
+  const size = Math.max(1, Number(params.get('size') ?? defaultSize) || defaultSize)
   const rawTab = params.get('tab')
   const tab: PanelTab = rawTab && rawTab in TABS ? (rawTab as PanelTab) : 'ticket'
   const fail = readFail(params.get('__fail'))
@@ -77,7 +79,7 @@ export function useFixtureDetailUrlState(fixtureId: string) {
         if ('sort' in patch)
           set(next, 'sort', patch.sort === DEFAULT_SORT_FIELD ? null : patch.sort)
         if ('order' in patch) set(next, 'order', patch.order === 'asc' ? null : patch.order)
-        if ('size' in patch) set(next, 'size', patch.size === DEFAULT_PAGE_SIZE ? null : patch.size)
+        if ('size' in patch) set(next, 'size', patch.size === defaultSize ? null : patch.size)
         if ('page' in patch) set(next, 'page', (patch.page ?? 1) <= 1 ? null : patch.page)
         if ('tab' in patch) set(next, 'tab', patch.tab === 'ticket' ? null : patch.tab)
 
@@ -89,7 +91,7 @@ export function useFixtureDetailUrlState(fixtureId: string) {
         if (!viewOnly) next.delete('page')
       })
     },
-    [url],
+    [url, defaultSize],
   )
 
   /**

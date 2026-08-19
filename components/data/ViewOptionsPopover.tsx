@@ -17,7 +17,11 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
  * type below 13px is not.
  */
 
-export type Density = 'comfortable' | 'compact'
+// Density is a PREFERENCE before it is a table prop, so the union lives with the
+// preference store and is re-exported here for the call sites that already import it.
+import type { Density } from '@/lib/format/LocaleProvider'
+
+export type { Density }
 export type ViewMode = 'table' | 'grid'
 
 export const PAGE_SIZES = [5, 10, 25, 50, 100, 200] as const

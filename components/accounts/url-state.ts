@@ -4,6 +4,7 @@ import * as React from 'react'
 import { useSearchParams } from 'next/navigation'
 
 import { useUrlWriter } from '@/lib/url-state'
+import { useUiPreferences } from '@/lib/format/LocaleProvider'
 
 import type { AccountFilters } from '@/lib/api/endpoints'
 import type { AccountStatus, ClubId, MembershipType } from '@/lib/types'
@@ -31,12 +32,17 @@ export const ACCOUNT_TABS: Array<{ id: AccountsTabId; label: string }> = [
   { id: 'otp', label: 'OTP Inbox' },
 ]
 
-/** Values equal to these are dropped from the URL, so a clean view has a clean link. */
+/**
+ * Values equal to these are dropped from the URL, so a clean view has a clean link.
+ *
+ * `size` is the exception: its default is the operator's rows-per-page preference, so
+ * it is resolved per render rather than sitting in this table. The rest are properties
+ * of the screen and never move.
+ */
 const DEFAULTS = {
   tab: 'accounts' as AccountsTabId,
   order: 'asc' as 'asc' | 'desc',
   page: 1,
-  size: 25,
 }
 
 export const SEARCH_DEBOUNCE_MS = 250
@@ -70,7 +76,8 @@ export function useAccountsUrlState() {
   // Direction only means something with a field to apply it to.
   const order = sortField && params.get('order') === 'desc' ? 'desc' : DEFAULTS.order
   const page = Math.max(1, Number(params.get('page') ?? DEFAULTS.page) || DEFAULTS.page)
-  const size = Math.max(1, Number(params.get('size') ?? DEFAULTS.size) || DEFAULTS.size)
+  const { pageSize: defaultSize } = useUiPreferences()
+  const size = Math.max(1, Number(params.get('size') ?? defaultSize) || defaultSize)
 
   /**
    * `useUrlWriter` carries the URL forward between writes in the same tick — see
@@ -81,8 +88,12 @@ export function useAccountsUrlState() {
     (patch: AccountsUrlPatch) => {
       url.commit((next) => {
         for (const [key, value] of Object.entries(patch)) {
-          const isDefault = value === DEFAULTS[key as keyof typeof DEFAULTS]
-          if (value === undefined || value === null || value === '' || isDefault) next.delete(key)
+          // `size` is compared against the preference, not against a constant, so
+          // choosing the size you already prefer leaves the URL clean.
+          const fallback: unknown =
+            key === 'size' ? defaultSize : DEFAULTS[key as keyof typeof DEFAULTS]
+          if (value === undefined || value === null || value === '' || value === fallback)
+            next.delete(key)
           else next.set(key, String(value))
         }
 
@@ -91,7 +102,7 @@ export function useAccountsUrlState() {
         if (patch.page === undefined) next.delete('page')
       })
     },
-    [url],
+    [url, defaultSize],
   )
 
   /**

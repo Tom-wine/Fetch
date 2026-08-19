@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation'
 import { useUrlWriter } from '@/lib/url-state'
 
 import { ALL } from '@/components/data/FilterSelect'
-import { useLocale } from '@/lib/format/LocaleProvider'
+import { useLocale, useUiPreferences } from '@/lib/format/LocaleProvider'
 import type { ListingFilters } from '@/lib/api/endpoints'
 import type { ListingStatus, Platform } from '@/lib/types'
 import { PLATFORMS } from '@/lib/registries/platforms'
@@ -30,7 +30,6 @@ import type { SortSpec } from '@/components/data/DataTable'
 const PLATFORM_IDS = new Set<string>(PLATFORMS.map((p) => p.id))
 const STATUS_IDS = new Set<string>(LISTING_STATUSES)
 
-export const DEFAULT_PAGE_SIZE = 25
 export const SEARCH_DEBOUNCE_MS = 250
 
 export interface ListingsUrlPatch {
@@ -71,7 +70,10 @@ export function useListingsUrlState() {
   const sortField = normaliseSortField(params.get('sort'))
   const order: 'asc' | 'desc' = params.get('order') === 'desc' ? 'desc' : 'asc'
   const page = Math.max(1, Number(params.get('page') ?? 1) || 1)
-  const size = Math.max(1, Number(params.get('size') ?? DEFAULT_PAGE_SIZE) || DEFAULT_PAGE_SIZE)
+  // Rows per page defaults to the operator's preference; the URL only records a
+  // departure from it, exactly like `show` above.
+  const { pageSize: defaultSize } = useUiPreferences()
+  const size = Math.max(1, Number(params.get('size') ?? defaultSize) || defaultSize)
   const fail = readFail(params.get('__fail'))
 
   /**
@@ -86,7 +88,7 @@ export function useListingsUrlState() {
         if ('show' in patch) set(next, 'show', patch.show === defaultShow ? null : patch.show)
         if ('sort' in patch) set(next, 'sort', patch.sort)
         if ('order' in patch) set(next, 'order', patch.order === 'asc' ? null : patch.order)
-        if ('size' in patch) set(next, 'size', patch.size === DEFAULT_PAGE_SIZE ? null : patch.size)
+        if ('size' in patch) set(next, 'size', patch.size === defaultSize ? null : patch.size)
         if ('page' in patch) set(next, 'page', (patch.page ?? 1) <= 1 ? null : patch.page)
 
         if ('platforms' in patch) {
@@ -101,7 +103,7 @@ export function useListingsUrlState() {
         if (!displayOnly) next.delete('page')
       })
     },
-    [defaultShow, url],
+    [defaultShow, defaultSize, url],
   )
 
   /**

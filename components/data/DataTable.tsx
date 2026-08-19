@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils'
 import { snake, upperSnake } from '@/lib/format/text'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ErrorState, SkeletonTable } from './states'
+import { useUiPreferences } from '@/lib/format/LocaleProvider'
 import { ViewOptionsPopover, type ColumnToggle, type Density } from './ViewOptionsPopover'
 
 /**
@@ -108,6 +109,12 @@ export interface DataTableProps<TData extends RowData> {
 
   /** Column ids hidden on first render — the fix when a table crowds at 1280px. */
   initiallyHidden?: string[]
+  /**
+   * Rows per page and row height on first render. Both fall back to the user's
+   * `/settings → Preferences` when the caller says nothing, which is what makes those
+   * two preferences reach every table without a prop threaded through every screen.
+   * A caller that DOES pass one is making a claim about its own screen, so it wins.
+   */
   defaultPageSize?: number
   defaultDensity?: Density
 
@@ -186,8 +193,8 @@ export function DataTable<TData extends RowData>({
   onSelectionChange,
   onRowClick,
   initiallyHidden = [],
-  defaultPageSize = 25,
-  defaultDensity = 'comfortable',
+  defaultPageSize,
+  defaultDensity,
   pageCount,
   totalRows,
   page,
@@ -203,7 +210,21 @@ export function DataTable<TData extends RowData>({
   toolbarActions,
   className,
 }: DataTableProps<TData>) {
-  const [density, setDensity] = React.useState<Density>(defaultDensity)
+  const preferences = useUiPreferences()
+  const initialDensity = defaultDensity ?? preferences.density
+  const initialPageSize = defaultPageSize ?? preferences.pageSize
+
+  const [density, setDensity] = React.useState<Density>(initialDensity)
+
+  /**
+   * A preference change reaches tables that are already mounted. Without this the
+   * setting would look broken until a reload, which is exactly when a user decides a
+   * setting does not work. The VIEW popover still wins for the rest of the session —
+   * it writes `density` again after this runs.
+   */
+  React.useEffect(() => {
+    setDensity(initialDensity)
+  }, [initialDensity])
   const [internalSelection, setInternalSelection] = React.useState<RowSelectionState>({})
   const rowSelection = selection ?? internalSelection
   const setRowSelection = onSelectionChange ?? setInternalSelection
@@ -253,7 +274,7 @@ export function DataTable<TData extends RowData>({
   // Page size is controlled when the caller supplies it and internal otherwise, so a
   // screen with its own rows-per-page control and the VIEW popover read the same
   // number instead of drifting apart.
-  const [internalPageSize, setInternalPageSize] = React.useState(defaultPageSize)
+  const [internalPageSize, setInternalPageSize] = React.useState(initialPageSize)
   const effectivePageSize = controlledPageSize ?? internalPageSize
 
   const applyPageSize = React.useCallback(
@@ -326,7 +347,7 @@ export function DataTable<TData extends RowData>({
         }
       : {}),
     initialState: {
-      pagination: { pageIndex: 0, pageSize: controlledPageSize ?? defaultPageSize },
+      pagination: { pageIndex: 0, pageSize: controlledPageSize ?? initialPageSize },
       columnVisibility: initialVisibility,
       // The first column is frozen (§9 rule 3) — pinning drives the sticky offset.
       columnPinning: { start: enableSelection ? [SELECT_COLUMN_ID] : [], end: [] },
@@ -348,7 +369,7 @@ export function DataTable<TData extends RowData>({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [controlledPageSize, manual])
 
-  const pagination = table.state.pagination ?? { pageIndex: 0, pageSize: defaultPageSize }
+  const pagination = table.state.pagination ?? { pageIndex: 0, pageSize: initialPageSize }
   const rows = table.getRowModel().rows
   const total = manual ? (totalRows ?? rows.length) : table.getRowCount()
   const selectedCount = Object.values(rowSelection).filter(Boolean).length

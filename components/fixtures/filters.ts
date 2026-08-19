@@ -4,6 +4,7 @@ import * as React from 'react'
 import { useSearchParams } from 'next/navigation'
 
 import { useUrlWriter } from '@/lib/url-state'
+import { useUiPreferences } from '@/lib/format/LocaleProvider'
 
 import { ALL } from '@/components/data/FilterSelect'
 import { CLUBS, type ClubId } from '@/lib/registries/clubs'
@@ -122,11 +123,19 @@ function one(params: URLSearchParams, key: string, allowed: (value: string) => b
   return raw && allowed(raw) ? raw : ALL
 }
 
-export function readState(params: URLSearchParams): FixtureQueryState {
+/**
+ * `defaultPageSize` is threaded in rather than read from `DEFAULT_STATE` because its
+ * default is the operator's rows-per-page preference, which only a hook can see. Both
+ * this and `writeState` take it so a size equal to the preference stays out of the URL.
+ */
+export function readState(
+  params: URLSearchParams,
+  defaultPageSize: number = DEFAULT_STATE.pageSize,
+): FixtureQueryState {
   const when = params.get('when')
   const view = params.get('view')
   const page = Number(params.get('page') ?? 1)
-  const size = Number(params.get('size') ?? DEFAULT_STATE.pageSize)
+  const size = Number(params.get('size') ?? defaultPageSize)
 
   return {
     q: params.get('q') ?? '',
@@ -142,13 +151,16 @@ export function readState(params: URLSearchParams): FixtureQueryState {
     order: params.get('order') === 'desc' ? 'desc' : 'asc',
     view: view === 'grid' ? 'grid' : 'table',
     page: Number.isFinite(page) && page > 0 ? Math.floor(page) : 1,
-    pageSize: Number.isFinite(size) && size > 0 ? Math.floor(size) : DEFAULT_STATE.pageSize,
+    pageSize: Number.isFinite(size) && size > 0 ? Math.floor(size) : defaultPageSize,
     fail: readFail(params.get('__fail')),
   }
 }
 
 /** Only non-default values are written, so a pristine screen keeps a clean URL. */
-export function writeState(state: FixtureQueryState): URLSearchParams {
+export function writeState(
+  state: FixtureQueryState,
+  defaultPageSize: number = DEFAULT_STATE.pageSize,
+): URLSearchParams {
   const params = new URLSearchParams()
   if (state.q) params.set('q', state.q)
   if (state.when !== DEFAULT_STATE.when) params.set('when', state.when)
@@ -161,7 +173,7 @@ export function writeState(state: FixtureQueryState): URLSearchParams {
   if (state.order !== DEFAULT_STATE.order) params.set('order', state.order)
   if (state.view !== DEFAULT_STATE.view) params.set('view', state.view)
   if (state.page > 1) params.set('page', String(state.page))
-  if (state.pageSize !== DEFAULT_STATE.pageSize) params.set('size', String(state.pageSize))
+  if (state.pageSize !== defaultPageSize) params.set('size', String(state.pageSize))
   if (state.fail !== null) params.set('__fail', String(state.fail))
   return params
 }
@@ -188,7 +200,12 @@ export function useFixtureFilters(): FixtureFilterControls {
   const params = useSearchParams()
   const url = useUrlWriter()
 
-  const state = React.useMemo(() => readState(new URLSearchParams(params.toString())), [params])
+  const { pageSize: defaultPageSize } = useUiPreferences()
+
+  const state = React.useMemo(
+    () => readState(new URLSearchParams(params.toString()), defaultPageSize),
+    [params, defaultPageSize],
+  )
 
   /**
    * `useUrlWriter` carries the URL forward between writes in the same tick — see
@@ -198,20 +215,20 @@ export function useFixtureFilters(): FixtureFilterControls {
    */
   const push = React.useCallback(
     (next: FixtureQueryState) => {
-      url.replaceWith(writeState(next))
+      url.replaceWith(writeState(next, defaultPageSize))
     },
-    [url],
+    [url, defaultPageSize],
   )
 
   const set = React.useCallback(
     (patch: Partial<FixtureQueryState>) => {
-      const next = { ...readState(url.read()), ...patch }
+      const next = { ...readState(url.read(), defaultPageSize), ...patch }
       // Page 9 of 13 is meaningless once the filter — or the order — under it changes.
       const onlyPaging = Object.keys(patch).every((k) => k === 'page' || k === 'view')
       if (!onlyPaging) next.page = 1
       push(next)
     },
-    [push, url],
+    [push, url, defaultPageSize],
   )
 
   const clear = React.useCallback(() => {
