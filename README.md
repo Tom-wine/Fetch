@@ -4,8 +4,7 @@ Fetch.io is the control room for someone who runs **many Premier League ticketin
 
 Club ticketing is membership-gated: every account is a membership with its own credentials, client
 reference, loyalty points and eligibility window. A serious operator holds tens to hundreds of these
-across clubs, buys allocations when they drop, and relists on secondary marketplaces (Viagogo,
-StubHub, Ticombo, GigsBerg).
+across clubs, and enters them into the club ballots that decide who gets to buy.
 
 The app answers four questions, in order of how often they get asked:
 
@@ -14,12 +13,11 @@ The app answers four questions, in order of how often they get asked:
 | Are my accounts healthy — logged in, unlocked, eligible? | `/accounts`                                |
 | Did anything sell, and what am I exposed to?          | `/dashboard`                               |
 | What do I own, per fixture?                           | `/mytickets` → `/mytickets/fixture/[id]`   |
-| What is live on the market and at what price?         | `/mylistings`                              |
 
 **What works today:** all six screens are built and driven by a seeded mock API — accounts with
-bulk CSV import, per-fixture seat inventory with the full actions menu, live listings with inline
-repricing, a dashboard whose figures agree with each other, settings that drive every date and price
-in the app, and a ⌘K palette over all of it.
+bulk CSV import, per-fixture seat inventory with the full actions menu, a dashboard whose figures
+agree with each other, settings that drive every date and price in the app, and a ⌘K palette over
+all of it. The ballots module is next.
 
 **This repo is frontend only.** There is no backend. Every read and write goes through a typed,
 Zod-validated API client whose base URL is a single environment variable, so a real backend can be
@@ -57,12 +55,6 @@ Two panes: every seat on the left, and whatever is selected explained on the rig
 menu groups, lists, associates, edits, transfers, resells at face value and shares.
 
 ![Fixture detail](./docs/screenshots/fixture-detail.jpg)
-
-### `/mylistings` — what is live and at what price
-Every listing across every marketplace, with inline price editing, bulk repricing and a display
-currency that converts the whole column.
-
-![My listings](./docs/screenshots/mylistings.jpg)
 
 Plus `/settings` (four tabs, and the one place preferences are written), five honest "coming soon"
 pages, and `/kitchen-sink` — every component in every variant, in both themes.

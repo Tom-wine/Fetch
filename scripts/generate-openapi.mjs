@@ -20,7 +20,6 @@ const COMPONENTS = {
   Account: S.accountSchema,
   Fixture: S.fixtureSchema,
   Ticket: S.ticketSchema,
-  Listing: S.listingSchema,
   Proxy: S.proxySchema,
   KpiSet: S.kpiSetSchema,
   AccountStats: S.accountStatsSchema,
@@ -37,8 +36,6 @@ const COMPONENTS = {
   ApiError: S.apiErrorSchema,
   AccountCreate: S.accountCreateSchema,
   AccountPatch: S.accountPatchSchema,
-  ListingPatch: S.listingPatchSchema,
-  ListingBulk: S.listingBulkSchema,
   TicketAction: S.ticketActionSchema,
   TicketPatch: S.ticketPatchSchema,
 }
@@ -314,7 +311,7 @@ const spec = {
       post: {
         summary: 'Ticket action',
         description:
-          'The segment is an action name here. `list` creates a listing and mints its own marketplace id; `associate-listing` links one that already exists and 422s if the id is unknown or belongs to another fixture. `resell-face-value` takes no price and no platform — it lists on `club-exchange` at each ticket’s faceValue.',
+          'The segment is an action name here. Each returns the full set of updated tickets, so the client replaces those cache entries wholesale rather than merging a partial.',
         parameters: [
           {
             name: 'segment',
@@ -322,14 +319,7 @@ const spec = {
             required: true,
             schema: {
               type: 'string',
-              enum: [
-                'group',
-                'list',
-                'associate-listing',
-                'resell-face-value',
-                'transfer',
-                'share',
-              ],
+              enum: ['group', 'transfer', 'share'],
             },
             description: 'Action name.',
           },
@@ -337,7 +327,7 @@ const spec = {
         requestBody: body('TicketAction'),
         responses: {
           200: {
-            description: 'Updated tickets, plus any listings created',
+            description: 'The updated tickets',
             content: {
               'application/json': {
                 schema: {
@@ -348,10 +338,6 @@ const spec = {
                       type: 'object',
                       properties: {
                         tickets: { type: 'array', items: { $ref: '#/components/schemas/Ticket' } },
-                        listings: {
-                          type: 'array',
-                          items: { $ref: '#/components/schemas/Listing' },
-                        },
                       },
                     },
                     meta: { type: 'null' },
@@ -366,34 +352,6 @@ const spec = {
             content: { 'application/json': { schema: errorEnvelope } },
           },
         },
-      },
-    },
-    '/listings': {
-      get: {
-        summary: 'List listings',
-        parameters: [
-          ...LIST_PARAMS,
-          repeatable('platform', 'Filter by marketplace.'),
-          repeatable('status', 'Filter by listing status.'),
-          repeatable('accountId', 'Filter by account.'),
-          repeatable('fixtureId', 'Filter by fixture.'),
-        ],
-        responses: responses('Listing', true),
-      },
-    },
-    '/listings/{id}': {
-      patch: {
-        summary: 'Inline price edit or status change',
-        parameters: [idParam],
-        requestBody: body('ListingPatch'),
-        responses: responses('Listing'),
-      },
-    },
-    '/listings/bulk': {
-      post: {
-        summary: 'Activate / deactivate / reprice / delete',
-        requestBody: body('ListingBulk'),
-        responses: responses('BulkActionResult'),
       },
     },
     '/proxies': {

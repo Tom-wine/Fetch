@@ -111,7 +111,7 @@ means a "helpful" shortcut on your side is a hard failure on ours.
 
 ## 3. Money is an integer of minor units. Always.
 
-`price`, `faceValue`, `revenue`, `valueAtRisk`, `floorPrice` — every one is an
+`price`, `faceValue`, `revenue`, `valueAtRisk` — every one is an
 **integer in the currency's minor unit**, paired with an ISO-4217 code:
 
 ```json
@@ -121,7 +121,7 @@ means a "helpful" shortcut on your side is a hard failure on ours.
 Never a float. Never a formatted string. Never a major-unit number.
 
 The whole frontend money layer (`lib/format/money.ts`) assumes this, and the display
-currency, the `≈` conversion marker and the reprice dialog all do integer arithmetic.
+currency, the `≈` conversion marker and the seat-edit dialog all do integer arithmetic.
 
 **What breaks:** `245.5` parses fine and renders as £2.46. A float is the failure mode
 that produces plausible wrong numbers on every screen at once, which is why the schema
@@ -231,55 +231,7 @@ support, and a column missing from them is a column with no arrow in the header.
 Paging follows from that: `page` and `pageSize`, `meta.total` and `meta.totalPages`,
 and `pageSize` is capped at 200.
 
-### Normalised-currency sorting is a BACKEND capability
-
-`GET /listings?sort=price` orders by each listing's price **in its own currency**,
-because that integer is the only price you hold.
-
-`/mylistings` has a display-currency normaliser: pick GBP and every row is shown
-converted. The two do not agree. A €325.30 listing sorts above a £309.20 one —
-`32530 > 30920` — but displayed in pounds the euro row is the smaller number, so the
-column looks broken.
-
-The UI does not fake it. When a normaliser is active **and** the visible rows really
-are out of order, it renders a small muted `sorted by native currency` note beside the
-PRICE header, and leaves the header sortable because the server does honour the sort.
-
-To make normalised sorting real, you need one of:
-
-1. **Store a normalised amount** alongside the native one, refreshed when the rate
-   moves, and accept `sort=priceNormalised`.
-2. **Sort by a rate-converted expression** at query time:
-   `ORDER BY price * rate(currency, :display)`.
-3. **Accept a `displayCurrency` parameter** on `GET /listings` and let the server
-   decide. This is the one we would pick — it keeps the rate on the server, matches
-   what the UI already knows, and leaves you free to change strategy later.
-
-If you implement any of them, the frontend change is small: send the display currency
-and drop the note.
-
----
-
-## 9. `club-exchange` is a destination, never an origin
-
-`Platform` has six members. Five are secondary marketplaces (`viagogo`, `stubhub`,
-`ticombo`, `gigsberg`, `fanpass`). The sixth, `club-exchange`, is the club's own
-resale channel and is different in kind:
-
-- a listing **arrives** there through `POST /tickets/resell-face-value`, at the
-  ticket's `faceValue`;
-- a listing is **never created** there. It is not offered in the List picker, because
-  face value is the price and there is nothing to choose.
-
-The registry marks this with `kind: 'club-exchange'` rather than by branching on the
-id, and the seed builds listings from marketplaces only.
-
-**What breaks:** if your seeder or your import path can mint a `club-exchange` listing
-directly, you have inventory on a channel nobody chose, at a price nobody set.
-
----
-
-## 10. The revenue series is the ledger. The ticket store is inventory.
+## 9. The revenue series is the ledger. The ticket store is inventory.
 
 Two different questions, and they are allowed to disagree about **volume**:
 
@@ -299,7 +251,7 @@ how many tickets exist. They must not disagree about money.
 
 ---
 
-## 11. Mock-only affordances
+## 10. Mock-only affordances
 
 Both are ignored by a real backend and can be dropped with `app/api/v1`.
 
@@ -316,7 +268,7 @@ Nothing is broken; the screen is waiting for you to come back.
 
 ---
 
-## 12. Checklist
+## 11. Checklist
 
 - [ ] Envelope is `{ data, meta, error }` on every response, with explicit `null`s.
 - [ ] Money is an integer of minor units plus a currency code. Never a float.
@@ -328,6 +280,5 @@ Nothing is broken; the screen is waiting for you to come back.
 - [ ] `byStatus` / `byClub` are sparse — absent means none.
 - [ ] `sort` + `order` honoured on every list; `pageSize` capped at 200.
 - [ ] `meta.total` and `meta.totalPages` correct — the pager reads them.
-- [ ] `club-exchange` reachable only by resale.
 - [ ] `/kpis` money comes from the revenue series, not the ticket store.
 - [ ] `app/api/v1` and `lib/mock` deleted.

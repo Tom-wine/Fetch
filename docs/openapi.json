@@ -1563,7 +1563,7 @@
       },
       "post": {
         "summary": "Ticket action",
-        "description": "The segment is an action name here. `list` creates a listing and mints its own marketplace id; `associate-listing` links one that already exists and 422s if the id is unknown or belongs to another fixture. `resell-face-value` takes no price and no platform — it lists on `club-exchange` at each ticket’s faceValue.",
+        "description": "The segment is an action name here. Each returns the full set of updated tickets, so the client replaces those cache entries wholesale rather than merging a partial.",
         "parameters": [
           {
             "name": "segment",
@@ -1573,9 +1573,6 @@
               "type": "string",
               "enum": [
                 "group",
-                "list",
-                "associate-listing",
-                "resell-face-value",
                 "transfer",
                 "share"
               ]
@@ -1595,7 +1592,7 @@
         },
         "responses": {
           "200": {
-            "description": "Updated tickets, plus any listings created",
+            "description": "The updated tickets",
             "content": {
               "application/json": {
                 "schema": {
@@ -1614,352 +1611,11 @@
                           "items": {
                             "$ref": "#/components/schemas/Ticket"
                           }
-                        },
-                        "listings": {
-                          "type": "array",
-                          "items": {
-                            "$ref": "#/components/schemas/Listing"
-                          }
                         }
                       }
                     },
                     "meta": {
                       "type": "null"
-                    },
-                    "error": {
-                      "type": "null"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "default": {
-            "description": "Error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "data",
-                    "meta",
-                    "error"
-                  ],
-                  "properties": {
-                    "data": {
-                      "type": "null"
-                    },
-                    "meta": {
-                      "type": "null"
-                    },
-                    "error": {
-                      "$ref": "#/components/schemas/ApiError"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/listings": {
-      "get": {
-        "summary": "List listings",
-        "parameters": [
-          {
-            "name": "page",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "default": 1
-            }
-          },
-          {
-            "name": "pageSize",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 200,
-              "default": 25
-            }
-          },
-          {
-            "name": "sort",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "order",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "asc",
-                "desc"
-              ],
-              "default": "asc"
-            }
-          },
-          {
-            "name": "q",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            },
-            "description": "Free-text search."
-          },
-          {
-            "name": "__fail",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "minimum": 400,
-              "maximum": 599
-            },
-            "description": "Mock only. Forces the route to return an error envelope with this status."
-          },
-          {
-            "name": "platform",
-            "in": "query",
-            "explode": true,
-            "style": "form",
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            },
-            "description": "Filter by marketplace. Repeated keys mean OR."
-          },
-          {
-            "name": "status",
-            "in": "query",
-            "explode": true,
-            "style": "form",
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            },
-            "description": "Filter by listing status. Repeated keys mean OR."
-          },
-          {
-            "name": "accountId",
-            "in": "query",
-            "explode": true,
-            "style": "form",
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            },
-            "description": "Filter by account. Repeated keys mean OR."
-          },
-          {
-            "name": "fixtureId",
-            "in": "query",
-            "explode": true,
-            "style": "form",
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            },
-            "description": "Filter by fixture. Repeated keys mean OR."
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "data",
-                    "meta",
-                    "error"
-                  ],
-                  "properties": {
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/Listing"
-                      }
-                    },
-                    "meta": {
-                      "$ref": "#/components/schemas/Meta"
-                    },
-                    "error": {
-                      "type": "null"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "default": {
-            "description": "Error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "data",
-                    "meta",
-                    "error"
-                  ],
-                  "properties": {
-                    "data": {
-                      "type": "null"
-                    },
-                    "meta": {
-                      "type": "null"
-                    },
-                    "error": {
-                      "$ref": "#/components/schemas/ApiError"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/listings/{id}": {
-      "patch": {
-        "summary": "Inline price edit or status change",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Opaque string id. Never assume numeric or sequential."
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ListingPatch"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "data",
-                    "meta",
-                    "error"
-                  ],
-                  "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/Listing"
-                    },
-                    "meta": {
-                      "oneOf": [
-                        {
-                          "$ref": "#/components/schemas/Meta"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "error": {
-                      "type": "null"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "default": {
-            "description": "Error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "data",
-                    "meta",
-                    "error"
-                  ],
-                  "properties": {
-                    "data": {
-                      "type": "null"
-                    },
-                    "meta": {
-                      "type": "null"
-                    },
-                    "error": {
-                      "$ref": "#/components/schemas/ApiError"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/listings/bulk": {
-      "post": {
-        "summary": "Activate / deactivate / reprice / delete",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ListingBulk"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "data",
-                    "meta",
-                    "error"
-                  ],
-                  "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/BulkActionResult"
-                    },
-                    "meta": {
-                      "oneOf": [
-                        {
-                          "$ref": "#/components/schemas/Meta"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
                     },
                     "error": {
                       "type": "null"
@@ -2865,9 +2521,7 @@
             "enum": [
               "club-direct",
               "ticketmaster-uk",
-              "eventim-uk",
-              "seatgeek",
-              "stubhub-exchange"
+              "eventim-uk"
             ]
           },
           "membershipId": {
@@ -3077,9 +2731,7 @@
             "enum": [
               "club-direct",
               "ticketmaster-uk",
-              "eventim-uk",
-              "seatgeek",
-              "stubhub-exchange"
+              "eventim-uk"
             ]
           },
           "counts": {
@@ -3114,20 +2766,6 @@
             ],
             "additionalProperties": false
           },
-          "blockedPlatforms": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "enum": [
-                "viagogo",
-                "stubhub",
-                "ticombo",
-                "gigsberg",
-                "fanpass",
-                "club-exchange"
-              ]
-            }
-          },
           "faceValueTotal": {
             "type": "integer",
             "minimum": -9007199254740991,
@@ -3158,7 +2796,6 @@
           "artworkUrl",
           "provider",
           "counts",
-          "blockedPlatforms",
           "faceValueTotal",
           "valueAtRisk",
           "currency"
@@ -3226,9 +2863,6 @@
           "groupId": {
             "type": "string"
           },
-          "listingId": {
-            "type": "string"
-          },
           "orderId": {
             "type": "string"
           },
@@ -3253,104 +2887,6 @@
           "status",
           "orderId",
           "purchasedAt"
-        ],
-        "additionalProperties": false
-      },
-      "Listing": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "listingId": {
-            "type": "string"
-          },
-          "platform": {
-            "type": "string",
-            "enum": [
-              "viagogo",
-              "stubhub",
-              "ticombo",
-              "gigsberg",
-              "fanpass",
-              "club-exchange"
-            ]
-          },
-          "accountId": {
-            "type": "string"
-          },
-          "fixtureId": {
-            "type": "string"
-          },
-          "fixtureName": {
-            "type": "string"
-          },
-          "kickoff": {
-            "type": "string",
-            "format": "date-time",
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
-          },
-          "price": {
-            "type": "integer",
-            "minimum": -9007199254740991,
-            "maximum": 9007199254740991
-          },
-          "currency": {
-            "type": "string",
-            "enum": [
-              "GBP",
-              "EUR",
-              "USD"
-            ]
-          },
-          "block": {
-            "type": "string"
-          },
-          "rank": {
-            "type": "integer",
-            "exclusiveMinimum": 0,
-            "maximum": 9007199254740991
-          },
-          "quantity": {
-            "type": "integer",
-            "exclusiveMinimum": 0,
-            "maximum": 9007199254740991
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "ACTIVE",
-              "INACTIVE",
-              "SOLDOUT",
-              "PAUSED",
-              "UNDELIVERABLE"
-            ]
-          },
-          "floorPrice": {
-            "type": "integer",
-            "minimum": -9007199254740991,
-            "maximum": 9007199254740991
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time",
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
-          }
-        },
-        "required": [
-          "id",
-          "listingId",
-          "platform",
-          "accountId",
-          "fixtureId",
-          "fixtureName",
-          "kickoff",
-          "price",
-          "currency",
-          "block",
-          "quantity",
-          "status",
-          "createdAt"
         ],
         "additionalProperties": false
       },
@@ -3584,10 +3120,8 @@
             "type": "string",
             "enum": [
               "sale",
-              "listing",
               "account",
-              "system",
-              "marketplace"
+              "system"
             ]
           },
           "source": {
@@ -3599,12 +3133,9 @@
               {
                 "type": "string",
                 "enum": [
-                  "viagogo",
-                  "stubhub",
-                  "ticombo",
-                  "gigsberg",
-                  "fanpass",
-                  "club-exchange"
+                  "club-direct",
+                  "ticketmaster-uk",
+                  "eventim-uk"
                 ]
               }
             ]
@@ -3641,8 +3172,7 @@
             "type": "string",
             "enum": [
               "success",
-              "issue",
-              "marketplace"
+              "issue"
             ]
           },
           "title": {
@@ -3739,7 +3269,6 @@
             "enum": [
               "account",
               "fixture",
-              "listing",
               "navigation"
             ]
           },
@@ -3986,9 +3515,7 @@
             "enum": [
               "club-direct",
               "ticketmaster-uk",
-              "eventim-uk",
-              "seatgeek",
-              "stubhub-exchange"
+              "eventim-uk"
             ]
           },
           "membershipId": {
@@ -4085,9 +3612,7 @@
             "enum": [
               "club-direct",
               "ticketmaster-uk",
-              "eventim-uk",
-              "seatgeek",
-              "stubhub-exchange"
+              "eventim-uk"
             ]
           },
           "membershipId": {
@@ -4148,68 +3673,6 @@
         },
         "additionalProperties": false
       },
-      "ListingPatch": {
-        "type": "object",
-        "properties": {
-          "price": {
-            "type": "integer",
-            "exclusiveMinimum": 0,
-            "maximum": 9007199254740991
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "ACTIVE",
-              "INACTIVE",
-              "SOLDOUT",
-              "PAUSED",
-              "UNDELIVERABLE"
-            ]
-          },
-          "floorPrice": {
-            "type": "integer",
-            "exclusiveMinimum": 0,
-            "maximum": 9007199254740991
-          },
-          "quantity": {
-            "type": "integer",
-            "exclusiveMinimum": 0,
-            "maximum": 9007199254740991
-          }
-        },
-        "additionalProperties": false
-      },
-      "ListingBulk": {
-        "type": "object",
-        "properties": {
-          "ids": {
-            "minItems": 1,
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "action": {
-            "type": "string",
-            "enum": [
-              "activate",
-              "deactivate",
-              "reprice",
-              "delete"
-            ]
-          },
-          "price": {
-            "type": "integer",
-            "exclusiveMinimum": 0,
-            "maximum": 9007199254740991
-          }
-        },
-        "required": [
-          "ids",
-          "action"
-        ],
-        "additionalProperties": false
-      },
       "TicketAction": {
         "type": "object",
         "properties": {
@@ -4220,25 +3683,10 @@
               "type": "string"
             }
           },
-          "platform": {
-            "type": "string",
-            "enum": [
-              "viagogo",
-              "stubhub",
-              "ticombo",
-              "gigsberg",
-              "fanpass",
-              "club-exchange"
-            ]
-          },
           "price": {
             "type": "integer",
             "exclusiveMinimum": 0,
             "maximum": 9007199254740991
-          },
-          "listingId": {
-            "type": "string",
-            "minLength": 1
           }
         },
         "required": [

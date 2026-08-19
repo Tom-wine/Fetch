@@ -172,7 +172,7 @@ place and never by hand.
 | column header  | `VALUE_AT_RISK`                         |
 | button         | `IMPORT_CSV →`                          |
 | button + count | `DELETE_ACCOUNTS (4)`                   |
-| nav item       | `my_listings` · active `//account_manager` |
+| nav item       | `my_tickets` · active `//account_manager` |
 | status chip    | `NEEDS_OTP`                             |
 | wizard step    | `02_map_columns`                        |
 | helper text    | `// passwords never leave memory`       |

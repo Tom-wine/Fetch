@@ -187,15 +187,9 @@ broken; the screen is waiting for you to come back.
 | `GET`    | `/fixtures/:id/tickets`         | seat-level rows                                              |
 | `PATCH`  | `/tickets/:id`                  | edit one seat — `price`, `block`, `row`, `seat`, `visibility` |
 | `POST`   | `/tickets/group`                | create or merge a group                                      |
-| `POST`   | `/tickets/list`                 | create listings from tickets                                 |
-| `POST`   | `/tickets/associate-listing`    | link an EXISTING marketplace listing — `{ ids, listingId }`  |
-| `POST`   | `/tickets/resell-face-value`    | list on the club exchange at face value                      |
 | `POST`   | `/tickets/transfer`             | transfer to another user                                     |
 | `POST`   | `/tickets/share`                | share with a QR link                                         |
 | `DELETE` | `/tickets`                      | bulk delete `{ ids: [] }`                                    |
-| `GET`    | `/listings`                     | list + filter                                                |
-| `PATCH`  | `/listings/:id`                 | inline price edit, status change                             |
-| `POST`   | `/listings/bulk`                | activate / deactivate / reprice / delete                     |
 | `GET`    | `/proxies`                      | proxy list                                                   |
 | `POST`   | `/proxies/bulk`                 | create from `host:port:user:pass` lines                      |
 | `POST`   | `/proxies/:id/test`             | connectivity check                                           |
@@ -213,7 +207,6 @@ broken; the screen is waiting for you to come back.
 | `/accounts`     | `club`, `status`, `membershipType`, `tag`, `proxyId`         | —                                     |
 | `/fixtures`     | `club`, `competition`, `provider`                            | `when=all\|upcoming\|past`, `accountId` |
 | `/fixtures/:id/tickets` | `accountId`, `block`, `row`, `status`                | —                                     |
-| `/listings`     | `platform`, `accountId`, `status`, `fixtureId`               | —                                     |
 | `/proxies`      | `status`, `groupId`                                          | —                                     |
 | `/activity`     | `source`, `kind`                                             | —                                     |
 | `/notifications`| `kind`                                                       | `unread=true`                         |
@@ -226,22 +219,9 @@ is what makes the seat table's eye a toggle rather than a one-way reveal.
 `POST /tickets/share` also reveals a seat, but as a side effect of publishing a QR
 link — same field, different intent.
 
-`associate-listing` and `list` are deliberately separate. `list` CREATES a listing and
-mints its own marketplace id; `associate-listing` LINKS one that already exists, which
-is what an operator needs when they listed the seats by hand or another tool did. It
-422s if the id is unknown, or if the listing belongs to a different fixture from the
-seats — a seat linked to another match's listing cannot be delivered.
-
-`resell-face-value` takes no price and no platform. It lists on `club-exchange`, the
-club's own resale channel, at each ticket's `faceValue`, and sets the ticket's `price`
-to match. `club-exchange` is a `Platform` like the marketplaces, but its registry entry
-carries `kind: 'club-exchange'`, which is what keeps it out of the List picker: there
-is no price to choose there, so offering it as a tile would ask a question with no
-answer.
-
-All three POSTs return `{ tickets, listings }`. `associate-listing` reports the listing
-it linked in `listings`, which is the one case where that array is something found
-rather than something created.
+`POST /tickets/group | transfer | share` each return `{ tickets }` — the full set of
+updated seats, so the client replaces those cache entries wholesale rather than merging
+a partial.
 
 **Not implemented, and not waiting on a route:** a wallet pass. A `.pkpass` is a signed
 bundle and a Google Wallet pass is a signed JWT, so both need a private key that must
