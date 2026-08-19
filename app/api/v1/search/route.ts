@@ -16,8 +16,14 @@ const NAVIGATION: SearchResult[] = [
   { id: 'nav_import', type: 'navigation', title: 'Import accounts', href: '/accounts/import' },
   { id: 'nav_tickets', type: 'navigation', title: 'My Tickets', href: '/mytickets' },
   { id: 'nav_links', type: 'navigation', title: 'My Links', href: '/mylinks' },
-  { id: 'nav_fixtures', type: 'navigation', title: 'Fixtures Calendar', href: '/fixtures' },
-  { id: 'nav_onsales', type: 'navigation', title: 'On-Sales', href: '/onsales' },
+  { id: 'nav_ballots', type: 'navigation', title: 'Ballot Entries', href: '/ballots' },
+  {
+    id: 'nav_ballot_runs',
+    type: 'navigation',
+    title: 'Run History',
+    subtitle: 'Every ballot run and its verdicts',
+    href: '/ballots?tab=runs',
+  },
   { id: 'nav_insights', type: 'navigation', title: 'Insights', href: '/insights' },
   { id: 'nav_settings', type: 'navigation', title: 'Settings', href: '/settings' },
   {

@@ -1,8 +1,7 @@
 import {
   BarChart3,
-  Calendar,
-  ClipboardCheck,
-  Clock,
+  Dices,
+  History,
   Key,
   LifeBuoy,
   Link2,
@@ -19,8 +18,7 @@ import {
  * The sidebar tree from §4, in order. Labels are written normally here and
  * lower_snake_cased at render time by `snake()` — the grammar lives in one place.
  *
- * §9 rule 4: no two nav icons look alike. On-Sales gets a clock, deliberately not
- * a second calendar.
+ * §9 rule 4: no two nav icons look alike.
  */
 
 export interface NavItem {
@@ -64,14 +62,16 @@ export const NAV: NavEntry[] = [
     ],
   },
   {
-    label: 'Fixtures',
+    label: 'Ballots',
     items: [
-      { label: 'Fixtures Calendar', href: '/fixtures', icon: Calendar, soon: true },
-      { label: 'On Sales', href: '/onsales', icon: Clock, soon: true },
+      // §9 rule 4 — no two nav icons look alike. A ballot is a draw, so `Dices`; a run
+      // history is a log, so `History`. Deliberately neither the calendar nor the clock
+      // this group replaces, which read as "when" rather than "what happened".
+      { label: 'Ballot Entries', href: '/ballots', icon: Dices, soon: true },
+      { label: 'Run History', href: '/ballots?tab=runs', icon: History, soon: true },
     ],
   },
   { label: 'Insights', href: '/insights', icon: BarChart3, soon: true },
-  { label: 'Sales Tracker', href: '/salestracker', icon: ClipboardCheck, soon: true },
 ]
 
 /** Pinned below a divider at the foot of the rail. */
