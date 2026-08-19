@@ -119,8 +119,26 @@ export interface DataTableProps<TData extends RowData> {
   page?: number
   /** Emitted with the next 1-based page. The caller refetches. */
   onPageChange?: (page: number) => void
+  /**
+   * Rows per page, controlled. Supply it alongside `onPageSizeChange` when a screen
+   * has its own rows-per-page control — two controls over one piece of internal
+   * state desync the moment either is used. Uncontrolled when absent.
+   */
+  pageSize?: number
   /** Emitted when rows-per-page changes. The caller resets to page 1. */
   onPageSizeChange?: (size: number) => void
+
+  /* ---- footer slots ------------------------------------------------------
+     The footer is `left · right`. Both default to what the table renders today,
+     so an existing call site is unaffected; a screen overrides `footerLeft` to
+     say something the table cannot know — §8.6's "0 of 26 selected" — without
+     having to reimplement the pagination sitting beside it.
+     ---------------------------------------------------------------------- */
+
+  /** Replaces the `Total N <noun>` summary. */
+  footerLeft?: React.ReactNode
+  /** Replaces the page counter and arrows. Rarely wanted; the default is complete. */
+  footerRight?: React.ReactNode
 
   /* ---- server-driven sorting (both optional) -----------------------------
      Supplying `onSortingChange` switches the table into manual sorting: the row
@@ -167,7 +185,10 @@ export function DataTable<TData extends RowData>({
   totalRows,
   page,
   onPageChange,
+  pageSize: controlledPageSize,
   onPageSizeChange,
+  footerLeft,
+  footerRight,
   sorting,
   onSortingChange,
   renderCard,
@@ -221,10 +242,24 @@ export function DataTable<TData extends RowData>({
 
   // The server owns the page index in manual mode, so the table's own slice is
   // controlled from the `page` prop (1-based on the wire, 0-based in the table).
-  const [uncontrolledPageSize, setUncontrolledPageSize] = React.useState(defaultPageSize)
+  //
+  // Page size is controlled when the caller supplies it and internal otherwise, so a
+  // screen with its own rows-per-page control and the VIEW popover read the same
+  // number instead of drifting apart.
+  const [internalPageSize, setInternalPageSize] = React.useState(defaultPageSize)
+  const effectivePageSize = controlledPageSize ?? internalPageSize
+
+  const applyPageSize = React.useCallback(
+    (next: number) => {
+      if (controlledPageSize === undefined) setInternalPageSize(next)
+      onPageSizeChange?.(next)
+    },
+    [controlledPageSize, onPageSizeChange],
+  )
+
   const controlledPagination = React.useMemo(
-    () => ({ pageIndex: Math.max(0, (page ?? 1) - 1), pageSize: uncontrolledPageSize }),
-    [page, uncontrolledPageSize],
+    () => ({ pageIndex: Math.max(0, (page ?? 1) - 1), pageSize: effectivePageSize }),
+    [page, effectivePageSize],
   )
 
   const table = useTable({
@@ -250,8 +285,7 @@ export function DataTable<TData extends RowData>({
             if (next.pageSize !== controlledPagination.pageSize) {
               // Rows-per-page always returns to page 1 — page 9 of 13 is meaningless
               // once the page size changes under it.
-              setUncontrolledPageSize(next.pageSize)
-              onPageSizeChange?.(next.pageSize)
+              applyPageSize(next.pageSize)
               onPageChange?.(1)
               return
             }
@@ -285,12 +319,27 @@ export function DataTable<TData extends RowData>({
         }
       : {}),
     initialState: {
-      pagination: { pageIndex: 0, pageSize: defaultPageSize },
+      pagination: { pageIndex: 0, pageSize: controlledPageSize ?? defaultPageSize },
       columnVisibility: initialVisibility,
       // The first column is frozen (§9 rule 3) — pinning drives the sticky offset.
       columnPinning: { start: enableSelection ? [SELECT_COLUMN_ID] : [], end: [] },
     },
   })
+
+  /**
+   * Client mode keeps its own pagination inside the table, so a controlled page size
+   * is pushed in rather than passed as state — controlling the whole slice would
+   * also take over the page index, which no client-mode caller supplies. No-op when
+   * the prop is absent, which is why every existing call site is unaffected.
+   */
+  React.useEffect(() => {
+    if (manual || controlledPageSize === undefined) return
+    if (table.state.pagination?.pageSize !== controlledPageSize) {
+      table.setPageSize(controlledPageSize)
+      table.setPageIndex(0)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [controlledPageSize, manual])
 
   const pagination = table.state.pagination ?? { pageIndex: 0, pageSize: defaultPageSize }
   const rows = table.getRowModel().rows
@@ -333,10 +382,14 @@ export function DataTable<TData extends RowData>({
         onDensityChange={setDensity}
         pageSize={pagination.pageSize}
         onPageSizeChange={(n) => {
-          // Manual mode routes through onPaginationChange, which resets to page 1
-          // and notifies the caller; client mode just re-slices locally.
+          // Manual mode routes through onPaginationChange, which resets to page 1,
+          // updates whichever page-size state is in force and notifies the caller;
+          // client mode just re-slices locally.
           table.setPageSize(n)
-          if (!manual) table.setPageIndex(0)
+          if (!manual) {
+            applyPageSize(n)
+            table.setPageIndex(0)
+          }
         }}
         columns={columnToggles}
         onColumnToggle={(id, visible) =>
@@ -535,34 +588,38 @@ export function DataTable<TData extends RowData>({
 
           {/* ---- footer -------------------------------------------------- */}
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <span className="text-caption text-muted tabular-nums">
-              Total {total} {total === 1 ? noun : `${noun}s`}
-              {enableSelection && selectedCount > 0 && ` · ${selectionSummary}`}
-            </span>
-
-            <div className="flex items-center gap-2">
-              <span className="text-caption text-faint tabular-nums">
-                {pagination.pageIndex + 1} / {Math.max(table.getPageCount(), 1)}
+            {footerLeft ?? (
+              <span className="text-caption text-muted tabular-nums">
+                Total {total} {total === 1 ? noun : `${noun}s`}
+                {enableSelection && selectedCount > 0 && ` · ${selectionSummary}`}
               </span>
-              <button
-                type="button"
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
-                aria-label="Previous page"
-                className="flex size-8 items-center justify-center rounded-full border border-border text-muted transition-colors duration-150 hover:bg-surface-hover hover:text-text disabled:opacity-40"
-              >
-                <ChevronLeft className="size-4" aria-hidden="true" />
-              </button>
-              <button
-                type="button"
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
-                aria-label="Next page"
-                className="flex size-8 items-center justify-center rounded-full border border-border text-muted transition-colors duration-150 hover:bg-surface-hover hover:text-text disabled:opacity-40"
-              >
-                <ChevronRight className="size-4" aria-hidden="true" />
-              </button>
-            </div>
+            )}
+
+            {footerRight ?? (
+              <div className="flex items-center gap-2">
+                <span className="text-caption text-faint tabular-nums">
+                  {pagination.pageIndex + 1} / {Math.max(table.getPageCount(), 1)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => table.previousPage()}
+                  disabled={!table.getCanPreviousPage()}
+                  aria-label="Previous page"
+                  className="flex size-8 items-center justify-center rounded-full border border-border text-muted transition-colors duration-150 hover:bg-surface-hover hover:text-text disabled:opacity-40"
+                >
+                  <ChevronLeft className="size-4" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => table.nextPage()}
+                  disabled={!table.getCanNextPage()}
+                  aria-label="Next page"
+                  className="flex size-8 items-center justify-center rounded-full border border-border text-muted transition-colors duration-150 hover:bg-surface-hover hover:text-text disabled:opacity-40"
+                >
+                  <ChevronRight className="size-4" aria-hidden="true" />
+                </button>
+              </div>
+            )}
           </div>
         </>
       )}
