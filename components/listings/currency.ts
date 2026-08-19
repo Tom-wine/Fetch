@@ -135,3 +135,36 @@ export function toMinor(raw: string, currency: Currency): number | null {
 
   return Math.round(value * 10 ** minorUnitExponent(currency))
 }
+
+/**
+ * Does the PRICE column look unsorted?
+ *
+ * `GET /listings` orders by each listing's price in ITS OWN currency, because that is
+ * the only number the server holds. Under a normaliser the cells show converted
+ * figures, and the two orders do not agree: EUR 32530 sorts above GBP 30920, but
+ * once both are shown in pounds the euro row displays as the smaller of the two.
+ *
+ * So rather than assert the caveat all the time, look at what is actually on screen
+ * and only say something when the visible sequence really does break. Ties are
+ * skipped — equal neighbours are not evidence either way.
+ */
+export function priceOrderLooksBroken(
+  rows: Array<{ price: number; currency: Currency }>,
+  show: DisplayCurrency,
+  desc: boolean,
+): boolean {
+  if (show === ORIGINAL || rows.length < 2) return false
+
+  const shown = rows.map((r) =>
+    r.currency === show ? r.price : convertMinor(r.price, r.currency, show),
+  )
+
+  for (let i = 1; i < shown.length; i++) {
+    const previous = shown[i - 1]!
+    const current = shown[i]!
+    if (previous === current) continue
+    if (desc ? current > previous : current < previous) return true
+  }
+
+  return false
+}

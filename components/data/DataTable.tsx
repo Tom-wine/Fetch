@@ -65,6 +65,13 @@ const features = tableFeatures({
  */
 export interface ColumnMeta {
   sortable?: boolean
+  /**
+   * A small note rendered after the sort arrow, for a caveat that only makes sense
+   * at the header — e.g. a column whose server order does not match what the cells
+   * currently display. Kept out of the cells so it is stated once, where the operator
+   * is looking when they wonder why the order looks wrong.
+   */
+  headerNote?: React.ReactNode
 }
 
 export type TableFeaturesOf = typeof features
@@ -486,6 +493,7 @@ export function DataTable<TData extends RowData>({
                                   headerLabel(header.column.columnDef.header, header.column.id),
                                 )}
                                 <SortIcon sorted={sorted} />
+                                {header.column.columnDef.meta?.headerNote}
                               </button>
                             ) : (
                               upperSnake(

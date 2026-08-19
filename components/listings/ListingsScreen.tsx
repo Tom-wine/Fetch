@@ -22,6 +22,7 @@ import { ListingRowActions } from './ListingRowActions'
 import { ListingsBulkBar } from './ListingsBulkBar'
 import { NoListingsMatch, NoListingsYet } from './ListingsEmpty'
 import { ListingsToolbar } from './ListingsToolbar'
+import { priceOrderLooksBroken } from './currency'
 import { makeListingColumns } from './columns'
 import { fieldForColumnId } from './sorting'
 import { useListingsUrlState } from './url-state'
@@ -170,6 +171,17 @@ export function ListingsScreen() {
     [bulkMutate],
   )
 
+  /**
+   * Only annotate PRICE when the confusion is actually on screen: a normaliser is
+   * active, the table IS sorted by price, and the converted figures really do break
+   * the order. Without the sort check the note would appear whenever a normaliser is
+   * on — the rows are in some other order then, so "non-monotonic" is meaningless and
+   * the note would be noise.
+   */
+  const priceOrderNote =
+    state.sortSpec?.id === 'price' &&
+    priceOrderLooksBroken(listings.rows, state.show, state.sortSpec.desc)
+
   const columns = React.useMemo(
     () =>
       makeListingColumns({
@@ -177,8 +189,9 @@ export function ListingsScreen() {
         show: state.show,
         onCommitPrice: commitPrice,
         renderActions,
+        priceOrderNote,
       }),
-    [accountById, state.show, commitPrice, renderActions],
+    [accountById, state.show, commitPrice, renderActions, priceOrderNote],
   )
 
   /* ---------------------------------------------------------------- empty */

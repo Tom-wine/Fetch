@@ -29,11 +29,17 @@ export function makeListingColumns({
   show,
   onCommitPrice,
   renderActions,
+  priceOrderNote = false,
 }: {
   accountById: Map<string, Account>
   show: DisplayCurrency
   onCommitPrice: (listing: Listing, price: number) => void
   renderActions: (listing: Listing) => React.ReactNode
+  /**
+   * Annotates the PRICE header when the server's order and the converted figures on
+   * screen disagree. The screen decides, because only it can see the rows.
+   */
+  priceOrderNote?: boolean
 }): FetchColumnDef<Listing>[] {
   const columns: FetchColumnDef<Listing>[] = [
     {
@@ -81,6 +87,18 @@ export function makeListingColumns({
       id: 'price',
       accessorKey: 'price',
       header: 'price',
+      meta: priceOrderNote
+        ? {
+            // Stated at the header, because that is where the operator is looking
+            // when they wonder why the column looks out of order. The header stays
+            // sortable: the server does honour the click, in its own currency.
+            headerNote: (
+              <span className="ml-1.5 font-normal text-faint normal-case">
+                sorted by native currency
+              </span>
+            ),
+          }
+        : undefined,
       cell: ({ row }) => (
         <PriceCell
           listing={row.original}
@@ -140,9 +158,11 @@ export function makeListingColumns({
 
   // One stamp from one registry, rather than a `meta` hand-written per column that
   // can drift from what the endpoint actually supports.
+  // Merged, not replaced: a column may already carry meta of its own (PRICE stamps a
+  // header note), and overwriting it here would silently drop it.
   return columns.map((column) =>
     column.id && SORTABLE_COLUMN_IDS.has(column.id)
-      ? { ...column, meta: { sortable: true } }
+      ? { ...column, meta: { ...column.meta, sortable: true } }
       : column,
   )
 }
