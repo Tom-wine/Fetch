@@ -1,7 +1,9 @@
 'use client'
 
 import * as React from 'react'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
+
+import { useUrlWriter } from '@/lib/url-state'
 
 import { ALL } from '@/components/data/FilterSelect'
 import { useLocale } from '@/lib/format/LocaleProvider'
@@ -46,9 +48,8 @@ export interface ListingsUrlPatch {
 }
 
 export function useListingsUrlState() {
-  const router = useRouter()
-  const pathname = usePathname()
   const params = useSearchParams()
+  const url = useUrlWriter()
   const { settings } = useLocale()
 
   /**
@@ -75,49 +76,32 @@ export function useListingsUrlState() {
 
   /**
    * The URL as of the last WRITE, not as of the last render.
-   *
-   * One header click produces two calls in the same tick: DataTable emits
-   * `onSortingChange`, then `onPageChange(1)`. Both would otherwise start from the
-   * same render-time `params` snapshot — `router.replace` has not updated
-   * `useSearchParams` by then — and the second would silently undo the first, so the
-   * click would look like it did nothing. Carrying the URL forward makes writes
-   * within a tick compose instead of race. (Same fix as
-   * components/accounts/url-state.ts and components/fixtures/filters.ts.)
    */
-  const searchRef = React.useRef(params.toString())
-  React.useEffect(() => {
-    searchRef.current = params.toString()
-  }, [params])
-
   const write = React.useCallback(
     (patch: ListingsUrlPatch) => {
-      const next = new URLSearchParams(searchRef.current)
+      url.commit((next) => {
+        if ('q' in patch) set(next, 'q', patch.q)
+        if ('account' in patch) set(next, 'account', patch.account === ALL ? null : patch.account)
+        if ('status' in patch) set(next, 'status', patch.status)
+        if ('show' in patch) set(next, 'show', patch.show === defaultShow ? null : patch.show)
+        if ('sort' in patch) set(next, 'sort', patch.sort)
+        if ('order' in patch) set(next, 'order', patch.order === 'asc' ? null : patch.order)
+        if ('size' in patch) set(next, 'size', patch.size === DEFAULT_PAGE_SIZE ? null : patch.size)
+        if ('page' in patch) set(next, 'page', (patch.page ?? 1) <= 1 ? null : patch.page)
 
-      if ('q' in patch) set(next, 'q', patch.q)
-      if ('account' in patch) set(next, 'account', patch.account === ALL ? null : patch.account)
-      if ('status' in patch) set(next, 'status', patch.status)
-      if ('show' in patch) set(next, 'show', patch.show === defaultShow ? null : patch.show)
-      if ('sort' in patch) set(next, 'sort', patch.sort)
-      if ('order' in patch) set(next, 'order', patch.order === 'asc' ? null : patch.order)
-      if ('size' in patch) set(next, 'size', patch.size === DEFAULT_PAGE_SIZE ? null : patch.size)
-      if ('page' in patch) set(next, 'page', (patch.page ?? 1) <= 1 ? null : patch.page)
+        if ('platforms' in patch) {
+          next.delete('platform')
+          for (const platform of patch.platforms ?? []) next.append('platform', platform)
+        }
 
-      if ('platforms' in patch) {
-        next.delete('platform')
-        for (const platform of patch.platforms ?? []) next.append('platform', platform)
-      }
-
-      // Anything that changes WHICH rows are on screen returns to page 1 — page 3 of
-      // a filter that no longer matches three pages is an empty screen with no
-      // explanation. `show` is display-only, so it leaves the page alone.
-      const displayOnly = Object.keys(patch).every((key) => key === 'page' || key === 'show')
-      if (!displayOnly) next.delete('page')
-
-      const search = next.toString()
-      searchRef.current = search
-      router.replace(search ? `${pathname}?${search}` : pathname, { scroll: false })
+        // Anything that changes WHICH rows are on screen returns to page 1 — page 3 of
+        // a filter that no longer matches three pages is an empty screen with no
+        // explanation. `show` is display-only, so it leaves the page alone.
+        const displayOnly = Object.keys(patch).every((key) => key === 'page' || key === 'show')
+        if (!displayOnly) next.delete('page')
+      })
     },
-    [defaultShow, pathname, router],
+    [defaultShow, url],
   )
 
   /**

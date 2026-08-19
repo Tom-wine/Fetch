@@ -1,7 +1,9 @@
 'use client'
 
 import * as React from 'react'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
+
+import { useUrlWriter } from '@/lib/url-state'
 
 import type { AccountFilters } from '@/lib/api/endpoints'
 import type { AccountStatus, ClubId, MembershipType } from '@/lib/types'
@@ -53,9 +55,8 @@ export interface AccountsUrlPatch {
 }
 
 export function useAccountsUrlState() {
-  const router = useRouter()
-  const pathname = usePathname()
   const params = useSearchParams()
+  const url = useUrlWriter()
 
   const tab = (params.get('tab') as AccountsTabId | null) ?? DEFAULTS.tab
   const club = (params.get('club') as ClubId | null) ?? null
@@ -72,38 +73,25 @@ export function useAccountsUrlState() {
   const size = Math.max(1, Number(params.get('size') ?? DEFAULTS.size) || DEFAULTS.size)
 
   /**
-   * The URL as of the last write, not as of the last render.
-   *
-   * One header click produces TWO calls in the same tick: DataTable emits
-   * `onSortingChange`, then `onPageChange(1)`. Both would otherwise start from the
-   * same render-time `params` snapshot, and the second would overwrite the first —
-   * the sort would be written and then silently dropped. Carrying the URL forward
-   * here makes writes within a tick compose instead of race.
+   * `useUrlWriter` carries the URL forward between writes in the same tick — see
+   * lib/url-state.ts for why a header click needs that. Only the param schema below
+   * is this screen's own.
    */
-  const searchRef = React.useRef(params.toString())
-  React.useEffect(() => {
-    searchRef.current = params.toString()
-  }, [params])
-
   const write = React.useCallback(
     (patch: AccountsUrlPatch) => {
-      const next = new URLSearchParams(searchRef.current)
+      url.commit((next) => {
+        for (const [key, value] of Object.entries(patch)) {
+          const isDefault = value === DEFAULTS[key as keyof typeof DEFAULTS]
+          if (value === undefined || value === null || value === '' || isDefault) next.delete(key)
+          else next.set(key, String(value))
+        }
 
-      for (const [key, value] of Object.entries(patch)) {
-        const isDefault = value === DEFAULTS[key as keyof typeof DEFAULTS]
-        if (value === undefined || value === null || value === '' || isDefault) next.delete(key)
-        else next.set(key, String(value))
-      }
-
-      // Any change other than paging returns to page 1 — page 9 of a filter that no
-      // longer matches nine pages is an empty screen with no explanation.
-      if (patch.page === undefined) next.delete('page')
-
-      const search = next.toString()
-      searchRef.current = search
-      router.replace(search ? `${pathname}?${search}` : pathname, { scroll: false })
+        // Any change other than paging returns to page 1 — page 9 of a filter that no
+        // longer matches nine pages is an empty screen with no explanation.
+        if (patch.page === undefined) next.delete('page')
+      })
     },
-    [pathname, router],
+    [url],
   )
 
   /**

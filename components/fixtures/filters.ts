@@ -1,7 +1,9 @@
 'use client'
 
 import * as React from 'react'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
+
+import { useUrlWriter } from '@/lib/url-state'
 
 import { ALL } from '@/components/data/FilterSelect'
 import { CLUBS, type ClubId } from '@/lib/registries/clubs'
@@ -183,46 +185,33 @@ export interface FixtureFilterControls {
 }
 
 export function useFixtureFilters(): FixtureFilterControls {
-  const router = useRouter()
-  const pathname = usePathname()
   const params = useSearchParams()
+  const url = useUrlWriter()
 
   const state = React.useMemo(() => readState(new URLSearchParams(params.toString())), [params])
 
   /**
-   * The URL is async — `router.replace` does not update `useSearchParams` before the
-   * next line runs — so two `set` calls in one tick would both merge into the same
-   * stale state and the second would silently undo the first. DataTable does exactly
-   * that: a header click emits the new sort AND a reset to page 1. Merging into the
-   * last value written, rather than the last value rendered, makes the pair compose.
+   * `useUrlWriter` carries the URL forward between writes in the same tick — see
+   * lib/url-state.ts for why a header click needs that. Reading the carried string
+   * back through this screen's own `readState` means there is no second copy of the
+   * state to keep in sync.
    */
-  const latest = React.useRef(state)
-  // Re-syncs only when the URL itself changes, so an unrelated re-render cannot
-  // clobber a value that has been pushed but not yet read back.
-  React.useMemo(() => {
-    latest.current = state
-  }, [state])
-
   const push = React.useCallback(
     (next: FixtureQueryState) => {
-      latest.current = next
-      const qs = writeState(next).toString()
-      // replace, not push: a filter tweak is not a navigation step, and `scroll: false`
-      // keeps the table where the eye left it.
-      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
+      url.replaceWith(writeState(next))
     },
-    [pathname, router],
+    [url],
   )
 
   const set = React.useCallback(
     (patch: Partial<FixtureQueryState>) => {
-      const next = { ...latest.current, ...patch }
+      const next = { ...readState(url.read()), ...patch }
       // Page 9 of 13 is meaningless once the filter — or the order — under it changes.
       const onlyPaging = Object.keys(patch).every((k) => k === 'page' || k === 'view')
       if (!onlyPaging) next.page = 1
       push(next)
     },
-    [push],
+    [push, url],
   )
 
   const clear = React.useCallback(() => {
