@@ -27,9 +27,9 @@ import { columnIdForField, DEFAULT_SORT_FIELD, isSortField } from './sorting'
 
 export const SEARCH_DEBOUNCE_MS = 250
 
-export type PanelTab = 'ticket' | 'fixture' | 'map'
+export type PanelTab = 'ticket' | 'map'
 
-const TABS: Record<PanelTab, true> = { ticket: true, fixture: true, map: true }
+const TABS: Record<PanelTab, true> = { ticket: true, map: true }
 
 export interface FixtureDetailPatch {
   q?: string | null

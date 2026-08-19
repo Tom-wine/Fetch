@@ -247,7 +247,6 @@ export function FixtureDetailScreen({ fixtureId }: { fixtureId: string }) {
           fixture={fixture}
           selected={selection.selectedTickets}
           fixtureTickets={facets.tickets}
-          blocks={facets.blocks}
           tab={url.tab}
           onTabChange={(tab) => url.set({ tab })}
           className="min-h-[420px]"

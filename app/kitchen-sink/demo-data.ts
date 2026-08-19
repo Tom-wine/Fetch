@@ -1,6 +1,5 @@
 import type { ClubId } from '@/lib/registries/clubs'
-import type { Platform } from '@/lib/registries/platforms'
-import type { AccountStatus, ListingStatus } from '@/components/domain/StatusChip'
+import type { AccountStatus } from '@/components/domain/StatusChip'
 
 /**
  * Fixed demo rows for /kitchen-sink. Hand-written and deterministic — no
@@ -223,81 +222,6 @@ export const DEMO_FIXTURES: DemoFixture[] = [
   },
 ]
 
-export interface DemoListing extends Record<string, unknown> {
-  id: string
-  listingId: string
-  platform: Platform
-  fixture: string
-  block: string
-  quantity: number
-  price: number
-  currency: 'GBP' | 'EUR' | 'USD'
-  status: ListingStatus
-}
-
-export const DEMO_LISTINGS: DemoListing[] = [
-  {
-    id: 'lst_01',
-    listingId: 'VG-88420193',
-    platform: 'viagogo',
-    fixture: 'Arsenal v Chelsea',
-    block: 'North Bank Upper 21',
-    quantity: 4,
-    price: 24500,
-    currency: 'GBP',
-    status: 'ACTIVE',
-  },
-  {
-    id: 'lst_02',
-    listingId: 'SH-11940228',
-    platform: 'stubhub',
-    fixture: 'Liverpool v Everton',
-    block: 'Kop 306',
-    quantity: 2,
-    price: 31000,
-    currency: 'GBP',
-    status: 'SOLDOUT',
-  },
-  {
-    id: 'lst_03',
-    listingId: 'TC-55210447',
-    platform: 'ticombo',
-    fixture: 'Man City v Brighton',
-    block: 'South Stand 108',
-    quantity: 3,
-    price: 18900,
-    currency: 'EUR',
-    status: 'PAUSED',
-  },
-  {
-    id: 'lst_04',
-    listingId: 'GB-70228841',
-    platform: 'gigsberg',
-    fixture: 'Spurs v Wolves',
-    block: 'East Lower 112',
-    quantity: 1,
-    price: 42000,
-    currency: 'USD',
-    status: 'UNDELIVERABLE',
-  },
-  {
-    id: 'lst_05',
-    listingId: 'VG-33612079',
-    platform: 'viagogo',
-    fixture: 'Arsenal v Chelsea',
-    block: 'Clock End 5',
-    quantity: 2,
-    price: 20500,
-    currency: 'GBP',
-    status: 'INACTIVE',
-  },
-]
-
-/**
- * `listed` and `sold` are deliberately on the same scale as each other, and
- * `revenue` is charted on its own. Two measures of different magnitude never share
- * an axis — the smaller one flatlines against the baseline and reads as zero.
- */
 export const DEMO_REVENUE = [
   { month: 'Apr', revenue: 1840000, listed: 96, sold: 62 },
   { month: 'May', revenue: 2210000, listed: 108, sold: 71 },

@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import type { LucideIcon } from 'lucide-react'
-import { Banknote, Store, Tag, Terminal, UserRound } from 'lucide-react'
+import { Banknote, Terminal, UserRound } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import { ErrorState } from '@/components/data/states'
@@ -35,10 +35,9 @@ import { Panel } from './Panel'
 
 const SOURCES = [
   { id: 'fetch', label: 'Fetch News' },
-  { id: 'viagogo', label: 'Viagogo' },
-  { id: 'ticombo', label: 'Ticombo' },
-  { id: 'stubhub', label: 'StubHub' },
-  { id: 'gigsberg', label: 'GigsBerg' },
+  { id: 'club-direct', label: 'Club Direct' },
+  { id: 'ticketmaster-uk', label: 'Ticketmaster UK' },
+  { id: 'eventim-uk', label: 'Eventim UK' },
 ] as const
 
 type SourceId = (typeof SOURCES)[number]['id']
@@ -46,10 +45,8 @@ type SourceId = (typeof SOURCES)[number]['id']
 /** The icon says what KIND of thing happened; the tab already says where. */
 const KIND_ICON: Record<ActivityKind, LucideIcon> = {
   sale: Banknote,
-  listing: Tag,
   account: UserRound,
   system: Terminal,
-  marketplace: Store,
 }
 
 const PAGE_SIZE = 4
@@ -112,8 +109,8 @@ export function ActivityCard({ className }: { className?: string }) {
           </ul>
         ) : entries.length === 0 ? (
           <Prose className="py-8 text-center text-muted">
-            Nothing from {label} yet. Sales, price changes and delivery problems from this
-            marketplace will appear here.
+            Nothing from {label} yet. Sales, account changes and delivery problems from this source
+            will appear here.
           </Prose>
         ) : (
           <ul

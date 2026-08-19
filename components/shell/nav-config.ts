@@ -6,7 +6,6 @@ import {
   Key,
   LifeBuoy,
   Link2,
-  List,
   Mail,
   MessageSquare,
   Monitor,
@@ -61,7 +60,6 @@ export const NAV: NavEntry[] = [
     label: 'Inventory',
     items: [
       { label: 'My Tickets', href: '/mytickets', icon: Ticket },
-      { label: 'My Listings', href: '/mylistings', icon: List },
       { label: 'My Links', href: '/mylinks', icon: Link2, soon: true },
     ],
   },

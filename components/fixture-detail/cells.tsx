@@ -17,9 +17,9 @@ import type { Account, Ticket, TicketStatus } from '@/lib/types'
 /* ---------------------------------------------------------------- status */
 
 /**
- * `Ticket.status` is its own union (§5) — `StatusChip` covers the listing and account
- * unions and deliberately does not guess between them, so the seat states get their
- * own table here, with the plain-English tooltip §9 rule 10 requires.
+ * `Ticket.status` is its own union (§5) — `StatusChip` covers the account union and
+ * deliberately does not guess between them, so the seat states get their own table
+ * here, with the plain-English tooltip §9 rule 10 requires.
  */
 const TICKET_STATUS: Record<TicketStatus, { tone: ChipTone; hint: string }> = {
   ticket: {
@@ -28,7 +28,7 @@ const TICKET_STATUS: Record<TicketStatus, { tone: ChipTone; hint: string }> = {
   },
   listed: {
     tone: 'success',
-    hint: 'Offered on a marketplace right now. A buyer can take it at any moment.',
+    hint: 'Offered for sale right now. A buyer can take it at any moment.',
   },
   sold: {
     tone: 'violet',

@@ -15,7 +15,7 @@
  *   it would order 25 seats of 90 and look like it had ordered all of them.
  * - `ACCOUNT` orders by `accountId`, an opaque string, while the cell shows an email
  *   resolved from a different query. The rows would reorder in a way the column does
- *   not explain. Same call session-b made for ACCOUNT on /mylistings.
+ *   not explain.
  */
 export interface TicketSort {
   /** What the API sorts by. */

@@ -10,7 +10,6 @@ import {
   fixtureSchema,
   importRowVerdictSchema,
   kpiSetSchema,
-  listingSchema,
   notificationSchema,
   proxySchema,
   revealSchema,
@@ -19,18 +18,9 @@ import {
   ticketSchema,
   type AccountCreate,
   type AccountPatch,
-  type ListingBulk,
-  type ListingPatch,
   type TicketPatch,
 } from './schemas'
-import type {
-  AccountStatus,
-  ClubId,
-  Competition,
-  ListingStatus,
-  Platform,
-  ProxyStatus,
-} from '@/lib/types'
+import type { AccountStatus, ClubId, Competition, ProxyStatus } from '@/lib/types'
 
 /**
  * One thin typed function per §6.3 endpoint. These are the only callers of
@@ -60,13 +50,6 @@ export interface FixtureFilters extends ListParams {
   competition?: Competition[]
   when?: 'all' | 'upcoming' | 'past'
   accountId?: string
-}
-
-export interface ListingFilters extends ListParams {
-  platform?: Platform[]
-  accountId?: string[]
-  status?: ListingStatus[]
-  fixtureId?: string[]
 }
 
 export interface TicketFilters extends ListParams {
@@ -145,52 +128,24 @@ export const fixturesApi = {
 
 const ticketActionResultSchema = z.object({
   tickets: z.array(ticketSchema),
-  listings: z.array(listingSchema),
 })
 
-export type TicketActionName =
-  'group' | 'list' | 'associate-listing' | 'resell-face-value' | 'transfer' | 'share'
+export type TicketActionName = 'group' | 'transfer' | 'share'
 
 export const ticketsApi = {
-  action: (
-    action: TicketActionName,
-    body: { ids: string[]; platform?: Platform; price?: number; listingId?: string },
-  ) => apiFetch(`/tickets/${action}`, { method: 'POST', body, schema: ticketActionResultSchema }),
+  action: (action: TicketActionName, body: { ids: string[] }) =>
+    apiFetch(`/tickets/${action}`, { method: 'POST', body, schema: ticketActionResultSchema }),
 
   /**
-   * `query` exists so `?__fail=500` can be forced on a write, the same as
-   * `listingsApi.patch` — it is how the optimistic rollback on the seat table is
-   * demonstrated (§6.2 failure injection). A real backend ignores it.
+   * `query` exists so `?__fail=500` can be forced on a write — it is how the optimistic
+   * rollback on the seat table is demonstrated (§6.2 failure injection). A real backend
+   * ignores it.
    */
   patch: (id: string, body: TicketPatch, query?: QueryParams) =>
     apiFetch(`/tickets/${id}`, { method: 'PATCH', body, query, schema: ticketSchema }),
 
   remove: (ids: string[]) =>
     apiFetch('/tickets', { method: 'DELETE', body: { ids }, schema: bulkActionResultSchema }),
-}
-
-/* -------------------------------------------------------------- listings */
-
-const listingBulkResultSchema = z.object({
-  affected: z.int().nonnegative(),
-  ids: z.array(z.string()),
-  listings: z.array(listingSchema),
-})
-
-export const listingsApi = {
-  list: (params: ListingFilters = {}) =>
-    apiFetch('/listings', { query: params, schema: z.array(listingSchema) }),
-
-  /**
-   * `query` exists so `?__fail=500` can be forced on a write, which is how the
-   * optimistic rollback is demonstrated (§6.2 failure injection). A real backend
-   * simply ignores the parameter.
-   */
-  patch: (id: string, body: ListingPatch, query?: QueryParams) =>
-    apiFetch(`/listings/${id}`, { method: 'PATCH', body, query, schema: listingSchema }),
-
-  bulk: (body: ListingBulk) =>
-    apiFetch('/listings/bulk', { method: 'POST', body, schema: listingBulkResultSchema }),
 }
 
 /* --------------------------------------------------------------- proxies */

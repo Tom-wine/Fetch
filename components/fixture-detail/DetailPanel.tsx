@@ -5,7 +5,6 @@ import * as React from 'react'
 import { cn } from '@/lib/utils'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import type { Fixture, Ticket } from '@/lib/types'
-import { FixtureInfoTab } from './FixtureInfoTab'
 import { SeatMapTab } from './SeatMapTab'
 import { TicketInfoTab } from './TicketInfoTab'
 import type { PanelTab } from './url-state'
@@ -22,7 +21,6 @@ import type { PanelTab } from './url-state'
  */
 const TABS: Array<{ value: PanelTab; label: string }> = [
   { value: 'ticket', label: 'Ticket Info' },
-  { value: 'fixture', label: 'Fixture Info' },
   { value: 'map', label: 'Seat Map' },
 ]
 
@@ -30,7 +28,6 @@ export function DetailPanel({
   fixture,
   selected,
   fixtureTickets,
-  blocks,
   tab,
   onTabChange,
   className,
@@ -40,7 +37,6 @@ export function DetailPanel({
   selected: Ticket[]
   /** Every seat on the fixture — the map tab counts them, the table only holds a page. */
   fixtureTickets: Ticket[]
-  blocks: string[]
   tab: PanelTab
   onTabChange: (tab: PanelTab) => void
   className?: string
@@ -78,10 +74,6 @@ export function DetailPanel({
             divider, and every tab fills the same box so switching does not resize it. */}
         <TabsContent value="ticket" className="mt-0 flex min-h-0 flex-1 flex-col">
           <TicketInfoTab fixture={fixture} tickets={selected} />
-        </TabsContent>
-
-        <TabsContent value="fixture" className="mt-0 flex min-h-0 flex-1 flex-col">
-          <FixtureInfoTab fixture={fixture} blocks={blocks} />
         </TabsContent>
 
         <TabsContent value="map" className="mt-0 flex min-h-0 flex-1 flex-col">

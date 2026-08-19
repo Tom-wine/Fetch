@@ -41,22 +41,8 @@ export const clubIdSchema = z.enum([
   'wolves',
 ])
 
-export const providerIdSchema = z.enum([
-  'club-direct',
-  'ticketmaster-uk',
-  'eventim-uk',
-  'seatgeek',
-  'stubhub-exchange',
-])
+export const providerIdSchema = z.enum(['club-direct', 'ticketmaster-uk', 'eventim-uk'])
 
-export const platformSchema = z.enum([
-  'viagogo',
-  'stubhub',
-  'ticombo',
-  'gigsberg',
-  'fanpass',
-  'club-exchange',
-])
 export const currencySchema = z.enum(['GBP', 'EUR', 'USD'])
 export const competitionSchema = z.enum([
   'premier-league',
@@ -88,13 +74,6 @@ export const accountStatusSchema = z.enum([
 
 export const ticketStatusSchema = z.enum(['ticket', 'listed', 'sold', 'transferred'])
 export const ticketVisibilitySchema = z.enum(['visible', 'hidden'])
-export const listingStatusSchema = z.enum([
-  'ACTIVE',
-  'INACTIVE',
-  'SOLDOUT',
-  'PAUSED',
-  'UNDELIVERABLE',
-])
 export const proxyStatusSchema = z.enum(['ok', 'dead', 'untested'])
 
 /** An ISO-8601 UTC instant. Opaque to the server; the client formats it. */
@@ -155,7 +134,6 @@ export const fixtureSchema = z.object({
   artworkUrl: z.string(),
   provider: providerIdSchema,
   counts: fixtureCountsSchema,
-  blockedPlatforms: z.array(platformSchema),
   faceValueTotal: minorUnits,
   valueAtRisk: minorUnits,
   currency: currencySchema,
@@ -175,27 +153,8 @@ export const ticketSchema = z.object({
   visibility: ticketVisibilitySchema,
   status: ticketStatusSchema,
   groupId: z.string().optional(),
-  listingId: z.string().optional(),
   orderId: z.string(),
   purchasedAt: isoDate,
-})
-
-export const listingSchema = z.object({
-  id: z.string(),
-  listingId: z.string(),
-  platform: platformSchema,
-  accountId: z.string(),
-  fixtureId: z.string(),
-  fixtureName: z.string(),
-  kickoff: isoDate,
-  price: minorUnits,
-  currency: currencySchema,
-  block: z.string(),
-  rank: z.int().positive().optional(),
-  quantity: z.int().positive(),
-  status: listingStatusSchema,
-  floorPrice: minorUnits.optional(),
-  createdAt: isoDate,
 })
 
 export const proxySchema = z.object({
@@ -241,8 +200,8 @@ export const revenuePointSchema = z.object({
 
 export const activityEntrySchema = z.object({
   id: z.string(),
-  kind: z.enum(['sale', 'listing', 'account', 'system', 'marketplace']),
-  source: z.union([z.literal('fetch'), platformSchema]),
+  kind: z.enum(['sale', 'account', 'system']),
+  source: z.union([z.literal('fetch'), providerIdSchema]),
   title: z.string(),
   body: z.string(),
   at: isoDate,
@@ -250,7 +209,7 @@ export const activityEntrySchema = z.object({
 
 export const notificationSchema = z.object({
   id: z.string(),
-  kind: z.enum(['success', 'issue', 'marketplace']),
+  kind: z.enum(['success', 'issue']),
   title: z.string(),
   body: z.string(),
   at: isoDate,
@@ -269,7 +228,7 @@ export const clubRefSchema = z.object({
 
 export const searchResultSchema = z.object({
   id: z.string(),
-  type: z.enum(['account', 'fixture', 'listing', 'navigation']),
+  type: z.enum(['account', 'fixture', 'navigation']),
   title: z.string(),
   subtitle: z.string().optional(),
   href: z.string(),
@@ -390,36 +349,11 @@ export const accountPatchSchema = accountCreateSchema.partial().extend({
 
 export type AccountPatch = z.infer<typeof accountPatchSchema>
 
-export const listingPatchSchema = z.object({
-  price: minorUnits.positive().optional(),
-  status: listingStatusSchema.optional(),
-  floorPrice: minorUnits.positive().optional(),
-  quantity: z.int().positive().optional(),
-})
-
-export type ListingPatch = z.infer<typeof listingPatchSchema>
-
-export const listingBulkSchema = z.object({
-  ids: z.array(z.string()).min(1),
-  action: z.enum(['activate', 'deactivate', 'reprice', 'delete']),
-  /** Required when `action` is `reprice`. Minor units. */
-  price: minorUnits.positive().optional(),
-})
-
-export type ListingBulk = z.infer<typeof listingBulkSchema>
-
 export const idsSchema = z.object({ ids: z.array(z.string()).min(1) })
 
 export const ticketActionSchema = z.object({
   ids: z.array(z.string()).min(1),
-  /** `list` needs a platform and a price; most of the others ignore them. */
-  platform: platformSchema.optional(),
   price: minorUnits.positive().optional(),
-  /**
-   * `associate-listing` only: the marketplace-side id of a listing that ALREADY
-   * exists. This is the whole difference from `list`, which mints a new one.
-   */
-  listingId: z.string().min(1).optional(),
 })
 
 /**

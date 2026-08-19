@@ -11,7 +11,7 @@ import { useUrlWriter } from '@/lib/url-state'
  * where the base URL is set, which is the whole reason tab state is not local.
  *
  * The writer is the shared one in lib/url-state.ts. This file holds only this screen's
- * param schema, same split as /accounts, /mytickets and /mylistings.
+ * param schema, same split as /accounts and /mytickets.
  */
 
 export const SETTINGS_TABS = [

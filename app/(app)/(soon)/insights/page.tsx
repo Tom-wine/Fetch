@@ -9,7 +9,7 @@ export default function InsightsPage() {
       <PageHeader title="Insights" subtitle="roi_and_best_sellers" />
       <ComingSoon
         icon={BarChart3}
-        what="Which clubs, blocks and marketplaces actually return, measured against what the seats cost — the question the revenue chart on the dashboard raises but cannot answer."
+        what="Which clubs and blocks actually return, measured against what the seats cost — the question the revenue chart on the dashboard raises but cannot answer."
         cta={{ href: '/dashboard', label: 'Go to dashboard' }}
       />
     </div>

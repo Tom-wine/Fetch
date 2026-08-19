@@ -15,12 +15,10 @@ const NAVIGATION: SearchResult[] = [
   { id: 'nav_proxies', type: 'navigation', title: 'Proxies', href: '/accounts?tab=proxies' },
   { id: 'nav_import', type: 'navigation', title: 'Import accounts', href: '/accounts/import' },
   { id: 'nav_tickets', type: 'navigation', title: 'My Tickets', href: '/mytickets' },
-  { id: 'nav_listings', type: 'navigation', title: 'My Listings', href: '/mylistings' },
   { id: 'nav_links', type: 'navigation', title: 'My Links', href: '/mylinks' },
   { id: 'nav_fixtures', type: 'navigation', title: 'Fixtures Calendar', href: '/fixtures' },
   { id: 'nav_onsales', type: 'navigation', title: 'On-Sales', href: '/onsales' },
   { id: 'nav_insights', type: 'navigation', title: 'Insights', href: '/insights' },
-  { id: 'nav_salestracker', type: 'navigation', title: 'Sales Tracker', href: '/salestracker' },
   { id: 'nav_settings', type: 'navigation', title: 'Settings', href: '/settings' },
   {
     id: 'nav_settings_preferences',
@@ -50,8 +48,8 @@ export async function GET(request: Request) {
     for (const a of store.accounts) {
       if (results.filter((r) => r.type === 'account').length >= LIMIT_PER_TYPE) break
       // The club is part of the haystack because it is how an operator thinks about
-      // an account. Typing `arsenal` and getting fixtures and listings but none of
-      // the twelve Arsenal accounts reads as a broken search, not a narrow one.
+      // an account. Typing `arsenal` and getting fixtures but none of the twelve
+      // Arsenal accounts reads as a broken search, not a narrow one.
       const club = getClub(a.club)
       const haystack = `${a.email} ${a.firstName ?? ''} ${a.lastName ?? ''} ${a.membershipId} ${club.name} ${club.short}`
       if (haystack.toLowerCase().includes(q)) {
@@ -77,19 +75,6 @@ export async function GET(request: Request) {
           title: `${home.short} v ${away.short}`,
           subtitle: `${f.venue.name} · ${f.venue.city}`,
           href: `/mytickets/fixture/${f.id}`,
-        })
-      }
-    }
-
-    for (const l of store.listings) {
-      if (results.filter((r) => r.type === 'listing').length >= LIMIT_PER_TYPE) break
-      if (`${l.fixtureName} ${l.listingId} ${l.block}`.toLowerCase().includes(q)) {
-        results.push({
-          id: l.id,
-          type: 'listing',
-          title: l.listingId,
-          subtitle: `${l.fixtureName} · ${l.block}`,
-          href: `/mylistings?listing=${l.id}`,
         })
       }
     }

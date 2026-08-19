@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { AlertTriangle, Bell, CheckCircle2, Store } from 'lucide-react'
+import { AlertTriangle, Bell, CheckCircle2 } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import { Prose, SectionLabel } from '@/components/ui/typography'
@@ -9,7 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Hint } from '@/components/ui/tooltip'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
-type Kind = 'success' | 'issue' | 'marketplace'
+type Kind = 'success' | 'issue'
 
 interface Notification {
   id: string
@@ -25,8 +25,8 @@ const NOTIFICATIONS: Notification[] = [
   {
     id: 'n1',
     kind: 'success',
-    title: 'Listing sold',
-    body: 'Arsenal v Chelsea — North Bank Upper 21, Row 14, 2 seats sold on StubHub.',
+    title: 'Seats sold',
+    body: 'Arsenal v Chelsea — North Bank Upper 21, Row 14, 2 seats sold.',
     at: '4m ago',
     unread: true,
   },
@@ -40,9 +40,9 @@ const NOTIFICATIONS: Notification[] = [
   },
   {
     id: 'n3',
-    kind: 'marketplace',
-    title: 'Viagogo price drop',
-    body: 'Three comparable listings undercut yours for Liverpool v Everton.',
+    kind: 'issue',
+    title: 'Membership expiring',
+    body: 'One Liverpool membership lapses inside 30 days and needs renewing.',
     at: 'yesterday',
     unread: false,
   },
@@ -51,13 +51,11 @@ const NOTIFICATIONS: Notification[] = [
 const ICONS: Record<Kind, typeof Bell> = {
   success: CheckCircle2,
   issue: AlertTriangle,
-  marketplace: Store,
 }
 
 const TONE: Record<Kind, string> = {
   success: 'text-success-ink',
   issue: 'text-warning-ink',
-  marketplace: 'text-primary-ink',
 }
 
 const TABS = [
@@ -65,11 +63,6 @@ const TABS = [
   { key: 'unread', label: 'Unread', match: (n: Notification) => n.unread },
   { key: 'success', label: 'Success', match: (n: Notification) => n.kind === 'success' },
   { key: 'issues', label: 'Issues', match: (n: Notification) => n.kind === 'issue' },
-  {
-    key: 'marketplace',
-    label: 'Marketplace',
-    match: (n: Notification) => n.kind === 'marketplace',
-  },
 ] as const
 
 export function NotificationPopover() {

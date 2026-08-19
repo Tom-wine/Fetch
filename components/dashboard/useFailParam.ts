@@ -5,8 +5,8 @@ import { useSearchParams } from 'next/navigation'
 /**
  * §6.2 failure injection, read off the screen's own URL.
  *
- * /mytickets, /mylistings and the fixture screen each read `__fail` inside their own
- * url-state module, because each has a param schema to read it alongside. /dashboard
+ * /mytickets and the fixture screen each read `__fail` inside their own url-state
+ * module, because each has a param schema to read it alongside. /dashboard
  * has no filters and therefore no url-state of its own, so this is the whole of its
  * URL contract — one optional parameter, shared by the four panels.
  *

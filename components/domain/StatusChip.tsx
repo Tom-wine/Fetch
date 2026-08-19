@@ -54,9 +54,6 @@ export function Chip({
   )
 }
 
-/** Listing statuses, from the §5 `Listing.status` union. */
-export type ListingStatus = 'ACTIVE' | 'INACTIVE' | 'SOLDOUT' | 'PAUSED' | 'UNDELIVERABLE'
-
 /** Account statuses, from the §5 `AccountStatus` union. */
 export type AccountStatus = 'active' | 'needs_login' | 'needs_otp' | 'locked' | 'expired' | 'error'
 
@@ -65,18 +62,6 @@ interface StatusSpec {
   outline?: boolean
   /** Plain English, for the tooltip §9 rule 10 requires on every domain flag. */
   hint: string
-}
-
-const LISTING: Record<ListingStatus, StatusSpec> = {
-  ACTIVE: { tone: 'success', hint: 'Live on the marketplace and buyable right now.' },
-  INACTIVE: { tone: 'neutral', hint: 'Created but not published. No buyer can see it.' },
-  SOLDOUT: { tone: 'danger', hint: 'Every seat on this listing has sold.' },
-  PAUSED: { tone: 'warning', hint: 'Temporarily hidden by you. Reactivate to sell again.' },
-  UNDELIVERABLE: {
-    tone: 'danger',
-    outline: true,
-    hint: 'Sold, but the tickets could not be delivered. This needs attention today.',
-  },
 }
 
 const ACCOUNT: Record<AccountStatus, StatusSpec> = {
@@ -90,18 +75,20 @@ const ACCOUNT: Record<AccountStatus, StatusSpec> = {
 
 export function StatusChip({
   status,
-  kind,
   withTooltip = true,
   className,
 }: {
-  status: ListingStatus | AccountStatus
-  /** Which union `status` belongs to — the two overlap in spirit but not in values. */
-  kind: 'listing' | 'account'
+  status: AccountStatus
+  /**
+   * Kept, and kept required, even though it now has one value. The seat table has its
+   * own status union and its own chip table, and an untyped `<StatusChip status=…>`
+   * would invite a ticket status into the account chip by mistake.
+   */
+  kind: 'account'
   withTooltip?: boolean
   className?: string
 }) {
-  const spec =
-    kind === 'listing' ? LISTING[status as ListingStatus] : ACCOUNT[status as AccountStatus]
+  const spec = ACCOUNT[status]
 
   // Status values are a fixed chrome vocabulary, not user data, so UPPER_SNAKE is correct here.
   const label = upperSnake(status)
@@ -129,5 +116,4 @@ export function StatusChip({
   )
 }
 
-export const LISTING_STATUSES = Object.keys(LISTING) as ListingStatus[]
 export const ACCOUNT_STATUSES = Object.keys(ACCOUNT) as AccountStatus[]

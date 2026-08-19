@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
-import { Compass, Key, List, Ticket, type LucideIcon } from 'lucide-react'
+import { Compass, Key, Ticket, type LucideIcon } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import {
@@ -21,8 +21,8 @@ import { MIN_QUERY_LENGTH, usePaletteSearch, useRecentSearches } from './useComm
 /**
  * ⌘K / Ctrl+K (§7 #5).
  *
- * Accounts by email, name or membership id; fixtures by either team; listings by
- * marketplace id; and the screens themselves — all from one `GET /search?q=`, grouped
+ * Accounts by email, name or membership id; fixtures by either team; and the screens
+ * themselves — all from one `GET /search?q=`, grouped
  * by what they are. An operator looking for `arsenal` does not know whether they want
  * the fixture or the twelve accounts, so the palette shows both and lets the grouping
  * answer the question.
@@ -39,14 +39,12 @@ import { MIN_QUERY_LENGTH, usePaletteSearch, useRecentSearches } from './useComm
 const GROUPS: Array<{ type: SearchResultType; label: string; icon: LucideIcon }> = [
   { type: 'account', label: 'Accounts', icon: Key },
   { type: 'fixture', label: 'Fixtures', icon: Ticket },
-  { type: 'listing', label: 'Listings', icon: List },
   { type: 'navigation', label: 'Navigation', icon: Compass },
 ]
 
 const ICON_OF: Record<SearchResultType, LucideIcon> = {
   account: Key,
   fixture: Ticket,
-  listing: List,
   navigation: Compass,
 }
 
@@ -90,20 +88,19 @@ export function CommandPalette({
         {/* Named for assistive tech; the input below is the visible label. */}
         <DialogTitle className="sr-only">Search Fetch.io</DialogTitle>
         <DialogDescription className="sr-only">
-          Search accounts, fixtures, listings and screens. Use the arrow keys to move and Enter to
-          open.
+          Search accounts, fixtures and screens. Use the arrow keys to move and Enter to open.
         </DialogDescription>
 
         <Command shouldFilter={false} loop className="bg-transparent">
           <CommandInput
             value={query}
             onValueChange={setQuery}
-            placeholder="Search accounts, fixtures, listings…"
+            placeholder="Search accounts, fixtures, screens…"
           />
 
           {/*
             Tall enough that four groups are readable at once. The palette's normal
-            result is one hit in each of accounts, fixtures, listings and navigation,
+            result is one hit in each of accounts, fixtures and navigation,
             and a list that shows two of them makes the other two look absent rather
             than below the fold.
           */}
@@ -131,7 +128,7 @@ export function CommandPalette({
               ) : (
                 <Hint>
                   Type at least {MIN_QUERY_LENGTH} characters. Accounts match on email, name or
-                  membership id, fixtures on either team, listings on their marketplace id.
+                  membership id, and fixtures on either team.
                 </Hint>
               )
             ) : loading ? (

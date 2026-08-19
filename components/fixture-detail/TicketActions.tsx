@@ -2,57 +2,25 @@
 
 import * as React from 'react'
 import { toast } from 'sonner'
-import {
-  FileDown,
-  Globe,
-  Layers,
-  Link2,
-  Pencil,
-  Repeat,
-  Send,
-  Share2,
-  Tag,
-  Trash2,
-  Wallet,
-} from 'lucide-react'
+import { FileDown, Globe, Layers, Pencil, Send, Share2, Trash2, Wallet } from 'lucide-react'
 
 import { useLocale } from '@/lib/format/LocaleProvider'
 import { ActionsMenu, type ActionItem } from '@/components/domain/ActionsMenu'
 import { ConfirmDialog } from '@/components/domain/ConfirmDialog'
 import { useDeleteTickets, useTicketAction } from '@/lib/api/hooks/useFixtures'
-import {
-  useAssociateListing,
-  useResellAtFaceValue,
-  useSetTicketVisibility,
-  useUpdateTickets,
-} from '@/lib/api/hooks/useFixtureDetail'
-import type { Account, Fixture, Platform, Ticket } from '@/lib/types'
-import { AssociateListingDialog } from './AssociateListingDialog'
+import { useSetTicketVisibility, useUpdateTickets } from '@/lib/api/hooks/useFixtureDetail'
+import type { Account, Fixture, Ticket } from '@/lib/types'
 import { EditTicketsDialog } from './EditTicketsDialog'
-import { MarketplacePickerModal } from './MarketplacePickerModal'
 import { buildSeatSheet, downloadBlob, seatSheetFilename } from './seat-sheet'
 
 /**
  * The §8.5 Actions menu, reproduced item for item.
  *
- * Ten of the eleven items are fully live — optimistic update, toast, and a rollback if
- * the write is refused. Three of them arrived late, once the routes they needed
- * existed:
- *
- *   Associate listing   `POST /tickets/associate-listing` LINKS a listing that already
- *                       exists. `POST /tickets/list` mints a new marketplace id, which
- *                       would throw away the reference the operator typed in.
- *   Edit                `PATCH /tickets/:id`, fanned out over the selection. The same
- *                       route is what made the VISIBILITY eye a two-way toggle.
- *   Resell at face      `POST /tickets/resell-face-value` lists on the club's own
- *                       exchange at the price printed on the ticket. That channel is
- *                       `club-exchange` in the platform registry, whose `kind` keeps it
- *                       out of the List picker — it has no price to choose.
- *
- * `Download wallet pass` is the one that stays disabled, and it is not waiting for a
- * route. A .pkpass is a signed bundle and a Google Wallet pass is a signed JWT; both
- * need a private key that a browser must never hold. It keeps §8.5's label and
- * description, and carries a tooltip saying what it needs, because an item that says
+ * Every item is live — optimistic update, toast, and a rollback if the write is
+ * refused — with one exception. `Download wallet pass` is disabled and is not waiting
+ * for a route: a .pkpass is a signed bundle and a Google Wallet pass a signed JWT, and
+ * both need a private key that must never reach a browser. It keeps §8.5's label and
+ * description and carries a tooltip saying what it needs, because an item that says
  * why it cannot act is an honest empty hand and a renamed one teaches the wrong name.
  */
 export function TicketActions({
@@ -76,21 +44,11 @@ export function TicketActions({
   const remove = useDeleteTickets()
   const visibility = useSetTicketVisibility()
   const update = useUpdateTickets()
-  const associate = useAssociateListing()
-  const resell = useResellAtFaceValue()
 
-  const [listOpen, setListOpen] = React.useState(false)
   const [editOpen, setEditOpen] = React.useState(false)
-  const [associateOpen, setAssociateOpen] = React.useState(false)
   const [confirmOpen, setConfirmOpen] = React.useState(false)
 
-  const busy =
-    action.isPending ||
-    remove.isPending ||
-    visibility.isPending ||
-    update.isPending ||
-    associate.isPending ||
-    resell.isPending
+  const busy = action.isPending || remove.isPending || visibility.isPending || update.isPending
 
   const onDownloadPdf = React.useCallback(() => {
     try {
@@ -113,24 +71,6 @@ export function TicketActions({
       onSelect: () => action.mutate({ action: 'group', ids }),
     },
     {
-      id: 'list',
-      icon: Tag,
-      label: 'List',
-      description: 'Create a new listing',
-      tone: 'primary',
-      disabled: busy,
-      onSelect: () => defer(() => setListOpen(true)),
-    },
-    {
-      id: 'associate',
-      icon: Link2,
-      label: 'Associate listing',
-      description: 'Link a supported listing or record one manually',
-      tone: 'success',
-      disabled: busy,
-      onSelect: () => defer(() => setAssociateOpen(true)),
-    },
-    {
       id: 'edit',
       icon: Pencil,
       label: 'Edit',
@@ -146,17 +86,6 @@ export function TicketActions({
       tone: 'primary',
       disabled: busy,
       onSelect: () => action.mutate({ action: 'transfer', ids }),
-    },
-    {
-      id: 'resell',
-      icon: Repeat,
-      label: 'Resell at face value',
-      description: 'Resell at face value (club exchange)',
-      tone: 'success',
-      disabled: busy,
-      // No picker and no price field: face value is the price, and the club exchange
-      // is the only channel that sells at it.
-      onSelect: () => resell.mutate({ ids }),
     },
     {
       id: 'pdf',
@@ -215,30 +144,6 @@ export function TicketActions({
     <>
       <ActionsMenu items={items} dangerItems={dangerItems} selectionCount={count} />
 
-      <MarketplacePickerModal
-        open={listOpen}
-        onOpenChange={setListOpen}
-        count={count}
-        blockedPlatforms={fixture.blockedPlatforms}
-        busy={action.isPending}
-        onConfirm={(platform: Platform) => {
-          setListOpen(false)
-          action.mutate({ action: 'list', ids, platform })
-        }}
-      />
-
-      <AssociateListingDialog
-        open={associateOpen}
-        onOpenChange={setAssociateOpen}
-        count={count}
-        fixtureId={fixture.id}
-        busy={associate.isPending}
-        onConfirm={(listingId) => {
-          setAssociateOpen(false)
-          associate.mutate({ ids, listingId })
-        }}
-      />
-
       <EditTicketsDialog
         open={editOpen}
         onOpenChange={setEditOpen}
@@ -256,7 +161,7 @@ export function TicketActions({
         verb="Delete"
         count={count}
         noun="ticket"
-        description="The seats are removed from Fetch.io. Anything already listed on a marketplace stays there, and this cannot be undone."
+        description="The seats are removed from Fetch.io. This cannot be undone."
         onConfirm={() => {
           setConfirmOpen(false)
           remove.mutate({ ids }, { onSuccess: onCleared })

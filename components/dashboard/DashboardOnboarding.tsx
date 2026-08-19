@@ -45,8 +45,8 @@ export function DashboardOnboarding() {
 
         <Prose className="text-muted">
           Import your first accounts to start tracking. Fetch.io keeps their sessions alive between
-          on-sales, follows what you list across five marketplaces, and tells you what is still
-          unsold while there is time to reprice it.
+          on-sales, follows every seat you hold, and tells you what is still unsold while there is
+          time to reprice it.
         </Prose>
 
         <div className="mt-2 flex flex-wrap items-center justify-center gap-2">

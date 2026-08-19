@@ -31,8 +31,8 @@ import { SettingsCard, SettingRow } from './SettingsCard'
  * Locale, timezone and display currency write straight to the LocaleProvider, which
  * is the single setting every date and every money figure in Fetch.io is rendered
  * from (§9 rule 6). There is no second store and no per-screen override: change the
- * currency here and /mylistings and /mytickets change with it, because they were
- * never formatting anything themselves.
+ * currency here and /mytickets and the fixture screen change with it, because they
+ * were never formatting anything themselves.
  *
  * The preview row below the selects is not decoration. A timezone and a locale are
  * abstract until you see the date they produce, and the whole point of this card is
@@ -123,8 +123,8 @@ export function PreferencesTab() {
             <>
               Converts every price into one currency so a mixed column can be read at a glance.
               Converted figures are marked <span className="font-mono">≈</span> and keep the
-              original in a tooltip. Prices are still edited and sorted in the currency each listing
-              was created in.
+              original in a tooltip. Prices are still edited in the currency each seat was bought
+              in.
             </>
           }
           control={

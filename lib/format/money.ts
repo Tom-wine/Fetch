@@ -110,7 +110,6 @@ export function formatPercent(value: number, settings: LocaleSettings): string {
  * Money in, money out — the two halves of an editable price field.
  *
  * They live beside `formatMoney` rather than on a screen because three screens now
- * edit money: /mylistings edits a listing price inline and in bulk, and the seat
  * table's Edit dialog edits a ticket price. Parsing what an operator types is exactly
  * the kind of thing that must have one answer.
  */

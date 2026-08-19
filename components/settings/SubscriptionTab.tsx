@@ -33,7 +33,7 @@ const PLAN = {
   startedOn: '2025-09-14T00:00:00.000Z',
   features: [
     'Unlimited accounts and proxies',
-    'Every marketplace Fetch.io integrates',
+    'Every club Fetch.io integrates',
     'Bulk CSV import with column mapping',
     'Seat-level inventory and price automation',
   ],

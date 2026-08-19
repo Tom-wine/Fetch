@@ -5,16 +5,9 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 import { ApiError, type ApiResult } from '../client'
-import {
-  accountsApi,
-  fixturesApi,
-  listingsApi,
-  ticketsApi,
-  type ListingFilters,
-  type TicketFilters,
-} from '../endpoints'
+import { accountsApi, fixturesApi, ticketsApi, type TicketFilters } from '../endpoints'
 import type { TicketPatch } from '../schemas'
-import type { Account, Listing, Ticket, TicketVisibility } from '@/lib/types'
+import type { Account, Ticket, TicketVisibility } from '@/lib/types'
 import { qk } from './keys'
 import { useOptimisticMutation } from './useOptimisticMutation'
 import { toTableState, type TableState } from './useAccounts'
@@ -27,8 +20,7 @@ import { toTableState, type TableState } from './useAccounts'
  * are imported by the screen straight from `useFixtures.ts` rather than re-exported,
  * so there is one definition of each and no wrapper to keep in step.
  *
- * No key namespace was added: `qk.fixtures.tickets(id, filters)` already exists, and
- * the comparables panel reads through `qk.listings.list`.
+ * No key namespace was added: `qk.fixtures.tickets(id, filters)` already exists.
  */
 
 /* ------------------------------------------------------------- the rows */
@@ -199,52 +191,6 @@ export function useSetTicketVisibility() {
 }
 
 /**
- * `Associate listing`. Links seats to a listing that ALREADY exists on a marketplace
- * — one an operator created by hand, or another tool did.
- *
- * Deliberately not `list`: that route mints a new marketplace id, which would throw
- * away the reference the operator typed in and leave the same seats offered twice.
- */
-export function useAssociateListing() {
-  return useOptimisticMutation<
-    { ids: string[]; listingId: string },
-    ApiResult<{ tickets: Ticket[]; listings: Listing[] }>
-  >({
-    mutationFn: ({ ids, listingId }) => ticketsApi.action('associate-listing', { ids, listingId }),
-    keys: () => [qk.fixtures.all],
-    // No optimistic write. The server decides whether the listing exists and whether
-    // it is for this fixture, and guessing `listed` here would flash a status that a
-    // 422 then takes away.
-    successMessage: (result, { ids }) => {
-      const listing = result.data.listings[0]
-      const n = ids.length
-      const noun = n === 1 ? 'seat' : 'seats'
-      return listing ? `${n} ${noun} linked to ${listing.listingId}.` : `${n} ${noun} linked.`
-    },
-  })
-}
-
-/**
- * `Resell at face value`. Lists the seats on the club's own exchange at the price
- * printed on the ticket — no marketplace to pick and no price to set, which is why
- * it fires straight from the menu instead of opening the picker.
- */
-export function useResellAtFaceValue() {
-  return useOptimisticMutation<
-    { ids: string[] },
-    ApiResult<{ tickets: Ticket[]; listings: Listing[] }>
-  >({
-    mutationFn: ({ ids }) => ticketsApi.action('resell-face-value', { ids }),
-    keys: () => [qk.fixtures.all, qk.listings.all],
-    optimistic: (previous, { ids }) => patchTickets(previous, ids, { status: 'listed' }),
-    successMessage: (_result, { ids }) => {
-      const n = ids.length
-      return `${n} ${n === 1 ? 'seat' : 'seats'} listed on the club exchange at face value.`
-    },
-  })
-}
-
-/**
  * `Reset PW` and `Relogin` in the toolbar. Both act on the ACCOUNTS behind the
  * selected seats, not on the seats — one request per distinct account, one toast for
  * the lot, because "4 tickets selected" is usually two or three logins.
@@ -291,109 +237,6 @@ export function useRefreshTickets() {
   }, [queryClient])
 
   return { refresh, refreshing }
-}
-
-/* ---------------------------------------------------------- comparables */
-
-/**
- * The `Fixture Info` tab's comparable-sales lookup.
- *
- * There is no comparables endpoint, and inventing one would mean inventing the
- * numbers with it. These are the REAL listings on this fixture: `Live prices` is what
- * is buyable right now, `Recent sales` is what has already gone. Both come from
- * `GET /listings?fixtureId=...`, so every figure on the tab is one an operator can go
- * and check.
- *
- * The query is `null` until the search button is pressed: the tab opens on an empty
- * state and fetches only when asked, because a lookup that runs itself is a lookup
- * nobody trusts.
- */
-export interface ComparablesQuery {
-  fixtureId: string
-  /** A block name, or null for every block. */
-  block: string | null
-  /** Minimum quantity a listing must offer. */
-  qty: number
-}
-
-export interface Comparables {
-  live: Listing[]
-  sold: Listing[]
-  loading: boolean
-  error: string | null
-  onRetry: () => void
-}
-
-function comparableFilters(fixtureId: string): ListingFilters {
-  return { fixtureId: [fixtureId], page: 1, pageSize: 200, sort: 'price', order: 'asc' }
-}
-
-/**
- * Every listing Fetch.io holds for one fixture, for the Associate dialog's preview.
- *
- * `null` until the dialog opens, for the same reason the comparables lookup waits for
- * its button: the seat table does not need this, and a screen that fetches what it
- * might use is a screen that is slow on the load nobody asked for. It shares
- * `comparableFilters`, so if both are open React Query serves one request.
- */
-export function useFixtureListings(fixtureId: string | null): {
-  listings: Listing[]
-  loading: boolean
-} {
-  const filters = React.useMemo(
-    () => (fixtureId ? comparableFilters(fixtureId) : null),
-    [fixtureId],
-  )
-
-  const query = useQuery<ApiResult<Listing[]>, ApiError>({
-    queryKey: qk.listings.list(filters ?? {}),
-    queryFn: () => listingsApi.list(filters!),
-    enabled: Boolean(filters),
-  })
-
-  return { listings: query.data?.data ?? [], loading: Boolean(filters) && query.isPending }
-}
-
-export function useComparables(params: ComparablesQuery | null): Comparables {
-  const fixtureId = params?.fixtureId ?? null
-  const block = params?.block ?? null
-  const qty = params?.qty ?? 1
-
-  const filters = React.useMemo(
-    () => (fixtureId ? comparableFilters(fixtureId) : null),
-    [fixtureId],
-  )
-
-  const query = useQuery<ApiResult<Listing[]>, ApiError>({
-    queryKey: qk.listings.list(filters ?? {}),
-    queryFn: () => listingsApi.list(filters!),
-    enabled: Boolean(filters),
-  })
-
-  const all = query.data?.data
-  const pending = query.isPending
-  const error = query.error
-  const refetch = query.refetch
-
-  return React.useMemo(() => {
-    // Block and quantity are narrowed here rather than on the wire: `GET /listings`
-    // filters by platform, account, status and fixture, and has no `block` key.
-    const matching = (all ?? []).filter(
-      (listing) => (!block || listing.block === block) && listing.quantity >= qty,
-    )
-
-    return {
-      live: matching
-        .filter((l) => l.status === 'ACTIVE' || l.status === 'PAUSED')
-        .sort((a, b) => a.price - b.price),
-      sold: matching
-        .filter((l) => l.status === 'SOLDOUT')
-        .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)),
-      loading: Boolean(filters) && pending,
-      error: error ? error.message : null,
-      onRetry: () => void refetch(),
-    }
-  }, [all, block, qty, filters, pending, error, refetch])
 }
 
 /* ------------------------------------------------------------ internals */

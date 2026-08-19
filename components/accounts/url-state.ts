@@ -152,9 +152,8 @@ export function useAccountsUrlState() {
       membershipType: type ? [type] : undefined,
       tag: tag ? [tag] : undefined,
       // §6.2 failure injection, forwarded from the screen's own URL onto the read.
-      // /accounts is a list whose error state is the thing being demonstrated, so
-      // unlike /mylistings — where `__fail` rides the WRITES so the rollback has rows
-      // to roll back — here it belongs on the query.
+      // /accounts is a list whose error state is the thing being demonstrated, so it
+      // belongs on the query rather than on a write.
       ...(fail === null ? {} : { __fail: fail }),
     }),
     [page, size, sortField, order, q, club, status, type, tag, fail],

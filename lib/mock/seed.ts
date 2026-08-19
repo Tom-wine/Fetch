@@ -1,5 +1,4 @@
 import { CLUBS, getClub } from '@/lib/registries/clubs'
-import { MARKETPLACES } from '@/lib/registries/platforms'
 import { PROVIDERS } from '@/lib/registries/providers'
 import type {
   Account,
@@ -11,9 +10,7 @@ import type {
   Competition,
   Currency,
   Fixture,
-  Listing,
   MembershipType,
-  Platform,
   Proxy,
   ProviderId,
   RevenuePoint,
@@ -24,19 +21,14 @@ import { DAY, HOUR, MINUTE, SEED_NOW, ago, ahead, rng } from './rng'
 /**
  * The seeded dataset (§5 volumes), built once at module load from a fixed seed.
  *
- * The registries in lib/registries/ are the reference data — clubs, marketplaces and
- * providers are read from there, never restated here, so a club exists in exactly
- * one place.
+ * The registries in lib/registries/ are the reference data — clubs and providers are
+ * read from there, never restated here, so a club exists in exactly one place.
  *
  * All money is integer MINOR UNITS.
  */
 
 const r = rng(0x5e7c4)
 
-// Marketplaces only. `club-exchange` is a real platform, but a seat only reaches it
-// by being resold at face value through the Actions menu — seeding listings there
-// would put inventory on a channel nobody chose.
-const PLATFORM_IDS = MARKETPLACES.map((p) => p.id)
 const PROVIDER_IDS = PROVIDERS.map((p) => p.id)
 
 export const clubs: ClubRef[] = CLUBS.map((c) => ({
@@ -348,8 +340,6 @@ function buildFixtures(): Fixture[] {
       artworkUrl: home.crest,
       provider: r.pick(PROVIDER_IDS) as ProviderId,
       counts: { total, listed, sold, transferred },
-      // Some clubs block resale on some marketplaces — the "No Viagogo" chips.
-      blockedPlatforms: r.chance(0.3) ? [r.pick(PLATFORM_IDS) as Platform] : [],
       faceValueTotal,
       valueAtRisk: perSeat * unsold,
       currency,
@@ -467,52 +457,6 @@ function buildTickets(): Ticket[] {
 
 export const tickets: Ticket[] = buildTickets()
 
-/* ---------------------------------------------------------------- listings */
-
-function buildListings(): Listing[] {
-  const listedTickets = tickets.filter((t) => t.status === 'listed' || t.status === 'sold')
-  const source = listedTickets.length >= 26 ? listedTickets : tickets
-  const chosen = r.shuffle(source).slice(0, 26)
-
-  return chosen.map((t, i) => {
-    const fixture = fixtures.find((f) => f.id === t.fixtureId)!
-    const home = getClub(fixture.homeClub)
-    const away = getClub(fixture.awayClub)
-    const platform = r.pick(PLATFORM_IDS) as Platform
-    const status: Listing['status'] =
-      t.status === 'sold'
-        ? 'SOLDOUT'
-        : r.chance(0.62)
-          ? 'ACTIVE'
-          : r.chance(0.5)
-            ? 'PAUSED'
-            : r.chance(0.5)
-              ? 'INACTIVE'
-              : 'UNDELIVERABLE'
-
-    return {
-      id: `lst_${String(i + 1).padStart(3, '0')}`,
-      listingId: `${platform.slice(0, 2).toUpperCase()}-${r.int(10000000, 99999999)}`,
-      platform,
-      accountId: t.accountId,
-      fixtureId: fixture.id,
-      // Rendered verbatim — a fixture name is domain data, never snake_cased.
-      fixtureName: `${home.short} v ${away.short}`,
-      kickoff: fixture.kickoff,
-      price: t.price,
-      currency: t.currency,
-      block: t.block,
-      rank: r.chance(0.6) ? r.int(1, 40) : undefined,
-      quantity: r.int(1, 4),
-      status,
-      floorPrice: r.chance(0.5) ? Math.round(t.faceValue * 0.9) : undefined,
-      createdAt: ago(r.int(1, 90) * DAY),
-    }
-  })
-}
-
-export const listings: Listing[] = buildListings()
-
 /* ----------------------------------------------------------------- proxies */
 
 const PROXY_COUNTRIES = ['GB', 'GB', 'GB', 'IE', 'DE', 'NL', 'FR']
@@ -586,15 +530,15 @@ export const revenueTotals = {
 const ACTIVITY_TEMPLATES: Array<Pick<ActivityEntry, 'kind' | 'source' | 'title' | 'body'>> = [
   {
     kind: 'sale',
-    source: 'stubhub',
-    title: 'Listing sold',
+    source: 'club-direct',
+    title: 'Seats sold',
     body: 'Two seats in North Bank Upper 21 sold at £245 each.',
   },
   {
-    kind: 'sale',
-    source: 'viagogo',
-    title: 'Listing sold',
-    body: 'One seat in Kop 306 sold above your floor price.',
+    kind: 'account',
+    source: 'ticketmaster-uk',
+    title: 'Membership renewed',
+    body: 'An official membership renewed for another season.',
   },
   {
     kind: 'account',
@@ -609,33 +553,15 @@ const ACTIVITY_TEMPLATES: Array<Pick<ActivityEntry, 'kind' | 'source' | 'title' 
     body: 'Twelve accounts were re-authenticated successfully.',
   },
   {
-    kind: 'listing',
-    source: 'ticombo',
-    title: 'Price undercut',
-    body: 'Three comparable listings now sit below yours.',
-  },
-  {
-    kind: 'marketplace',
-    source: 'gigsberg',
-    title: 'Payout released',
-    body: 'Funds from last week’s sales have cleared.',
-  },
-  {
     kind: 'system',
     source: 'fetch',
     title: 'Import finished',
     body: 'A CSV of 48 accounts imported with 3 warnings.',
   },
   {
-    kind: 'listing',
-    source: 'viagogo',
-    title: 'Listing paused',
-    body: 'Resale is blocked on this fixture by the club.',
-  },
-  {
     kind: 'sale',
-    source: 'ticombo',
-    title: 'Listing sold',
+    source: 'club-direct',
+    title: 'Seats sold',
     body: 'Four seats sold as a single lot.',
   },
   {
@@ -651,21 +577,21 @@ const ACTIVITY_TEMPLATES: Array<Pick<ActivityEntry, 'kind' | 'source' | 'title' 
     body: 'Two proxies stopped responding and were marked dead.',
   },
   {
-    kind: 'marketplace',
-    source: 'stubhub',
+    kind: 'system',
+    source: 'fetch',
     title: 'Delivery reminder',
-    body: 'One sold listing still needs its tickets transferring.',
+    body: 'One sold pair still needs its tickets transferring.',
   },
   {
-    kind: 'listing',
-    source: 'gigsberg',
-    title: 'Listing activated',
-    body: 'Six listings went live for the weekend fixtures.',
+    kind: 'account',
+    source: 'eventim-uk',
+    title: 'Eligibility window open',
+    body: 'Six accounts became eligible for the weekend fixtures.',
   },
   {
     kind: 'sale',
-    source: 'viagogo',
-    title: 'Listing sold',
+    source: 'club-direct',
+    title: 'Seats sold',
     body: 'A pair in the Clock End sold within an hour.',
   },
   {
@@ -687,18 +613,13 @@ export const activity: ActivityEntry[] = ACTIVITY_TEMPLATES.map((t, i) => ({
 const NOTIFICATION_TEMPLATES: Array<Pick<AppNotification, 'kind' | 'title' | 'body'>> = [
   {
     kind: 'success',
-    title: 'Listing sold',
-    body: 'Arsenal v Chelsea — North Bank Upper 21, Row 14, 2 seats sold on StubHub.',
+    title: 'Seats sold',
+    body: 'Arsenal v Chelsea — North Bank Upper 21, Row 14, 2 seats sold.',
   },
   {
     kind: 'issue',
     title: 'Account needs OTP',
     body: 'An account hit a 2FA challenge on Man City and is waiting on a code.',
-  },
-  {
-    kind: 'marketplace',
-    title: 'Viagogo price drop',
-    body: 'Three comparable listings undercut yours for Liverpool v Everton.',
   },
   {
     kind: 'success',
@@ -710,16 +631,11 @@ const NOTIFICATION_TEMPLATES: Array<Pick<AppNotification, 'kind' | 'title' | 'bo
     title: 'Account locked',
     body: 'The club locked an account after repeated sign-in attempts.',
   },
-  { kind: 'success', title: 'Payout cleared', body: 'Last week’s marketplace payout has landed.' },
-  {
-    kind: 'marketplace',
-    title: 'New comparable sale',
-    body: 'A similar lot sold £40 above your current ask.',
-  },
+  { kind: 'success', title: 'Payout cleared', body: 'Last week’s payout has landed.' },
   {
     kind: 'issue',
-    title: 'Undeliverable listing',
-    body: 'A sold listing could not be delivered and needs attention today.',
+    title: 'Membership expiring',
+    body: 'One membership lapses inside 30 days and needs renewing today.',
   },
 ]
 

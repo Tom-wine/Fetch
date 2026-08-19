@@ -31,17 +31,8 @@ export type ClubId =
   | 'west-ham'
   | 'wolves'
 
-export type ProviderId =
-  'club-direct' | 'ticketmaster-uk' | 'eventim-uk' | 'seatgeek' | 'stubhub-exchange'
-
-/**
- * Where a seat can be offered. The first five are secondary marketplaces; the last is
- * the club's own resale exchange, which is a different kind of venue — it sells at
- * face value, it is the only channel `POST /tickets/resell-face-value` targets, and it
- * is never a choice in the `List` picker. `PlatformInfo.kind` in the registry is what
- * tells the two apart; nothing branches on the id.
- */
-export type Platform = 'viagogo' | 'stubhub' | 'ticombo' | 'gigsberg' | 'fanpass' | 'club-exchange'
+/** Where an account BUYS — the club's own site, or a primary seller in front of it. */
+export type ProviderId = 'club-direct' | 'ticketmaster-uk' | 'eventim-uk'
 
 export type Currency = 'GBP' | 'EUR' | 'USD'
 
@@ -66,7 +57,6 @@ export type AccountStatus =
 
 export type TicketStatus = 'ticket' | 'listed' | 'sold' | 'transferred'
 export type TicketVisibility = 'visible' | 'hidden'
-export type ListingStatus = 'ACTIVE' | 'INACTIVE' | 'SOLDOUT' | 'PAUSED' | 'UNDELIVERABLE'
 export type ProxyStatus = 'ok' | 'dead' | 'untested'
 
 export interface Account {
@@ -122,8 +112,6 @@ export interface Fixture {
   artworkUrl: string
   provider: ProviderId
   counts: FixtureCounts
-  /** Drives the "No Viagogo" chips. */
-  blockedPlatforms: Platform[]
   /** Minor units. */
   faceValueTotal: number
   /** Unsold face value, in minor units — the anxiety column. */
@@ -148,35 +136,8 @@ export interface Ticket {
   visibility: TicketVisibility
   status: TicketStatus
   groupId?: string
-  /**
-   * The marketplace-side id of the listing this seat is being sold through, once one
-   * exists — set by `POST /tickets/list`, `/associate-listing` and
-   * `/resell-face-value`. Absent on a seat that is only held.
-   */
-  listingId?: string
   orderId: string
   purchasedAt: string
-}
-
-export interface Listing {
-  id: string
-  /** Marketplace-side id. */
-  listingId: string
-  platform: Platform
-  accountId: string
-  fixtureId: string
-  fixtureName: string
-  kickoff: string
-  /** Minor units. */
-  price: number
-  currency: Currency
-  block: string
-  rank?: number
-  quantity: number
-  status: ListingStatus
-  /** Minor units. */
-  floorPrice?: number
-  createdAt: string
 }
 
 export interface Proxy {
@@ -231,18 +192,18 @@ export interface RevenuePoint {
   currency: Currency
 }
 
-export type ActivityKind = 'sale' | 'listing' | 'account' | 'system' | 'marketplace'
+export type ActivityKind = 'sale' | 'account' | 'system'
 
 export interface ActivityEntry {
   id: string
   kind: ActivityKind
-  source: 'fetch' | Platform
+  source: 'fetch' | ProviderId
   title: string
   body: string
   at: string
 }
 
-export type NotificationKind = 'success' | 'issue' | 'marketplace'
+export type NotificationKind = 'success' | 'issue'
 
 export interface AppNotification {
   id: string
@@ -263,7 +224,7 @@ export interface ClubRef {
   crest: string
 }
 
-export type SearchResultType = 'account' | 'fixture' | 'listing' | 'navigation'
+export type SearchResultType = 'account' | 'fixture' | 'navigation'
 
 export interface SearchResult {
   id: string

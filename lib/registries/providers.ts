@@ -1,6 +1,6 @@
 import type { Competition, ProviderId } from '@/lib/types'
 
-/** Where an account actually buys — the club's own site, or a platform in front of it. */
+/** Where an account actually buys — the club's own site, or a primary seller in front of it. */
 
 // The unions live in lib/types.ts (§5) so the domain model has one home.
 export type { ProviderId }
@@ -17,8 +17,6 @@ export const PROVIDERS: ProviderInfo[] = [
   { id: 'club-direct', name: 'Club Direct', mark: 'CD', color: '#1A8CF0' },
   { id: 'ticketmaster-uk', name: 'Ticketmaster UK', mark: 'TM', color: '#0057C8' },
   { id: 'eventim-uk', name: 'Eventim UK', mark: 'EV', color: '#22D18A' },
-  { id: 'seatgeek', name: 'SeatGeek', mark: 'SG', color: '#F5A524' },
-  { id: 'stubhub-exchange', name: 'StubHub Exchange', mark: 'SX', color: '#E8542F' },
 ]
 
 const BY_ID = new Map(PROVIDERS.map((p) => [p.id, p]))

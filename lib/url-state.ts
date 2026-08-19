@@ -18,8 +18,8 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
  * with `page=1` and no `sort`, and the column header appears not to work.
  *
  * The fix is to merge into the last value WRITTEN rather than the last value
- * RENDERED. `/accounts`, `/mytickets` and `/mylistings` each discovered this
- * separately and each solved it separately; this is that fix, once.
+ * RENDERED. `/accounts` and `/mytickets` each discovered this separately and each
+ * solved it separately; this is that fix, once.
  *
  * Each screen keeps its own param schema — which keys exist, what their defaults are,
  * how they map onto an API filter object. Only the carry-forward lives here.

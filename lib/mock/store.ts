@@ -1,4 +1,4 @@
-import type { Account, AppNotification, Fixture, Listing, Proxy, Ticket } from '@/lib/types'
+import type { Account, AppNotification, Fixture, Proxy, Ticket } from '@/lib/types'
 import * as seed from './seed'
 
 /**
@@ -16,7 +16,6 @@ interface Store {
   accounts: Account[]
   fixtures: Fixture[]
   tickets: Ticket[]
-  listings: Listing[]
   proxies: Proxy[]
   notifications: AppNotification[]
   passwords: Map<string, string>
@@ -31,7 +30,6 @@ function create(): Store {
     accounts: seed.accounts.map((a) => ({ ...a })),
     fixtures: seed.fixtures.map((f) => ({ ...f })),
     tickets: seed.tickets.map((t) => ({ ...t })),
-    listings: seed.listings.map((l) => ({ ...l })),
     proxies: seed.proxies.map((p) => ({ ...p })),
     notifications: seed.notifications.map((n) => ({ ...n })),
     passwords: new Map(seed.passwords),

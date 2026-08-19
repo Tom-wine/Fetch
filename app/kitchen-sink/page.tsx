@@ -32,15 +32,10 @@ import { ViewOptionsPopover, type Density } from '@/components/data/ViewOptionsP
 import { BulkActionBar } from '@/components/data/BulkActionBar'
 import { EmptyState, ErrorState, SkeletonCard, SkeletonTable } from '@/components/data/states'
 
-import {
-  Chip,
-  StatusChip,
-  ACCOUNT_STATUSES,
-  LISTING_STATUSES,
-} from '@/components/domain/StatusChip'
+import { Chip, StatusChip, ACCOUNT_STATUSES } from '@/components/domain/StatusChip'
 import { AccountPicker } from '@/components/domain/AccountPicker'
 import { ClubBadge } from '@/components/domain/ClubBadge'
-import { PlatformBadge, ProviderBadge } from '@/components/domain/PlatformBadge'
+import { ProviderBadge } from '@/components/domain/ProviderBadge'
 import { FixtureIdentity } from '@/components/domain/FixtureIdentity'
 import { StatTile } from '@/components/domain/StatTile'
 import { PasswordCell } from '@/components/domain/PasswordCell'
@@ -51,24 +46,12 @@ import { ConfirmDialog } from '@/components/domain/ConfirmDialog'
 import { PrivacyToggle } from '@/components/domain/PrivacyToggle'
 import { BarChart, LineChart, Sparkline } from '@/components/domain/charts'
 
-import {
-  useAccountsTable,
-  useListingsTable,
-  useRevealPassword,
-  useUpdateListing,
-} from '@/lib/api/hooks'
-import type { AccountFilters, ListingFilters } from '@/lib/api/endpoints'
+import { useAccountsTable, useRevealPassword } from '@/lib/api/hooks'
+import type { AccountFilters } from '@/lib/api/endpoints'
 import type { Account } from '@/lib/types'
 import { CLUBS } from '@/lib/registries/clubs'
-import { PLATFORMS } from '@/lib/registries/platforms'
 import { PROVIDERS } from '@/lib/registries/providers'
-import {
-  DEMO_FIXTURES,
-  DEMO_LISTINGS,
-  DEMO_REVENUE,
-  DEMO_SPARK,
-  type DemoFixture,
-} from './demo-data'
+import { DEMO_FIXTURES, DEMO_REVENUE, DEMO_SPARK, type DemoFixture } from './demo-data'
 
 /**
  * The regression check for every part that follows (§7): every primitive, every
@@ -233,7 +216,6 @@ function GrammarSection() {
     ['column header', upperSnake('value at risk')],
     ['button', 'IMPORT_CSV →'],
     ['button with count', withCount('Delete accounts', 4)],
-    ['nav item', snake('My Listings')],
     ['active nav item', `//${snake('Account Manager')}`],
     ['status chip', upperSnake('needs otp')],
     ['wizard step', step(2, 'Map columns')],
@@ -451,13 +433,6 @@ function ChipSection() {
   return (
     <Section label="status_chips" note="§3.5 recipe · one class set, both themes">
       <div className="grid gap-4 lg:grid-cols-2">
-        <Panel label="listing statuses">
-          <Row>
-            {LISTING_STATUSES.map((s) => (
-              <StatusChip key={s} status={s} kind="listing" />
-            ))}
-          </Row>
-        </Panel>
         <Panel label="account statuses">
           <Row>
             {ACCOUNT_STATUSES.map((s) => (
@@ -470,7 +445,7 @@ function ChipSection() {
         <Row>
           <Chip tone="success">MONEY_IN</Chip>
           <Chip tone="warning">EXPIRING</Chip>
-          <Chip tone="danger">NO_VIAGOGO</Chip>
+          <Chip tone="danger">LOCKED</Chip>
           <Chip tone="violet">NORTH_BANK_21</Chip>
           <Chip tone="neutral">INACTIVE</Chip>
           <Chip tone="primary">MW 5</Chip>
@@ -504,12 +479,7 @@ function DomainSection() {
             <ClubBadge club="tottenham" variant="crest-only" size="lg" />
           </Row>
         </Panel>
-        <Panel label="marketplaces and providers">
-          <Row>
-            {PLATFORMS.map((p) => (
-              <PlatformBadge key={p.id} platform={p.id} />
-            ))}
-          </Row>
+        <Panel label="providers">
           <Row>
             {PROVIDERS.map((p) => (
               <ProviderBadge key={p.id} provider={p.id} />
@@ -536,8 +506,8 @@ function DomainSection() {
         <AccountPickerDemo />
         <Prose className="text-[12px] text-muted">
           A plain Select cannot do this job: sixty-four accounts are all name@domain, so the list is
-          unscannable without a filter. Lives in components/domain/ because /mytickets and
-          /mylistings both use it.
+          unscannable without a filter. Lives in components/domain/ because more than one screen
+          uses it.
         </Prose>
       </Panel>
     </Section>
@@ -657,20 +627,6 @@ function Pair({ k, children }: { k: string; children: React.ReactNode }) {
 
 const MENU_ITEMS = [
   { id: 'group', icon: Link2, label: 'Group', description: 'Create or merge a group.', count: 4 },
-  {
-    id: 'list',
-    icon: Upload,
-    label: 'List',
-    description: 'Create a new listing.',
-    tone: 'primary' as const,
-  },
-  {
-    id: 'associate',
-    icon: Link2,
-    label: 'Associate listing',
-    description: 'Link a supported listing or record one manually.',
-    tone: 'success' as const,
-  },
   {
     id: 'transfer',
     icon: Send,
@@ -1163,8 +1119,6 @@ function TableSection() {
 
       <ServerPagedPanel />
 
-      <MutationPanel />
-
       <Panel label="fixture table — value at risk and the countdown ramp">
         <DataTable
           data={DEMO_FIXTURES}
@@ -1298,75 +1252,6 @@ function LivePasswordCell({ account }: { account: Account }) {
   return <PasswordCell masked={account.passwordMasked} onReveal={revealFor(account.id)} />
 }
 
-/**
- * The optimistic-mutation proof (§6.4). Bumping a price updates the cell instantly
- * and toasts; with failures forced, the same click rolls the price back visibly and
- * toasts the error instead.
- */
-function MutationPanel() {
-  const [forceFailure, setForceFailure] = React.useState(false)
-  const filters = React.useMemo<ListingFilters>(
-    () => ({ pageSize: 4, sort: 'price', order: 'desc' }),
-    [],
-  )
-  const listings = useListingsTable(filters)
-  const updateListing = useUpdateListing()
-
-  return (
-    <Panel label="optimistic mutation — PATCH /listings/:id">
-      <Row>
-        <Button
-          variant={forceFailure ? 'danger' : 'secondary'}
-          size="sm"
-          label={forceFailure ? 'Writes will fail' : 'Force write failure'}
-          onClick={() => setForceFailure((v) => !v)}
-        />
-        <span className="text-caption text-faint">
-          {forceFailure
-            ? 'the price moves, then rolls back when the server rejects it'
-            : 'the price moves immediately, then the server confirms'}
-        </span>
-      </Row>
-
-      {listings.error ? (
-        <ErrorState message={listings.error} onRetry={listings.onRetry} />
-      ) : listings.loading ? (
-        <SkeletonTable rows={4} columns={4} />
-      ) : (
-        <div className="flex flex-col gap-2">
-          {listings.rows.map((l) => (
-            <div
-              key={l.id}
-              className="flex flex-wrap items-center gap-3 border-b border-border pb-2 last:border-0 last:pb-0"
-            >
-              <PlatformBadge platform={l.platform} />
-              <span className="min-w-0 flex-1 truncate text-body">{l.fixtureName}</span>
-              <span className="text-caption text-muted">{l.block}</span>
-              <Money amount={l.price} currency={l.currency} className="font-semibold" />
-              <StatusChip status={l.status} kind="listing" />
-              <Button
-                size="sm"
-                variant="secondary"
-                label="Raise £5"
-                disabled={updateListing.isPending}
-                onClick={() =>
-                  updateListing.mutate({
-                    id: l.id,
-                    patch: { price: l.price + 500 },
-                    forceFailure,
-                  })
-                }
-              />
-            </div>
-          ))}
-        </div>
-      )}
-    </Panel>
-  )
-}
-
-/* ------------------------------------------------------------------ charts */
-
 function ChartSection() {
   return (
     <Section label="charts" note="one theme object · reads the CSS variables at runtime">
@@ -1409,25 +1294,9 @@ function ChartSection() {
             <Money amount={4821000} currency="GBP" compact />
           </StatTile>
           <div className="flex flex-col justify-center gap-2 rounded-lg border border-border bg-surface p-6">
-            <SectionLabel>listings_live</SectionLabel>
+            <SectionLabel>seats_held</SectionLabel>
             <Sparkline data={DEMO_SPARK} slot={1} height={48} />
           </div>
-        </div>
-      </Panel>
-      <Panel label="listings — mixed currencies through the normaliser">
-        <div className="grid gap-2">
-          {DEMO_LISTINGS.map((l) => (
-            <div
-              key={l.id}
-              className="flex flex-wrap items-center gap-3 border-b border-border pb-2 last:border-0 last:pb-0"
-            >
-              <PlatformBadge platform={l.platform} />
-              <span className="min-w-0 flex-1 truncate text-body">{l.fixture}</span>
-              <span className="text-caption text-muted">{l.block}</span>
-              <Money amount={l.price} currency={l.currency} className="font-semibold" />
-              <StatusChip status={l.status} kind="listing" />
-            </div>
-          ))}
         </div>
       </Panel>
     </Section>

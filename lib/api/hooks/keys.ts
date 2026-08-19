@@ -2,7 +2,6 @@ import type {
   AccountFilters,
   FixtureFilters,
   ListParams,
-  ListingFilters,
   ProxyFilters,
   TicketFilters,
 } from '../endpoints'
@@ -41,11 +40,6 @@ export const qk = {
     detail: (id: string) => [...qk.fixtures.all, 'detail', id] as const,
     tickets: (id: string, filters: TicketFilters) =>
       [...qk.fixtures.all, 'detail', id, 'tickets', filters] as const,
-  },
-  listings: {
-    all: ['listings'] as const,
-    lists: () => [...qk.listings.all, 'list'] as const,
-    list: (filters: ListingFilters) => [...qk.listings.lists(), filters] as const,
   },
   proxies: {
     all: ['proxies'] as const,

@@ -1,28 +1,16 @@
 import { cn } from '@/lib/utils'
-import { getPlatform, type Platform } from '@/lib/registries/platforms'
-import { getProvider, type ProviderId } from '@/lib/registries/providers'
+import { getProvider } from '@/lib/registries/providers'
+import type { ProviderId } from '@/lib/types'
 
 /**
- * Marketplace mark + name. Brand names render verbatim — `StubHub`, not `stubhub`.
- * The mark is a two-letter tile tinted with the platform's own colour, so the row
- * can be scanned by colour before it is read.
+ * A provider's two-letter mark and name — where an account BUYS: the club's own site,
+ * or a primary seller in front of it.
+ *
+ * Moved out of the old `PlatformBadge.tsx` when the resale domain was deleted. That
+ * file rendered resale venues and providers through one `Mark`; only the provider half
+ * survives, so it lives under its own name rather than in a file called after the thing
+ * that went.
  */
-export function PlatformBadge({
-  platform,
-  showName = true,
-  className,
-}: {
-  platform: Platform
-  showName?: boolean
-  className?: string
-}) {
-  const p = getPlatform(platform)
-  return (
-    <Mark mark={p.mark} name={p.name} color={p.color} showName={showName} className={className} />
-  )
-}
-
-/** Same treatment for where the ticket was bought (§5 `ProviderId`). */
 export function ProviderBadge({
   provider,
   showName = true,

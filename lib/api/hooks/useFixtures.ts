@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { ApiError, type ApiResult } from '../client'
 import { fixturesApi, ticketsApi, type FixtureFilters, type TicketFilters } from '../endpoints'
-import type { Fixture, Listing, Platform, Ticket } from '@/lib/types'
+import type { Fixture, Ticket } from '@/lib/types'
 import { qk } from './keys'
 import { removeFromList, useOptimisticMutation } from './useOptimisticMutation'
 import { toTableState, type TableState } from './useAccounts'
@@ -127,22 +127,16 @@ export function useFixtureTicketsTable(
 
 export function useTicketAction() {
   return useOptimisticMutation<
-    {
-      action: 'group' | 'list' | 'transfer' | 'share'
-      ids: string[]
-      platform?: Platform
-      price?: number
-    },
-    ApiResult<{ tickets: Ticket[]; listings: Listing[] }>
+    { action: 'group' | 'transfer' | 'share'; ids: string[] },
+    ApiResult<{ tickets: Ticket[] }>
   >({
     mutationFn: ({ action, ...body }) => ticketsApi.action(action, body),
-    // A ticket action can create listings and shift fixture counts, so both
-    // resources are invalidated rather than just the tickets list.
-    keys: () => [qk.fixtures.all, qk.listings.all],
+    // A ticket action shifts the fixture's counts, so the fixtures tree is
+    // invalidated rather than just the tickets list.
+    keys: () => [qk.fixtures.all],
     successMessage: (result, { action, ids }) => {
       const n = ids.length
       const noun = n === 1 ? 'ticket' : 'tickets'
-      if (action === 'list') return `${n} ${noun} listed on the marketplace.`
       if (action === 'group') return `${n} ${noun} grouped.`
       if (action === 'transfer') return `${n} ${noun} transferred.`
       return `${n} ${noun} shared.`

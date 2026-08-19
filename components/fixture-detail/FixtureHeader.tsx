@@ -9,11 +9,9 @@ import { useLocale } from '@/lib/format/LocaleProvider'
 import { formatDateLong, formatDateTime, formatRelative, urgencyOf } from '@/lib/format/date'
 import type { LocaleSettings } from '@/lib/format/locale'
 import { getClub } from '@/lib/registries/clubs'
-import { getPlatform } from '@/lib/registries/platforms'
 import { COMPETITION_LABEL } from '@/lib/registries/providers'
 import { Display, SectionLabel } from '@/components/ui/typography'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Chip } from '@/components/domain/StatusChip'
 import { Money } from '@/components/domain/Money'
 import { PrivacyToggle } from '@/components/domain/PrivacyToggle'
@@ -96,9 +94,6 @@ export function FixtureHeader({ fixture }: { fixture: Fixture }) {
               {fixture.matchweek !== undefined && (
                 <Chip tone="primary">MW {fixture.matchweek}</Chip>
               )}
-              {fixture.blockedPlatforms.map((platform) => (
-                <BlockedChip key={platform} platform={platform} />
-              ))}
             </div>
           </div>
         </div>
@@ -123,29 +118,6 @@ export function FixtureHeader({ fixture }: { fixture: Fixture }) {
         </div>
       </div>
     </header>
-  )
-}
-
-/**
- * §9 rule 10 — every domain flag chip says what it means in plain English. "No
- * Viagogo" is the kind of chip an operator learns to ignore until the day it costs
- * them a listing, so it spells the consequence out rather than the fact.
- */
-function BlockedChip({ platform }: { platform: Fixture['blockedPlatforms'][number] }) {
-  const { name } = getPlatform(platform)
-  return (
-    <TooltipProvider delayDuration={200}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span tabIndex={0} className="rounded-sm">
-            <Chip tone="danger">No {name}</Chip>
-          </span>
-        </TooltipTrigger>
-        <TooltipContent className="max-w-[280px] font-prose text-prose">
-          {`This fixture cannot be resold on ${name}.`}
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
   )
 }
 
