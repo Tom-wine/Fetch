@@ -2,6 +2,9 @@ import { CLUBS, getClub } from '@/lib/registries/clubs'
 import { PROVIDERS } from '@/lib/registries/providers'
 import type {
   Account,
+  BallotClubId,
+  BallotProfile,
+  BallotRun,
   AccountStatus,
   ActivityEntry,
   AppNotification,
@@ -654,6 +657,127 @@ export const notifications: AppNotification[] = NOTIFICATION_TEMPLATES.map((t, i
   at: ago(notificationRng.int(3, 6000) * MINUTE),
   unread: i < 3,
 })).sort((a, b) => b.at.localeCompare(a.at))
+
+/* ------------------------------------------------------------------ ballots */
+
+/**
+ * One `default` profile ships and cannot be deleted (§B5.2), plus two the operator
+ * would plausibly have made: a cautious one for clubs that rate-limit hard, and a fast
+ * one for a pool that has already been warmed up.
+ */
+export const ballotProfiles: BallotProfile[] = [
+  {
+    id: 'bpf_default',
+    name: 'Default',
+    delayMinMs: 2000,
+    delayMaxMs: 5000,
+    concurrency: 8,
+    maxRetries: 2,
+    timeoutMs: 30000,
+    proxyGroupId: 'grp_1',
+    otpSource: 'none',
+    stopOnRateLimit: true,
+    notes: 'The shipped defaults. Safe for a first run against any club.',
+    createdAt: ago(60 * DAY),
+    updatedAt: ago(60 * DAY),
+  },
+  {
+    id: 'bpf_slow',
+    name: 'Slow and quiet',
+    delayMinMs: 6000,
+    delayMaxMs: 14000,
+    concurrency: 3,
+    maxRetries: 3,
+    timeoutMs: 45000,
+    proxyGroupId: 'grp_2',
+    otpSource: 'imap',
+    imapId: 'acc_imap_1',
+    stopOnRateLimit: true,
+    notes: 'For clubs that start refusing above three at a time.',
+    createdAt: ago(21 * DAY),
+    updatedAt: ago(9 * DAY),
+  },
+  {
+    id: 'bpf_fast',
+    name: 'Fast pool',
+    delayMinMs: 800,
+    delayMaxMs: 2000,
+    concurrency: 20,
+    maxRetries: 1,
+    timeoutMs: 20000,
+    proxyGroupId: 'grp_3',
+    otpSource: 'manual',
+    stopOnRateLimit: false,
+    notes: 'Only for accounts already signed in. Expect refusals otherwise.',
+    createdAt: ago(11 * DAY),
+    updatedAt: ago(2 * DAY),
+  },
+]
+
+/**
+ * Two finished runs and one in flight (§B6), so the history has something to show and
+ * the monitor has something to watch on first load.
+ *
+ * The in-flight run is started far enough in the past that it is genuinely mid-way when
+ * the server boots, and it keeps advancing from there on wall-clock time alone.
+ */
+export interface SeededRun {
+  run: BallotRun
+  accountIds: string[]
+  pausedMs: number
+  startedAt: number
+}
+
+const runRng = rngFor('runs')
+
+function ballotAccountsFor(clubIds: BallotClubId[], limit: number): Account[] {
+  const pool = accounts.filter((a) => (clubIds as string[]).includes(a.club))
+  return runRng.shuffle(pool).slice(0, limit)
+}
+
+function seededRun(
+  id: string,
+  label: string,
+  clubIds: BallotClubId[],
+  profile: BallotProfile,
+  size: number,
+  startedMsAgo: number,
+): SeededRun {
+  const picked = ballotAccountsFor(clubIds, size)
+  return {
+    run: {
+      id,
+      label,
+      clubIds,
+      profileId: profile.id,
+      profileName: profile.name,
+      status: 'QUEUED',
+      counts: {
+        total: picked.length,
+        queued: picked.length,
+        running: 0,
+        success: 0,
+        failed: 0,
+        needsOtp: 0,
+        skipped: 0,
+      },
+      startedAt: ago(startedMsAgo),
+      ratePerMin: 0,
+      lastEventSeq: 0,
+    },
+    accountIds: picked.map((a) => a.id),
+    pausedMs: 0,
+    startedAt: SEED_NOW - startedMsAgo,
+  }
+}
+
+export const ballotRuns: SeededRun[] = [
+  // Long finished — the engine settles every task on the first request.
+  seededRun('run_a1f3c2', 'Arsenal · Chelsea — members sale', ['arsenal', 'chelsea'], ballotProfiles[0]!, 42, 3 * DAY),
+  seededRun('run_b7e214', 'Liverpool — Anfield ballot', ['liverpool'], ballotProfiles[1]!, 18, 26 * HOUR),
+  // In flight: started recently enough that most tasks are still ahead of the clock.
+  seededRun('run_c92d55', 'Newcastle · Leeds — away scheme', ['newcastle', 'leeds'], ballotProfiles[2]!, 64, 40 * MINUTE),
+]
 
 /* --------------------------------------------------------------- passwords */
 
