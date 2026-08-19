@@ -79,7 +79,9 @@ export function RevenueCard({
   return (
     <Panel
       title="Revenue by month"
-      label="monthly resale split"
+      // Not "revenue by month" again, and not "resale split" -- there is no resale
+      // domain to split. The label's job is to add the window the title leaves out.
+      label="last_twelve_months"
       className={className}
       bodyClassName="flex items-center"
       actions={

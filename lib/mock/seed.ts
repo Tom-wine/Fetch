@@ -423,7 +423,7 @@ function buildTickets(): Ticket[] {
         levelName: r.pick(LEVELS),
         row: String(r.int(1, 44)),
         seat: String(r.int(1, 220)),
-        // Resale asks a premium over face; a transferred seat keeps face value.
+        // A sale asks a premium over face; a transferred seat keeps face value.
         price: status === 'transferred' ? faceValue : Math.round(faceValue * (1 + r.next() * 1.4)),
         faceValue,
         currency: fixture.currency,

@@ -58,7 +58,7 @@ export function KpiTiles({
     <>
       <StatTile
         icon={Banknote}
-        label="Total resale revenue"
+        label="Total revenue"
         // The total's own month-on-month move: what this month added, over what
         // the total stood at before it.
         delta={totalDelta(kpis.totalRevenue, kpis.monthRevenue)}

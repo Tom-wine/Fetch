@@ -18,7 +18,7 @@ export default function ImportAccountsPage() {
     <div className="mx-auto w-full max-w-[1600px] space-y-6">
       <PageHeader
         title="Import accounts"
-        subtitle="manual_and_bulk_csv"
+        subtitle="add_accounts_one_or_a_thousand"
         breadcrumb={[{ label: 'accounts', href: '/accounts' }, { label: 'import' }]}
       />
 

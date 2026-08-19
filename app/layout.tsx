@@ -22,7 +22,7 @@ const mono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: 'Fetch.io',
-  description: 'Premier League ticketing account manager and resale inventory dashboard.',
+  description: 'Premier League ticketing account manager, seat inventory and ballot automation.',
 }
 
 export default function RootLayout({

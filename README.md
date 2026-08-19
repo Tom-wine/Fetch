@@ -73,7 +73,7 @@ risk on each one.
 
 ### `/mytickets/fixture/[id]` — the seat-level screen
 Two panes: every seat on the left, and whatever is selected explained on the right. The actions
-menu groups, lists, associates, edits, transfers, resells at face value and shares.
+menu groups, edits, transfers, downloads, makes public, shares and deletes.
 
 ![Fixture detail](./docs/screenshots/fixture-detail.jpg)
 

@@ -49,7 +49,7 @@ export function BallotsScreen() {
 
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-6">
-      <PageHeader title="Ballot Entries" subtitle="pool_profiles_runs" />
+      <PageHeader title="Ballot Entries" subtitle="load_accounts_and_run_entries" />
 
       <Tabs
         value={state.tab}

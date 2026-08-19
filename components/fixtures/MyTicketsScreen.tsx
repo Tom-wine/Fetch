@@ -131,7 +131,11 @@ export function MyTicketsScreen() {
 
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-6">
-      <PageHeader title="My Tickets" subtitle="inventory_by_fixture" actions={<PrivacyToggle />} />
+      <PageHeader
+        title="My Tickets"
+        subtitle="what_you_hold_and_what_is_at_risk"
+        actions={<PrivacyToggle />}
+      />
 
       {state.view === 'grid' ? (
         <FixturesGrid

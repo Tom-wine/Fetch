@@ -24,7 +24,7 @@ export default function MyTicketsPage() {
 function MyTicketsFallback() {
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-6">
-      <PageHeader title="My Tickets" subtitle="inventory_by_fixture" />
+      <PageHeader title="My Tickets" subtitle="what_you_hold_and_what_is_at_risk" />
       <div className="overflow-hidden rounded-lg border border-border bg-surface">
         <SkeletonTable rows={8} columns={8} />
       </div>

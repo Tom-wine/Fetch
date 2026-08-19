@@ -69,7 +69,7 @@ export function DashboardScreen() {
     <div className="mx-auto w-full max-w-[1600px] space-y-6">
       <PageHeader
         title="Dashboard"
-        subtitle="account_health"
+        subtitle="what_sold_and_what_needs_attention"
         caret
         actions={
           <div className="flex flex-wrap items-center gap-2">

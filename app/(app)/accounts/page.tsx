@@ -15,7 +15,7 @@ import { AccountsScreen } from '@/components/accounts/AccountsScreen'
 export default function AccountsPage() {
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-6">
-      <PageHeader title="Accounts" subtitle="account_manager" />
+      <PageHeader title="Accounts" subtitle="keep_the_logins_working" />
 
       <Suspense
         fallback={

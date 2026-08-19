@@ -159,7 +159,7 @@ function TypographySection() {
           <SectionLabel>account_health</SectionLabel>
         </Spec>
         <Spec caption="card title · mono 600 · 14px · UPPER_SNAKE · 0.04em">
-          <div className="text-title font-semibold uppercase">TOTAL_RESALE_REVENUE</div>
+          <div className="text-title font-semibold uppercase">TOTAL_REVENUE</div>
         </Spec>
         <Spec caption="body / table cell · mono 400 · 13px · -0.01em">
           <div className="text-body">
@@ -220,7 +220,7 @@ function GrammarSection() {
     ['status chip', upperSnake('needs otp')],
     ['wizard step', step(2, 'Map columns')],
     ['helper text', '// passwords are never stored in your browser'],
-    ['metric label', snake('Total resale revenue')],
+    ['metric label', snake('Total revenue')],
   ]
 
   const GUARDRAILS: Array<[string, string, string]> = [
@@ -532,7 +532,7 @@ function StatTileSection() {
   return (
     <Section label="stat_tiles" note="privacy eye above blurs every value on the page">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <StatTile icon={PoundSterling} label="Total resale revenue" delta={0.124}>
+        <StatTile icon={PoundSterling} label="Total revenue" delta={0.124}>
           <Money amount={4821000} currency="GBP" compact />
         </StatTile>
         <StatTile icon={Ticket} label="Tickets sold" delta={-0.043}>
@@ -657,7 +657,7 @@ const MENU_ITEMS = [
   {
     id: 'blocked',
     icon: Ban,
-    label: 'Resell at face value',
+    label: 'Download wallet pass',
     description: 'Not supported by this club.',
     disabled: true,
   },

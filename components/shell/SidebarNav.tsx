@@ -145,8 +145,14 @@ export function SidebarNav({
 
         <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-3 pb-4">
           <ul className="space-y-0.5">
-            {NAV.map((entry) =>
-              isGroup(entry) ? (
+            {NAV.map((entry, index) => {
+              // A group opened with space above it but never CLOSED. `insights` is a
+              // top-level item, and it was sitting one row under `run_history` at the
+              // same indent, so it read as a third thing inside `// ballots`. Space
+              // below a group as well as above it, and the tree is legible again.
+              const closesAGroup = index > 0 && isGroup(NAV[index - 1]!)
+
+              return isGroup(entry) ? (
                 <li key={entry.label} className="pt-3 first:pt-0">
                   <NavGroupBlock
                     label={entry.label}
@@ -156,11 +162,11 @@ export function SidebarNav({
                   />
                 </li>
               ) : (
-                <li key={entry.href}>
+                <li key={entry.href} className={cn(closesAGroup && 'pt-3')}>
                   <NavLink item={entry} collapsed={collapsed} active={isActive(entry.href)} />
                 </li>
-              ),
-            )}
+              )
+            })}
           </ul>
         </div>
 
@@ -231,7 +237,13 @@ function NavGroupBlock({
         />
       </CollapsibleTrigger>
       <CollapsibleContent className="mt-0.5">
-        <ul className="space-y-0.5">
+        {/*
+          Indented by half a step. The group header says `// ballots` at the rail's own
+          indent; its items sit inside that, so a top-level item at the rail indent can
+          never be mistaken for one of them. Half a step rather than a whole one because
+          the icons still have to line up as a column, not a staircase.
+        */}
+        <ul className="ml-2 space-y-0.5">
           {items.map((item) => (
             <li key={item.href}>
               <NavLink item={item} collapsed={false} active={isActive(item.href)} />
