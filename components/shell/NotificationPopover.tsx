@@ -6,6 +6,7 @@ import { AlertTriangle, Bell, CheckCircle2, Store } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Prose, SectionLabel } from '@/components/ui/typography'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Hint } from '@/components/ui/tooltip'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 type Kind = 'success' | 'issue' | 'marketplace'
@@ -76,18 +77,23 @@ export function NotificationPopover() {
 
   return (
     <Popover>
-      <PopoverTrigger
-        aria-label={`Notifications, ${unreadCount} unread`}
-        className="relative flex size-9 items-center justify-center rounded-md border border-border bg-surface text-muted transition-colors duration-150 hover:text-text"
+      <Hint
+        label={unreadCount === 0 ? 'Notifications' : `Notifications — ${unreadCount} unread`}
+        side="bottom"
       >
-        <Bell className="size-4" aria-hidden="true" />
-        {unreadCount > 0 && (
-          <span
-            aria-hidden="true"
-            className="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-primary ring-2 ring-bg"
-          />
-        )}
-      </PopoverTrigger>
+        <PopoverTrigger
+          aria-label={`Notifications, ${unreadCount} unread`}
+          className="relative flex size-9 items-center justify-center rounded-md border border-border bg-surface text-muted transition-colors duration-150 hover:text-text"
+        >
+          <Bell className="size-4" aria-hidden="true" />
+          {unreadCount > 0 && (
+            <span
+              aria-hidden="true"
+              className="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-primary ring-2 ring-bg"
+            />
+          )}
+        </PopoverTrigger>
+      </Hint>
 
       <PopoverContent align="end" className="w-[380px] border-border bg-surface p-0">
         <div className="flex items-start justify-between gap-4 border-b border-border p-4">

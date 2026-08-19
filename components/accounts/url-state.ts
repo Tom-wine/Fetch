@@ -78,6 +78,7 @@ export function useAccountsUrlState() {
   const page = Math.max(1, Number(params.get('page') ?? DEFAULTS.page) || DEFAULTS.page)
   const { pageSize: defaultSize } = useUiPreferences()
   const size = Math.max(1, Number(params.get('size') ?? defaultSize) || defaultSize)
+  const fail = readFail(params.get('__fail'))
 
   /**
    * `useUrlWriter` carries the URL forward between writes in the same tick — see
@@ -150,8 +151,13 @@ export function useAccountsUrlState() {
       status: status ? [status] : undefined,
       membershipType: type ? [type] : undefined,
       tag: tag ? [tag] : undefined,
+      // §6.2 failure injection, forwarded from the screen's own URL onto the read.
+      // /accounts is a list whose error state is the thing being demonstrated, so
+      // unlike /mylistings — where `__fail` rides the WRITES so the rollback has rows
+      // to roll back — here it belongs on the query.
+      ...(fail === null ? {} : { __fail: fail }),
     }),
-    [page, size, sortField, order, q, club, status, type, tag],
+    [page, size, sortField, order, q, club, status, type, tag, fail],
   )
 
   /**
@@ -192,3 +198,14 @@ export function useAccountsUrlState() {
 }
 
 export type AccountsUrlState = ReturnType<typeof useAccountsUrlState>
+
+/**
+ * `?__fail=500` on the screen's own URL (§6.2). Anything outside the 4xx/5xx band is
+ * ignored rather than passed through, so a typo cannot quietly become a real request
+ * parameter the mock does not understand.
+ */
+function readFail(raw: string | null): number | null {
+  if (!raw) return null
+  const status = Number(raw)
+  return Number.isFinite(status) && status >= 400 && status <= 599 ? status : null
+}

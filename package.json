@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "npm run lint && npm run typecheck",
+    "check": "npm run lint && npm run typecheck && npm run check:contrast",
+    "check:contrast": "node --experimental-strip-types scripts/check-contrast.ts",
     "ui": "npx --yes shadcn@latest add"
   },
   "dependencies": {
@@ -60,6 +61,7 @@
     "@types/papaparse": "^5.5.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "axe-core": "^4.13.0",
     "eslint": "^9",
     "eslint-config-next": "15.5.23",
     "eslint-config-prettier": "^10.1.8",

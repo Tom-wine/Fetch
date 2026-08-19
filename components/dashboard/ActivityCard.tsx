@@ -7,19 +7,26 @@ import { Banknote, Store, Tag, Terminal, UserRound } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ErrorState } from '@/components/data/states'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { Prose } from '@/components/ui/typography'
 import { Chip } from '@/components/domain/StatusChip'
 import { RelativeTime } from '@/components/domain/RelativeTime'
 import { useActivity } from '@/lib/api/hooks/useDashboard'
+import { useFailParam } from './useFailParam'
 import type { ActivityKind } from '@/lib/types'
 import { Panel } from './Panel'
 
 /**
- * Row 2 right of §8.1 — the activity feed, one tab per source.
+ * Row 2 right of §8.1 — the activity feed, filtered by source.
  *
- * The tab labels are brand names, so they render verbatim rather than in the
- * UPPER_SNAKE chrome grammar (§3.3b guardrail: never snake domain data).
+ * A ToggleGroup, not Tabs. It looks like a tab strip and it was one, but there is no
+ * tab panel: the feed below lives outside the control and is filtered by it. Radix
+ * therefore pointed each trigger's `aria-controls` at a panel id that never existed,
+ * which axe flags as `aria-valid-attr-value` and which leaves a screen-reader user
+ * following a reference to nothing. A radiogroup is what this actually is.
+ *
+ * The labels are brand names, so they render verbatim rather than in the UPPER_SNAKE
+ * chrome grammar (§3.3b guardrail: never snake domain data).
  *
  * `GET /activity` sorts ascending by default, which on a feed would put the oldest
  * entry at the top and hang the "Last update" chip on it. The sort is therefore
@@ -50,25 +57,38 @@ const PAGE_SIZE = 4
 export function ActivityCard({ className }: { className?: string }) {
   const [source, setSource] = React.useState<SourceId>('fetch')
 
-  const query = useActivity({ source: [source], sort: 'at', order: 'desc', pageSize: PAGE_SIZE })
+  const fail = useFailParam()
+  const query = useActivity({
+    source: [source],
+    sort: 'at',
+    order: 'desc',
+    pageSize: PAGE_SIZE,
+    ...(fail === null ? {} : { __fail: fail }),
+  })
   const entries = query.data?.data ?? []
   const label = SOURCES.find((option) => option.id === source)?.label ?? source
 
   return (
     <Panel title="Activity" label="what happened while you were away" className={className}>
-      <Tabs value={source} onValueChange={(value) => setSource(value as SourceId)}>
-        <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-md bg-surface-raised p-1">
-          {SOURCES.map((option) => (
-            <TabsTrigger
-              key={option.id}
-              value={option.id}
-              className="rounded-sm px-2.5 py-1.5 font-mono text-body font-medium text-muted data-[state=active]:bg-surface data-[state=active]:text-text data-[state=active]:shadow-sm"
-            >
-              {option.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
+      <ToggleGroup
+        type="single"
+        value={source}
+        // Radix emits '' when the active item is clicked again; a filter that is
+        // always on something has no empty state, so that click is a no-op.
+        onValueChange={(value) => value && setSource(value as SourceId)}
+        aria-label="Activity source"
+        className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-md bg-surface-raised p-1"
+      >
+        {SOURCES.map((option) => (
+          <ToggleGroupItem
+            key={option.id}
+            value={option.id}
+            className="rounded-sm px-2.5 py-1.5 font-mono text-body font-medium text-muted data-[state=on]:bg-surface data-[state=on]:text-text data-[state=on]:shadow-sm"
+          >
+            {option.label}
+          </ToggleGroupItem>
+        ))}
+      </ToggleGroup>
 
       <div className="mt-4">
         {query.error ? (

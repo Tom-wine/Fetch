@@ -119,7 +119,8 @@ export const accountsApi = {
   action: (id: string, action: 'login' | 'relogin' | 'reset-password') =>
     apiFetch(`/accounts/${id}/${action}`, { method: 'POST', schema: accountSchema }),
 
-  stats: () => apiFetch('/accounts/stats', { schema: accountStatsSchema }),
+  stats: (query?: QueryParams) =>
+    apiFetch('/accounts/stats', { query, schema: accountStatsSchema }),
 }
 
 /* ----------------------------------------------------------------- clubs */
@@ -217,10 +218,13 @@ export const proxiesApi = {
 /* ------------------------------------------------------------- dashboard */
 
 export const dashboardApi = {
-  kpis: () => apiFetch('/kpis', { schema: kpiSetSchema }),
+  kpis: (query?: QueryParams) => apiFetch('/kpis', { query, schema: kpiSetSchema }),
 
-  revenue: (groupBy: 'month' = 'month') =>
-    apiFetch('/revenue', { query: { groupBy }, schema: z.array(revenuePointSchema) }),
+  revenue: (groupBy: 'month' = 'month', query?: QueryParams) =>
+    apiFetch('/revenue', {
+      query: { groupBy, ...query },
+      schema: z.array(revenuePointSchema),
+    }),
 
   activity: (params: ListParams & { source?: string[]; kind?: string[] } = {}) =>
     apiFetch('/activity', { query: params, schema: z.array(activityEntrySchema) }),

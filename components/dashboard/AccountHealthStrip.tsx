@@ -187,9 +187,16 @@ export function AccountHealthStrip({
               {rest.map((entry, i) => (
                 <React.Fragment key={entry.status}>
                   {i > 0 && ' · '}
+                  {/*
+                    Underlined at rest, not only on hover. These links sit inside a
+                    sentence, so colour alone is the only thing telling them apart from
+                    the prose around them — which is exactly what axe's
+                    `link-in-text-block` catches, and what someone who cannot separate
+                    those two greys experiences.
+                  */}
                   <Link
                     href={href(entry.status)}
-                    className="text-muted underline-offset-4 transition-colors hover:text-text hover:underline"
+                    className="text-muted underline underline-offset-4 transition-colors hover:text-text"
                   >
                     {entry.count} {snake(entry.label)}
                   </Link>

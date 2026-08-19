@@ -24,17 +24,27 @@ import { qk } from './keys'
 import { useOptimisticMutation } from './useOptimisticMutation'
 import { toTableState, type TableState } from './useAccounts'
 
-export function useKpis() {
+/**
+ * §6.2 failure injection. `?__fail=500` on /dashboard is forwarded onto every read
+ * the screen makes, because on this screen the error state IS the thing being
+ * demonstrated — four panels that each have to fail independently and each offer
+ * their own retry.
+ */
+function failQuery(fail?: number | null) {
+  return fail ? { __fail: fail } : undefined
+}
+
+export function useKpis(fail?: number | null) {
   return useQuery<ApiResult<KpiSet>, ApiError>({
-    queryKey: qk.dashboard.kpis(),
-    queryFn: () => dashboardApi.kpis(),
+    queryKey: qk.dashboard.kpis(fail),
+    queryFn: () => dashboardApi.kpis(failQuery(fail)),
   })
 }
 
-export function useRevenue(groupBy: 'month' = 'month') {
+export function useRevenue(groupBy: 'month' = 'month', fail?: number | null) {
   return useQuery<ApiResult<RevenuePoint[]>, ApiError>({
-    queryKey: qk.dashboard.revenue(groupBy),
-    queryFn: () => dashboardApi.revenue(groupBy),
+    queryKey: qk.dashboard.revenue(groupBy, fail),
+    queryFn: () => dashboardApi.revenue(groupBy, failQuery(fail)),
   })
 }
 

@@ -6,6 +6,7 @@ import { useTheme } from 'next-themes'
 
 import { cn } from '@/lib/utils'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { Hint } from '@/components/ui/tooltip'
 
 /**
  * A two-segment sun|moon pill with the active segment filled — deliberately not a
@@ -34,12 +35,16 @@ export function ThemeSegment() {
       aria-label="Theme"
       className="flex h-9 items-center gap-0.5 rounded-md border border-border bg-surface px-1"
     >
-      <ToggleGroupItem value="light" aria-label="Light theme" className={cn(segment)}>
-        <Sun className="size-4" aria-hidden="true" />
-      </ToggleGroupItem>
-      <ToggleGroupItem value="dark" aria-label="Dark theme" className={cn(segment)}>
-        <Moon className="size-4" aria-hidden="true" />
-      </ToggleGroupItem>
+      <Hint label="Light theme" side="bottom">
+        <ToggleGroupItem value="light" aria-label="Light theme" className={cn(segment)}>
+          <Sun className="size-4" aria-hidden="true" />
+        </ToggleGroupItem>
+      </Hint>
+      <Hint label="Dark theme" side="bottom">
+        <ToggleGroupItem value="dark" aria-label="Dark theme" className={cn(segment)}>
+          <Moon className="size-4" aria-hidden="true" />
+        </ToggleGroupItem>
+      </Hint>
     </ToggleGroup>
   )
 }

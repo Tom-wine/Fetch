@@ -34,9 +34,21 @@ import { SectionLabel } from '@/components/ui/typography'
 
 const SERIES_SLOTS = 5
 
-function readVar(name: string, fallback: string): string {
+/**
+ * `currentColor` rather than a hex literal.
+ *
+ * A missing token is a build problem, not a runtime state — globals.css defines every
+ * name read below in both themes. Spelling the light-theme values out here as
+ * fallbacks would put a second copy of six tokens in a file nobody would think to
+ * update, and a copy that only renders when something is already broken is a copy
+ * that drifts silently. Inheriting the text colour is visibly wrong, which is what a
+ * missing token should look like.
+ */
+const TOKEN_MISSING = 'currentColor'
+
+function readVar(name: string): string {
   const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
-  return v || fallback
+  return v || TOKEN_MISSING
 }
 
 export interface ChartTheme {
@@ -63,14 +75,12 @@ export function useChartTheme(): ChartTheme | null {
 
   React.useEffect(() => {
     const build = (): ChartTheme => ({
-      series: Array.from({ length: SERIES_SLOTS }, (_, i) =>
-        readVar(`--chart-${i + 1}`, '#0b63c9'),
-      ),
-      grid: readVar('--border', '#e1e6ee'),
-      axis: readVar('--text-faint', '#626d80'),
-      surface: readVar('--surface', '#ffffff'),
-      border: readVar('--border', '#e1e6ee'),
-      text: readVar('--text', '#0b1220'),
+      series: Array.from({ length: SERIES_SLOTS }, (_, i) => readVar(`--chart-${i + 1}`)),
+      grid: readVar('--border'),
+      axis: readVar('--text-faint'),
+      surface: readVar('--surface'),
+      border: readVar('--border'),
+      text: readVar('--text'),
     })
 
     setTheme(build())

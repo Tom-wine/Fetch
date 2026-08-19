@@ -26,7 +26,7 @@ Values are the exact §3.1 hexes. Do not substitute Tailwind defaults, do not ro
 | `border-strong` | `border-border-strong`| `#333B48` | `#C8D1DF` | focused inputs, dividers that must read   |
 | `text`          | `text-text`           | `#ECF2F8` | `#0B1220` | primary copy                              |
 | `text-muted`    | `text-muted`          | `#9AA6B8` | `#5A6577` | secondary copy                            |
-| `text-faint`    | `text-faint`          | `#7A8698` | `#626D80` | timestamps, disabled                      |
+| `text-faint`    | `text-faint`          | `#7F8B9C` | `#606A7D` | timestamps, disabled                      |
 
 ### Brand — theme-invariant, sampled from the logo
 
@@ -36,7 +36,7 @@ Values are the exact §3.1 hexes. Do not substitute Tailwind defaults, do not ro
 | `primary-solid` | `bg-primary-solid`   | `#0B6FD4` | **filled buttons with white text** — 4.95:1      |
 | `primary-hover` | `hover:bg-primary-hover` | `#1A8CF0` | hover of a solid button                      |
 | `primary-press` | `active:bg-primary-press` | `#0A5FB8` | pressed state                               |
-| `primary-ink`   | `text-primary-ink`   | `#0B63C9` (light) / `#1A8CF0` (dark) | primary **text**       |
+| `primary-ink`   | `text-primary-ink`   | `#0B63C9` (light) / `#2692F1` (dark) | primary **text**       |
 | `cyan`          | `text-cyan`          | `#5FD0FA` | highlights, sparklines, glow                     |
 | `deep`          | `bg-deep`            | `#0057C8` | gradient start                                   |
 
@@ -48,15 +48,17 @@ Values are the exact §3.1 hexes. Do not substitute Tailwind defaults, do not ro
 
 | Token          | Utility          | Hue       | Ink (light) | Use                                    |
 | -------------- | ---------------- | --------- | ----------- | -------------------------------------- |
-| `success`      | `text-success`   | `#22D18A` | `#0A7B54`   | money in, ACTIVE, healthy account      |
-| `warning`      | `text-warning`   | `#F5A524` | `#B45309`   | relogin, OTP, expiring membership      |
-| `danger`       | `text-danger`    | `#FF4D6A` | `#C81E3C`   | locked, blocked, delete, SOLD_OUT      |
+| `success`      | `text-success`   | `#22D18A` | `#0A7751`   | money in, ACTIVE, healthy account      |
+| `warning`      | `text-warning`   | `#F5A524` | `#A94E08`   | relogin, OTP, expiring membership      |
+| `danger`       | `text-danger`    | `#FF4D6A` | `#C11D3A`   | locked, blocked, delete, SOLD_OUT      |
 | `violet`       | `text-violet`    | `#A78BFA` | `#6D28D9`   | sold count, block numbers              |
 | `neutral-chip` | `text-neutral-chip` | `#9AA6B8` | `#5A6577` | INACTIVE and other non-signals         |
 
 Each hue has an `-ink` companion (`text-success-ink`, …). In **light** mode it is the
-darker §3.1 `statusInk` value; in **dark** mode it collapses onto the raw hue. That is
-what lets one chip class work in both themes:
+darker §3.1 `statusInk` value; in **dark** mode it collapses onto the raw hue — with one
+exception, `primary-ink`, which is one step lighter than `primary` because the primary
+chip is a 12% tint and the raw hue only reaches 4.34:1 on `surface-raised`. That is what
+lets one chip class work in both themes:
 
 ```
 rounded-sm border px-2 py-0.5 text-chip font-medium
@@ -66,18 +68,31 @@ bg-success/12 text-success-ink border-success/30       ← light (opacity differ
 
 ### Contrast ledger (verified, not eyeballed)
 
-| Pair                        | Dark   | Light            | Verdict |
-| --------------------------- | ------ | ---------------- | ------- |
-| text on surface             | 16.8:1 | 18.7:1           | AAA     |
-| muted on surface            | 7.7:1  | 5.9:1            | AA      |
-| faint on surface_raised     | 4.7:1  | 4.8:1            | AA      |
-| accent as link text         | 5.5:1  | 5.8:1 (`#0B63C9`)| AA      |
-| white on primary_solid      | 4.95:1 | 4.95:1           | AA      |
-| success chip text on chip bg| 7.4:1  | 4.8:1 (`#0A7B54`)| AA      |
-| danger chip text on chip bg | 5.0:1  | 4.9:1            | AA      |
-| violet chip text on chip bg | 5.6:1  | 6.1:1            | AA      |
+Measured by `scripts/check-contrast.ts`, which parses these very tokens out of
+`app/globals.css`, checks 76 pairs across both themes and exits non-zero on any failure.
+It runs inside `npm run check`, so a token cannot regress without breaking the build.
 
-`scripts/check-contrast.ts` (Part 11) re-verifies these and fails the build.
+The worst case in each family, as of the last run:
+
+| Pair                             | Dark   | Light  | Verdict |
+| -------------------------------- | ------ | ------ | ------- |
+| text on surface                  | 16.8:1 | 18.7:1 | AAA     |
+| muted on surface-hover           | 6.5:1  | 5.0:1  | AA      |
+| faint on surface-hover           | 4.6:1  | 4.6:1  | AA      |
+| primary-ink as link text         | 5.0:1  | 5.3:1  | AA      |
+| white on primary-solid           | 4.95:1 | 4.95:1 | AA      |
+| success chip text on chip bg     | 6.6:1  | 4.6:1  | AA      |
+| warning chip text on chip bg     | 6.5:1  | 4.6:1  | AA      |
+| danger chip text on chip bg      | 4.6:1  | 4.6:1  | AA      |
+| violet chip text on chip bg      | 5.1:1  | 5.8:1  | AA      |
+| primary chip text on chip bg     | 4.6:1  | 4.6:1  | AA      |
+
+The chip rows are the binding constraint, and they are why five ink tokens moved in
+Part 11. A chip on `--surface` cleared 4.5:1 comfortably; the same chip in a popover or
+a table header row sits on `--surface-raised`, half a step darker, and three of them
+landed between 4.18:1 and 4.37:1. The inks were darkened (light) or lightened (dark) to
+the nearest value that clears 4.5:1 on BOTH surfaces — the hues themselves are
+untouched, so nothing about the palette's colour changed, only its text variants.
 
 ### shadcn aliases
 

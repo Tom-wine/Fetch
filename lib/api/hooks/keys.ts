@@ -22,7 +22,7 @@ export const qk = {
     lists: () => [...qk.accounts.all, 'list'] as const,
     list: (filters: AccountFilters) => [...qk.accounts.lists(), filters] as const,
     detail: (id: string) => [...qk.accounts.all, 'detail', id] as const,
-    stats: () => [...qk.accounts.all, 'stats'] as const,
+    stats: (fail?: number | null) => [...qk.accounts.all, 'stats', fail ?? null] as const,
     /**
      * Every row matching a filter set, not just the current page — the set behind
      * the /accounts bulk-selection escalation ("select all 64 matching these
@@ -54,8 +54,11 @@ export const qk = {
   },
   dashboard: {
     all: ['dashboard'] as const,
-    kpis: () => [...qk.dashboard.all, 'kpis'] as const,
-    revenue: (groupBy: string) => [...qk.dashboard.all, 'revenue', groupBy] as const,
+    // `fail` is part of the key on purpose: without it a forced failure would be
+    // answered from the cached good response and the error state would never render.
+    kpis: (fail?: number | null) => [...qk.dashboard.all, 'kpis', fail ?? null] as const,
+    revenue: (groupBy: string, fail?: number | null) =>
+      [...qk.dashboard.all, 'revenue', groupBy, fail ?? null] as const,
     activity: (filters: ListParams) => [...qk.dashboard.all, 'activity', filters] as const,
   },
   notifications: {

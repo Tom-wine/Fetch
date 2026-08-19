@@ -219,9 +219,16 @@ export function CsvDropzone({
           </Button>
         </div>
 
+        {/*
+          Visually hidden but still in the accessibility tree, so it needs a name of
+          its own: `sr-only` is not `hidden`, and a screen reader tabbing the dialog
+          reaches an unlabelled file field otherwise. BROWSE_FILES above is what a
+          sighted user clicks; this is what the label is for.
+        */}
         <input
           ref={inputRef}
           type="file"
+          aria-label="Choose a CSV file to import"
           accept={ACCEPTED_EXTENSIONS.join(',')}
           className="sr-only"
           onChange={(event) => {

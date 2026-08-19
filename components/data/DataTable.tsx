@@ -26,6 +26,7 @@ import { snake, upperSnake } from '@/lib/format/text'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ErrorState, SkeletonTable } from './states'
 import { useUiPreferences } from '@/lib/format/LocaleProvider'
+import { Hint } from '@/components/ui/tooltip'
 import { ViewOptionsPopover, type ColumnToggle, type Density } from './ViewOptionsPopover'
 
 /**
@@ -629,24 +630,28 @@ export function DataTable<TData extends RowData>({
                 <span className="text-caption text-faint tabular-nums">
                   {pagination.pageIndex + 1} / {Math.max(table.getPageCount(), 1)}
                 </span>
-                <button
-                  type="button"
-                  onClick={() => table.previousPage()}
-                  disabled={!table.getCanPreviousPage()}
-                  aria-label="Previous page"
-                  className="flex size-8 items-center justify-center rounded-full border border-border text-muted transition-colors duration-150 hover:bg-surface-hover hover:text-text disabled:opacity-40"
-                >
-                  <ChevronLeft className="size-4" aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => table.nextPage()}
-                  disabled={!table.getCanNextPage()}
-                  aria-label="Next page"
-                  className="flex size-8 items-center justify-center rounded-full border border-border text-muted transition-colors duration-150 hover:bg-surface-hover hover:text-text disabled:opacity-40"
-                >
-                  <ChevronRight className="size-4" aria-hidden="true" />
-                </button>
+                <Hint label="Previous page">
+                  <button
+                    type="button"
+                    onClick={() => table.previousPage()}
+                    disabled={!table.getCanPreviousPage()}
+                    aria-label="Previous page"
+                    className="flex size-8 items-center justify-center rounded-full border border-border text-muted transition-colors duration-150 hover:bg-surface-hover hover:text-text disabled:opacity-40"
+                  >
+                    <ChevronLeft className="size-4" aria-hidden="true" />
+                  </button>
+                </Hint>
+                <Hint label="Next page">
+                  <button
+                    type="button"
+                    onClick={() => table.nextPage()}
+                    disabled={!table.getCanNextPage()}
+                    aria-label="Next page"
+                    className="flex size-8 items-center justify-center rounded-full border border-border text-muted transition-colors duration-150 hover:bg-surface-hover hover:text-text disabled:opacity-40"
+                  >
+                    <ChevronRight className="size-4" aria-hidden="true" />
+                  </button>
+                </Hint>
               </div>
             )}
           </div>

@@ -9,6 +9,7 @@ import { PrivacyToggle } from '@/components/domain/PrivacyToggle'
 import { RelativeTime } from '@/components/domain/RelativeTime'
 import { useAccountStats } from '@/lib/api/hooks/useAccounts'
 import { useKpis, useRevenue } from '@/lib/api/hooks/useDashboard'
+import { useFailParam } from './useFailParam'
 import { AccountHealthStrip } from './AccountHealthStrip'
 import { ActivityCard } from './ActivityCard'
 import { DashboardOnboarding } from './DashboardOnboarding'
@@ -30,9 +31,14 @@ import { useRefreshDashboard } from './useRefreshDashboard'
  * knows about, and it is a feed rather than a number, so it refetches on its own.
  */
 export function DashboardScreen() {
-  const kpisQuery = useKpis()
-  const revenueQuery = useRevenue()
-  const statsQuery = useAccountStats()
+  // §6.2 failure injection, read from the screen's own URL and forwarded onto every
+  // read below. `?__fail=500` therefore fails all four panels at once, which is the
+  // point: each has to show its own error and its own retry, not one shared banner.
+  const fail = useFailParam()
+
+  const kpisQuery = useKpis(fail)
+  const revenueQuery = useRevenue('month', fail)
+  const statsQuery = useAccountStats(fail)
   const { refresh, refreshing } = useRefreshDashboard()
 
   const kpis = kpisQuery.data?.data ?? null

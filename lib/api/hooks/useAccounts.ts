@@ -67,10 +67,10 @@ export function useAccount(id: string | null) {
   })
 }
 
-export function useAccountStats() {
+export function useAccountStats(fail?: number | null) {
   return useQuery<ApiResult<AccountStats>, ApiError>({
-    queryKey: qk.accounts.stats(),
-    queryFn: () => accountsApi.stats(),
+    queryKey: qk.accounts.stats(fail),
+    queryFn: () => accountsApi.stats(fail ? { __fail: fail } : undefined),
   })
 }
 

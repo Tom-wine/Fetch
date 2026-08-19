@@ -27,7 +27,7 @@
   --border-strong: #c8d1df;
   --text: #0b1220; /* 18.7:1 on white */
   --text-muted: #5a6577; /* 5.9:1 on white */
-  --text-faint: #626d80; /* 4.8:1 on surface-raised */
+  --text-faint: #606a7d; /* 4.98:1 on surface-raised, 4.63:1 on surface-hover */
 
   /* --- brand (§3.1, theme-invariant: sampled from the logo) --- */
   --primary: #1a8cf0; /* links, active nav, selection, focus ring */
@@ -48,9 +48,12 @@
   /* --- status INK: the text variant of each hue on a light surface (§3.1 statusInk).
          In dark mode each collapses back onto the raw hue, so one chip class works
          in both themes (§3.5). --- */
-  --success-ink: #0a7b54;
-  --warning-ink: #b45309;
-  --danger-ink: #c81e3c;
+  /* Darkened one step from the brand sheet's values so the chip tint still clears
+     4.5:1 when a chip sits on --surface-raised (a popover or a table header row),
+     which is half a point darker than the --surface the ledger was measured on. */
+  --success-ink: #0a7751;
+  --warning-ink: #a94e08;
+  --danger-ink: #c11d3a;
   --violet-ink: #6d28d9;
   --neutral-chip-ink: #5a6577;
 
@@ -115,11 +118,14 @@
   --border-strong: #333b48;
   --text: #ecf2f8; /* 16.8:1 on surface */
   --text-muted: #9aa6b8; /* 7.7:1 on surface */
-  --text-faint: #7a8698; /* 4.7:1 on surface-raised */
+  --text-faint: #7f8b9c; /* 5.04:1 on surface-raised, 4.62:1 on surface-hover */
 
   /* Brand and status hues are unchanged in dark — only their text variants
      collapse, because the raw hue already carries on a near-black surface. */
-  --primary-ink: var(--primary); /* 5.5:1 as link text on surface */
+  /* One step lighter than --primary rather than an alias of it: the primary chip is
+     a 12% tint, and on --surface-raised the raw hue lands at 4.34:1. The brand colour
+     itself is unchanged — this is only its text variant. */
+  --primary-ink: #2692f1; /* 5.36:1 on surface-raised */
   --success-ink: var(--success);
   --warning-ink: var(--warning);
   --danger-ink: var(--danger);

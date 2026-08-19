@@ -27,4 +27,41 @@ const TooltipContent = React.forwardRef<
 ))
 TooltipContent.displayName = TooltipPrimitive.Content.displayName
 
+/**
+ * An icon-only control and its tooltip in one wrapper.
+ *
+ * §11 asks every icon-only control to carry BOTH an accessible name and a tooltip:
+ * the name for a screen reader, the tooltip for the sighted user who does not
+ * recognise the glyph. They are different audiences with the same question, and the
+ * four-component Radix incantation was long enough that controls kept shipping with
+ * only the aria-label.
+ *
+ * `children` must be a single element that forwards a ref — the trigger is `asChild`,
+ * so a Radix `DropdownMenuTrigger` or `PopoverTrigger` composes here directly rather
+ * than being wrapped in a span that would break the menu's positioning.
+ *
+ * 300ms rather than the 200ms used elsewhere: these sit in table rows, and a mouse
+ * crossing twenty-five of them should not leave a trail of tooltips.
+ */
+export function Hint({
+  label,
+  side = 'top',
+  children,
+}: {
+  label: string
+  side?: 'top' | 'right' | 'bottom' | 'left'
+  children: React.ReactNode
+}) {
+  return (
+    <TooltipProvider delayDuration={300}>
+      <Tooltip>
+        <TooltipTrigger asChild>{children}</TooltipTrigger>
+        <TooltipContent side={side} className="max-w-[240px] font-prose text-prose">
+          {label}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  )
+}
+
 export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider }

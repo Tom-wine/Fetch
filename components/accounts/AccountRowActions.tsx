@@ -26,6 +26,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Hint } from '@/components/ui/tooltip'
 import type { ActionTone } from '@/components/domain/ActionsMenu'
 import type { Account } from '@/lib/types'
 
@@ -146,17 +147,19 @@ export function AccountRowActions({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger
-        // The row itself is clickable, so the menu must not open it as well.
-        onClick={(e) => e.stopPropagation()}
-        aria-label={`Actions for ${account.email}`}
-        className={cn(
-          'flex size-8 items-center justify-center rounded-md text-muted transition-colors duration-150 hover:bg-surface-hover hover:text-text data-[state=open]:bg-surface-hover data-[state=open]:text-text',
-          className,
-        )}
-      >
-        <MoreVertical className="size-4" aria-hidden="true" />
-      </DropdownMenuTrigger>
+      <Hint label="Account actions">
+        <DropdownMenuTrigger
+          // The row itself is clickable, so the menu must not open it as well.
+          onClick={(e) => e.stopPropagation()}
+          aria-label={`Actions for ${account.email}`}
+          className={cn(
+            'flex size-8 items-center justify-center rounded-md text-muted transition-colors duration-150 hover:bg-surface-hover hover:text-text data-[state=open]:bg-surface-hover data-[state=open]:text-text',
+            className,
+          )}
+        >
+          <MoreVertical className="size-4" aria-hidden="true" />
+        </DropdownMenuTrigger>
+      </Hint>
 
       <DropdownMenuContent
         align="end"

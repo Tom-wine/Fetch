@@ -24,6 +24,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Hint } from '@/components/ui/tooltip'
 import type { ActionTone } from '@/components/domain/ActionsMenu'
 import type { Listing } from '@/lib/types'
 
@@ -118,16 +119,18 @@ export function ListingRowActions({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger
-        onClick={(e) => e.stopPropagation()}
-        aria-label={`Actions for listing ${listing.listingId}`}
-        className={cn(
-          'flex size-8 items-center justify-center rounded-md text-muted transition-colors duration-150 hover:bg-surface-hover hover:text-text data-[state=open]:bg-surface-hover data-[state=open]:text-text',
-          className,
-        )}
-      >
-        <MoreVertical className="size-4" aria-hidden="true" />
-      </DropdownMenuTrigger>
+      <Hint label="Listing actions">
+        <DropdownMenuTrigger
+          onClick={(e) => e.stopPropagation()}
+          aria-label={`Actions for listing ${listing.listingId}`}
+          className={cn(
+            'flex size-8 items-center justify-center rounded-md text-muted transition-colors duration-150 hover:bg-surface-hover hover:text-text data-[state=open]:bg-surface-hover data-[state=open]:text-text',
+            className,
+          )}
+        >
+          <MoreVertical className="size-4" aria-hidden="true" />
+        </DropdownMenuTrigger>
+      </Hint>
 
       <DropdownMenuContent
         align="end"

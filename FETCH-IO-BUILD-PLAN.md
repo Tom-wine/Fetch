@@ -85,7 +85,7 @@ export const tokens = {
     borderStrong:  '#333B48', // focused inputs, dividers that must read
     text:          '#ECF2F8', // 16.8:1 on surface
     textMuted:     '#9AA6B8', // secondary copy — 7.7:1 on surface
-    textFaint:     '#7A8698', // timestamps, disabled — 4.7:1 on surfaceRaised
+    textFaint:     '#7F8B9C', // timestamps, disabled — 5.0:1 on surfaceRaised, 4.6:1 on surfaceHover
   },
   light: {
     bg:            '#FFFFFF',
@@ -96,7 +96,7 @@ export const tokens = {
     borderStrong:  '#C8D1DF',
     text:          '#0B1220', // 18.7:1 on white
     textMuted:     '#5A6577', // 5.9:1 on white
-    textFaint:     '#626D80', // 4.8:1 on surfaceRaised — still passes, unlike the source app
+    textFaint:     '#606A7D', // 5.0:1 on surfaceRaised, 4.6:1 on surfaceHover — unlike the source app
   },
   brand: {
     primary:      '#1A8CF0', // THE logo blue. Links, active nav, selection, focus ring, chips on dark
@@ -116,7 +116,10 @@ export const tokens = {
   },
   // Light-mode text variants for status colours (chips keep the hue as a background tint,
   // but any status *text* on a white surface uses these):
-  statusInk: { success: '#0A7B54', warning: '#B45309', danger: '#C81E3C', violet: '#6D28D9' },
+  statusInk: { success: '#0A7751', warning: '#A94E08', danger: '#C11D3A', violet: '#6D28D9' },
+  // Dark mode collapses each ink onto its raw hue, with ONE exception: primaryInk is a
+  // step lighter than primary (#2692F1), because the primary chip is a 12% tint and the
+  // raw hue reads 4.34:1 on surfaceRaised. See scripts/check-contrast.ts.
 }
 ```
 
@@ -773,7 +776,7 @@ Each part is a stopping point with something visible to review. Prompts are in
 
 ## 11. Acceptance criteria
 
-- [ ] Both themes pass **4.5:1** on all text including muted copy and chip text — verified by a script that fails the build, not by eye.
+- [x] Both themes pass **4.5:1** on all text including muted copy and chip text — verified by `scripts/check-contrast.ts`, which parses app/globals.css, checks 76 pairs and exits non-zero inside `npm run check`. Five ink tokens moved in Part 11 to clear chips sitting on `surface-raised`.
 - [ ] No horizontal scrollbar on any toolbar at 375 / 768 / 1280 / 1440 / 1920.
 - [ ] Every table is usable at 375px (stacked cards) and 1920px (no dead whitespace).
 - [ ] Every icon-only control has an accessible name and a tooltip.
