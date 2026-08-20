@@ -146,4 +146,5 @@ code is read — all of that belongs to the backend, and
 Also in `docs/`: [`BACKEND-HANDOFF.md`](./docs/BACKEND-HANDOFF.md) (what a real backend must get
 right), [`API-CONTRACT.md`](./docs/API-CONTRACT.md) and [`openapi.json`](./docs/openapi.json) (the
 wire format, generated from the Zod schemas), and
-[`DESIGN-TOKENS.md`](./docs/DESIGN-TOKENS.md) (the palette and its contrast ledger).
+[`DESIGN-TOKENS.md`](./docs/DESIGN-TOKENS.md) (the palette and its contrast ledger) and
+[`CONVENTIONS.md`](./docs/CONVENTIONS.md) (hazards this codebase has already paid for).
