@@ -14,10 +14,15 @@ import { ValueAtRisk } from './ValueAtRisk'
 /**
  * The §8.4 columns, in order.
  *
- * `competition` ships hidden: `FixtureIdentity` already carries the competition chip
- * in the first cell, and mono runs ~12% wider than a proportional face, so nine
- * columns do not fit at 1280px (§9 rule 3). It is one click away in the view
- * options — hiding a duplicate is the sanctioned fix, shrinking the type is not.
+ * `competition` and `venue` ship hidden. Mono runs ~12% wider than a proportional face,
+ * so nine columns do not fit at 1280px (§9 rule 3) — and both of these repeat something
+ * the row already says. `FixtureIdentity` carries the competition chip in the first
+ * cell, and it names the home club, which IS the ground: Arsenal v Chelsea is at the
+ * Emirates whether or not a column says so. The city is the part that cannot be
+ * inferred, and it matters when scanning for travel, which is what the filters are for.
+ *
+ * Both are one click away in the view options. Hiding a duplicate is the sanctioned fix;
+ * shrinking the type is not.
  *
  * `meta.sortable` is stamped from the sort registry rather than written per column,
  * so a header is clickable exactly when the API can order by that field. FIXTURE and
@@ -118,7 +123,7 @@ export const FIXTURE_COLUMNS: FetchColumnDef<Fixture>[] = (
 }))
 
 /** Column ids hidden on first render — see the note above. */
-export const INITIALLY_HIDDEN = ['competition']
+export const INITIALLY_HIDDEN = ['competition', 'venue']
 
 function Count({ value, tone }: { value: number; tone: string }) {
   return <Num value={value} className={cn('font-semibold', value === 0 ? 'text-faint' : tone)} />

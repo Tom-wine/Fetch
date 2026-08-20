@@ -68,8 +68,17 @@ function makeCsvColumns(proxyById: Map<string, Proxy>): Array<CsvColumn<Account>
   ]
 }
 
-/** Hidden at 1440 so ACTIONS is not pushed off the right edge — see the note below. */
-const HIDDEN_COLUMNS = ['loyalty', 'tickets', 'proxy']
+/**
+ * Hidden on first render so the default set FITS — §9 rule 3: hide columns, never shrink
+ * type. LOYALTY, TICKETS and PROXY keep ACTIONS on screen at 1440; PASSWORD is what made
+ * the table fit at 1280, where the other seven wanted 1105px in a 974px pane.
+ *
+ * PASSWORD is the right one to lose. A constant-width ten-bullet mask carries no
+ * information at a glance — every row is identical by design — and the column's whole
+ * purpose is reveal-on-demand, which the row menu already serves through Copy
+ * credentials. It is one click away in VIEW for anyone who wants the eye back.
+ */
+const HIDDEN_COLUMNS = ['loyalty', 'tickets', 'proxy', 'password']
 
 export function AccountsTab() {
   const state = useAccountsUrlState()
