@@ -175,8 +175,10 @@ const PAIRS: Pair[] = [
     tint: { token: '--primary', alpha: 0.12 },
   })),
 
-  // Display type — Outfit 900 at 28px and the 32px KPI figure clear the large-text bar.
-  { what: 'text on --bg (display 28px/900)', fg: '--text', bg: '--bg', large: true },
+  // Display type — Space Grotesk 700 at 28px and the 32px KPI figure clear the
+  // large-text bar. 28px bold is over the 18.66px/bold threshold with room to spare, so
+  // the face change does not move this pair across it.
+  { what: 'text on --bg (display 28px/700)', fg: '--text', bg: '--bg', large: true },
 ]
 
 /* --------------------------------------------------------------------- report */

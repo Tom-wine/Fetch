@@ -6,7 +6,7 @@
 <title>Fetch.io — Brand & Token Sheet</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&family=Outfit:wght@400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#FFFFFF; --surface:#FFFFFF; --raised:#F3F5F9; --hover:#E9EDF4;
@@ -34,7 +34,9 @@
     transition:background .15s,color .15s;
   }
   pre,.csv{font-variant-ligatures:normal}
-  .disp{font-family:Outfit,system-ui,sans-serif;font-weight:900;text-transform:uppercase;letter-spacing:-.02em;line-height:1.05}
+  .disp{font-family:"Space Grotesk",system-ui,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:-.02em;line-height:1.05}
+  /* Domain data keeps its own case — a run label is the operator's string, not ours. */
+  .disp-verbatim{text-transform:none}
   .prose{font-family:Outfit,system-ui,sans-serif;font-weight:400;font-size:14px;line-height:1.6;letter-spacing:0}
   .wrap{max-width:1120px;margin:0 auto;padding:40px 24px 96px;position:relative}
   header{display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:44px}
@@ -86,7 +88,7 @@
   .tile{display:flex;gap:14px;align-items:center}
   .icon-sq{width:48px;height:48px;border-radius:12px;flex:none;display:grid;place-items:center;
            background:linear-gradient(135deg,#0057C8,#1A8CF0 48%,#6FD3FA);color:#fff}
-  .kpi{font-family:Outfit,sans-serif;font-weight:900;font-size:32px;letter-spacing:-.03em;line-height:1.1}
+  .kpi{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:32px;letter-spacing:-.03em;line-height:1.1}
   .klbl{font-size:11px;color:var(--muted);letter-spacing:.06em}
   .ratio{font-size:11px;color:var(--faint)}
   .pass{color:var(--success);font-weight:600}
@@ -94,7 +96,7 @@
   .note{border-left:2px solid var(--accent);padding-left:14px;color:var(--muted);font-size:13px}
   .stack{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
   .ok{color:var(--success)} .no{color:var(--danger)}
-  .glyph{position:absolute;font-family:Outfit,sans-serif;font-weight:900;font-size:180px;opacity:.05;
+  .glyph{position:absolute;font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:180px;opacity:.05;
          pointer-events:none;user-select:none;right:-10px;top:280px;color:var(--text)}
   .caret{display:inline-block;width:.55em;background:var(--accent);height:.9em;vertical-align:-2px;
          margin-left:.12em;animation:blink 1.1s steps(1) infinite}
@@ -146,17 +148,19 @@
     <div class="sw"><div class="chip" style="background:#A78BFA"></div><div class="meta"><div class="name">violet</div><div class="hex">#A78BFA</div><div class="use">sold count · block numbers</div></div></div>
   </div>
 
-  <div class="sec"><span class="lbl">// 02_typography</span><h2 class="disp">Two families, no third</h2></div>
+  <div class="sec"><span class="lbl">// 02_typography</span><h2 class="disp">Mono, a display face, one escape hatch</h2></div>
   <div class="grid g2">
     <div class="card">
-      <div class="disp" style="font-size:28px">H1 · outfit 900 · 28px</div>
-      <div class="disp" style="font-size:18px;margin-top:10px">H2 · outfit 900 · 18px</div>
+      <div class="disp" style="font-size:28px">H1 · space grotesk 700 · 28px</div>
+      <div class="disp disp-verbatim" style="font-size:28px;margin-top:10px">Newcastle · Leeds · Forest — away scheme</div>
+      <div class="lbl" style="margin-top:4px">// h1 · domain data renders verbatim, never shouted</div>
+      <div class="disp" style="font-size:18px;margin-top:10px">H2 · space grotesk 700 · 18px</div>
       <div class="kpi" style="margin-top:12px">£48,210</div>
       <div class="klbl">total_revenue</div>
       <div class="lbl" style="margin-top:16px">// section_label · mono 11 · 0.08em</div>
       <div style="margin-top:10px;font-weight:600;font-size:14px;letter-spacing:.04em">CARD_TITLE · MONO 600 · 14PX</div>
       <div style="margin-top:8px">body / table cell · mono 400 · 13px · -0.01em</div>
-      <div class="prose" style="margin-top:10px;color:var(--muted)">Prose is Outfit 400 at 14px with a 1.6 line-height. It is the one escape hatch, used only where copy runs past two lines — dropdown descriptions, empty states, validation explanations. Mono is unreadable in paragraphs, and this keeps the system at two families.</div>
+      <div class="prose" style="margin-top:10px;color:var(--muted)">Prose is Outfit 400 at 14px with a 1.6 line-height. It is the one escape hatch, used only where copy runs past two lines — dropdown descriptions, empty states, validation explanations. Mono is unreadable in paragraphs, and a display face is not built for them either, which is the whole reason Outfit is still here at one weight.</div>
       <div style="margin-top:12px;font-size:11px;color:var(--faint)">caption / timestamp · mono 400 · 11px</div>
     </div>
     <div class="card">

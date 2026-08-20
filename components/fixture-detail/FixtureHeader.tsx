@@ -63,8 +63,10 @@ export function FixtureHeader({ fixture }: { fixture: Fixture }) {
           />
 
           <div className="min-w-0">
-            <Display as="h1" size="h1" className="text-text">
-              {home.short} <span className="text-muted lowercase">v</span> {away.short}
+            {/* Club names are domain data — `verbatim`, so `Arsenal v Chelsea` rather
+                than a shouted version of a name nobody writes that way. */}
+            <Display as="h1" size="h1" verbatim className="text-text">
+              {home.short} <span className="text-muted">v</span> {away.short}
             </Display>
 
             <p className="mt-1.5 text-lg font-semibold text-text tabular-nums">
@@ -105,7 +107,7 @@ export function FixtureHeader({ fixture }: { fixture: Fixture }) {
               amount={fixture.valueAtRisk}
               currency={fixture.currency}
               className={cn(
-                'mt-1 block font-display text-kpi font-black',
+                'mt-1 block font-display text-kpi font-bold',
                 urgency === 'urgent'
                   ? 'text-danger-ink'
                   : urgency === 'soon'

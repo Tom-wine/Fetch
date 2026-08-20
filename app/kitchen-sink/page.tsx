@@ -140,17 +140,17 @@ function TypographySection() {
   return (
     <Section label="typography_specimen" note="§3.3 · two families, no third">
       <Panel>
-        <Spec caption="kpi · outfit 900 · 32px · -0.03em">
+        <Spec caption="kpi · space grotesk 700 · 32px · -0.03em">
           <Display as="div" size="kpi">
             £48,210
           </Display>
         </Spec>
-        <Spec caption="h1 · outfit 900 · 28px · uppercase · -0.02em">
+        <Spec caption="h1 · space grotesk 700 · 28px · uppercase · -0.02em">
           <Display as="h2" size="h1">
             Arsenal v Chelsea
           </Display>
         </Spec>
-        <Spec caption="h2 · outfit 900 · 18px · uppercase · -0.01em">
+        <Spec caption="h2 · space grotesk 700 · 18px · uppercase · -0.01em">
           <Display as="h2" size="h2">
             Account health
           </Display>

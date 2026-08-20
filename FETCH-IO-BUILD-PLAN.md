@@ -147,17 +147,29 @@ Never a gradient on body text, table rows, or more than one element in the same 
 
 ### 3.3 Typography — mono-first developer aesthetic
 
-**Two families, no third.** The reference points are Linear, Vercel, Railway, Resend and
-[proxylabs.app](https://proxylabs.app) — mono as the *default UI font*, not just for code.
+**Mono first, one display face, one escape hatch.** The reference points are Linear, Vercel,
+Railway, Resend and [proxylabs.app](https://proxylabs.app) — mono as the *default UI font*, not
+just for code.
 
 ```css
---font-display: 'Outfit', system-ui, sans-serif;                    /* weight 900 only, ALWAYS uppercase */
+--font-display: 'Space Grotesk', system-ui, sans-serif;             /* weight 700 only, uppercase except domain data */
 --font-mono:    'JetBrains Mono', ui-monospace, 'SF Mono', monospace; /* the default font of the app */
 --font-prose:   'Outfit', system-ui, sans-serif;                    /* weight 400, multi-line prose only */
 ```
 
-- **Outfit Black (900), uppercase** — page titles, section headings, KPI values, the logo wordmark.
-  Nothing else. Never longer than about five words, never a paragraph, never sentence case.
+> **Part 13 revision.** The display face was Outfit Black (900). Outfit's O, D, G and S are
+> near-circular and at 900 they read playful rather than technical, which fought the terminal
+> grammar the rest of the system carries and was worst on long uppercase strings like a run
+> label. Judged as a comparison rather than a guess — Outfit 700, Space Grotesk 700, Archivo 700
+> and JetBrains Mono 700, on the same real content at 1440 and 375 in both themes — Space Grotesk
+> won: geometric, but with cut terminals and a squarer S, so it sits beside JetBrains Mono as a
+> sibling. h1 stays at 28px.
+
+- **Space Grotesk Bold (700), uppercase** — page titles, section headings, KPI values, the logo
+  wordmark. Nothing else. Never longer than about five words, never a paragraph.
+- **…except for DOMAIN DATA**, which renders verbatim: a run label or a fixture name is the
+  operator's own string, and §B7 rule 7 already said so — upper-casing it was the one place that
+  rule contradicted itself. `<Display verbatim>` is how a screen opts out.
 - **JetBrains Mono** — *everything else*: nav, buttons, table cells and headers, chips, inputs, stat
   labels, form labels, breadcrumbs, tooltips, timestamps. This is the body font.
 - **Outfit Regular (400)** — the one escape hatch, for genuine prose that runs past two lines:
@@ -166,9 +178,9 @@ Never a gradient on body text, table rows, or more than one element in the same 
 
 | Role | Family | Spec |
 |---|---|---|
-| h1 page title | Outfit 900 | `28px / uppercase / -0.02em` |
-| h2 section | Outfit 900 | `18px / uppercase / -0.01em` |
-| KPI value | Outfit 900 | `32px / -0.03em / tabular` |
+| h1 page title | Space Grotesk 700 | `28px / uppercase, verbatim for domain data / -0.02em` |
+| h2 section | Space Grotesk 700 | `18px / uppercase / -0.01em` |
+| KPI value | Space Grotesk 700 | `32px / -0.03em / tabular` |
 | section label | Mono 400 | `11px / lower_snake_case / 0.08em / muted`, prefixed `// ` |
 | card title | Mono 600 | `14px / UPPER_SNAKE / 0.04em` |
 | body / table cell | Mono 400 | `13px / -0.01em` |
@@ -187,10 +199,10 @@ Never a gradient on body text, table rows, or more than one element in the same 
 - Mono runs ~12% wider than Inter at the same size, so body drops from 14px to **13px** and tables lose
   roughly one column of breathing room. The column-visibility picker (§7 #7) stops being a nicety and
   becomes load-bearing. Re-check every table at 1280px.
-- Uppercase mono looks cramped: any uppercase run gets `letter-spacing: 0.06–0.08em`. Outfit Black caps
+- Uppercase mono looks cramped: any uppercase run gets `letter-spacing: 0.06–0.08em`. Display caps
   are the opposite — they need *negative* tracking (`-0.02em`) or they look loose.
-- Load both from `next/font/google` with `display: 'swap'`, subset `latin`, and only the weights used
-  (Outfit 400 + 900, JetBrains Mono 400/500/600). Two families, five weights, self-hosted.
+- Load all three from `next/font/google` with `display: 'swap'`, subset `latin`, and only the weights
+  used (Space Grotesk 700, Outfit 400, JetBrains Mono 400/500/600). Five weights, self-hosted.
 
 ### 3.3b Terminal grammar — the copy conventions
 

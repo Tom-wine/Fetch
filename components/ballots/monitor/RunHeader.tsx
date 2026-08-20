@@ -78,6 +78,7 @@ export function RunHeader({
           <Display
             as="h1"
             size="h1"
+            verbatim
             title={run.label}
             className="line-clamp-2 text-text max-sm:text-[20px]"
           >

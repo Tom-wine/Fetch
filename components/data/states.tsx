@@ -15,7 +15,7 @@ import { GlyphMark } from '@/components/shell/GlyphMark'
  */
 
 /**
- * §7 #23 — icon + title + one line + a primary CTA. The title is Outfit Black caps
+ * §7 #23 — icon + title + one line + a primary CTA. The title is display caps
  * per §3.3b (`NO_ACCOUNTS_YET`); the body is Prose, because an explanation that
  * runs past two lines is unreadable in mono.
  */

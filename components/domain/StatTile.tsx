@@ -10,7 +10,7 @@ import { Chip } from './StatusChip'
 import { Percent } from './Money'
 
 /**
- * The dashboard KPI tile (§7 #6): a 48px gradient icon square, the value in Outfit
+ * The dashboard KPI tile (§7 #6): a 48px gradient icon square, the value in the display
  * Black, a lower_snake metric label, and a month-on-month delta chip.
  *
  * The gradient square is allowed use #2 of the five in §3.2 — one per tile, nothing

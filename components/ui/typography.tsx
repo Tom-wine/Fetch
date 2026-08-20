@@ -4,8 +4,8 @@ import { comment } from '@/lib/format/text'
 
 /**
  * The only components in Fetch.io allowed to set a font family (§3.3).
- * Two families, no third: Outfit for display and prose, JetBrains Mono for
- * everything else. If a component needs a typeface, it composes one of these.
+ * Space Grotesk 700 for display, Outfit 400 for the prose escape hatch, JetBrains Mono
+ * for everything else. If a component needs a typeface, it composes one of these.
  */
 
 type DisplaySize = 'kpi' | 'h1' | 'h2'
@@ -19,18 +19,34 @@ const displaySizes: Record<DisplaySize, string> = {
 export function Display({
   as: Tag = 'h1',
   size = 'h1',
+  verbatim = false,
   className,
   children,
   ...props
 }: {
   as?: 'h1' | 'h2' | 'div' | 'span'
   size?: DisplaySize
+  /**
+   * DOMAIN DATA — a fixture, a run label, whatever the operator typed. Rendered in the
+   * case it was written in.
+   *
+   * Chrome shouts: DASHBOARD, ACCOUNTS, SETTINGS are the product talking about itself.
+   * Data does not. §B7 rule 7 already says domain data renders verbatim, and
+   * upper-casing a label an operator typed is not verbatim — it was the one place the
+   * rule contradicted itself. It also costs a phone two lines of a long run label.
+   */
+  verbatim?: boolean
   className?: string
   children: React.ReactNode
 } & Omit<React.HTMLAttributes<HTMLHeadingElement>, 'children'>) {
   return (
     <Tag
-      className={cn('font-display font-black uppercase', displaySizes[size], className)}
+      className={cn(
+        'font-display font-bold',
+        !verbatim && 'uppercase',
+        displaySizes[size],
+        className,
+      )}
       {...props}
     >
       {children}

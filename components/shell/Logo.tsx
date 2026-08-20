@@ -27,7 +27,7 @@ export function Logo({
         </svg>
       </span>
       {!collapsed && (
-        <span className="font-display text-[18px] font-black tracking-[-0.02em] text-text uppercase">
+        <span className="font-display text-[18px] font-bold tracking-[-0.02em] text-text uppercase">
           Fetch.io
         </span>
       )}

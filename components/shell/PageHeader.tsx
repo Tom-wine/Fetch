@@ -21,7 +21,9 @@ export function PageHeader({
   caret = false,
   className,
 }: {
-  /** Rendered by <Display> — Outfit 900, 28px, uppercase. May be domain data. */
+  /** Rendered by <Display> — Space Grotesk 700, 28px, uppercase. Chrome strings only:
+   * a screen whose title is domain data renders its own <Display verbatim>, the way the
+   * fixture and run headers do. */
   title: string
   /** Chrome string; rendered as `// lower_snake_case`. */
   subtitle?: string

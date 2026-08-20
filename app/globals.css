@@ -152,18 +152,18 @@
          an unstyled element lands on mono, never on a proportional face. --- */
   --font-mono: var(--font-jetbrains-mono), ui-monospace, 'SF Mono', monospace;
   --font-sans: var(--font-jetbrains-mono), ui-monospace, 'SF Mono', monospace;
-  --font-display: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
   --font-prose: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
 
   /* --- type scale (§3.3). Mono runs ~12% wider than a proportional face, so
          13px is the floor for data — never shrink below it. --- */
-  --text-kpi: 32px;
+  --text-kpi: 32px; /* KPI value · Space Grotesk 700 */
   --text-kpi--line-height: 1.1;
   --text-kpi--letter-spacing: -0.03em;
-  --text-display: 28px; /* h1 · Outfit 900 · uppercase */
+  --text-display: 28px; /* h1 · Space Grotesk 700 · uppercase, except domain data */
   --text-display--line-height: 1.1;
   --text-display--letter-spacing: -0.02em;
-  --text-h2: 18px; /* h2 · Outfit 900 */
+  --text-h2: 18px; /* h2 · Space Grotesk 700 */
   --text-h2--line-height: 1.2;
   --text-h2--letter-spacing: -0.01em;
   --text-prose: 14px; /* Outfit 400 — the only multi-line face */

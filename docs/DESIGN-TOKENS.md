@@ -125,20 +125,33 @@ viewport region.
 
 ---
 
-## 3. Typography — two families, no third
+## 3. Typography — mono, a display face, and one escape hatch
 
 **JetBrains Mono is the default UI font.** `--font-sans` deliberately resolves to it, so
-an unstyled element lands on mono rather than a proportional face. **Outfit** appears
-only as Black (900) uppercase display, and as Regular (400) prose.
+an unstyled element lands on mono rather than a proportional face. **Space Grotesk Bold
+(700)** is the display face — page titles, section headings, KPI values, the wordmark —
+and **Outfit Regular (400)** appears for one job only: multi-line prose.
+
+Space Grotesk replaced Outfit Black in the Part 13 pass. Outfit's O, D, G and S are
+near-circular, and at 900 they read playful rather than technical; the display face was
+fighting the terminal grammar the rest of the system carries, and it was worst on a long
+uppercase run label. Space Grotesk is geometric too, but its terminals are cut and its S
+is squarer, so it stands beside JetBrains Mono as a sibling. One display weight: nothing
+here is ever not-bold.
+
+**Display type is uppercase, except where it is DOMAIN DATA.** `DASHBOARD` and `ACCOUNTS`
+are the product talking about itself. A run label or a fixture name is the operator's
+own string, and §B7 rule 7 says domain data renders verbatim — so `<Display verbatim>`
+renders `Newcastle · Leeds · Forest — away scheme` in the case it was written in.
 
 Only `components/ui/typography.tsx` and `components/ui/button.tsx` set a font family.
 No other component does.
 
 | Role                | Utility        | Spec                                    |
 | ------------------- | -------------- | --------------------------------------- |
-| KPI value           | `text-kpi`     | Outfit 900 · 30px · -0.02em             |
-| h1 page title       | `text-display` | Outfit 900 · 28px · uppercase · -0.02em |
-| h2 section          | `text-h2`      | Outfit 900 · 18px · -0.02em             |
+| KPI value           | `text-kpi`     | Space Grotesk 700 · 32px · -0.03em      |
+| h1 page title       | `text-display` | Space Grotesk 700 · 28px · uppercase (verbatim for domain data) · -0.02em |
+| h2 section          | `text-h2`      | Space Grotesk 700 · 18px · -0.01em      |
 | prose               | `text-prose`   | Outfit 400 · 14px · 1.6                 |
 | card title          | `text-title`   | mono 600 · 14px · uppercase · 0.02em    |
 | body / table cell   | `text-body`    | mono 400 · 13px · -0.01em               |
