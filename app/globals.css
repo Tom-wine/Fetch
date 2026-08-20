@@ -388,6 +388,29 @@
   animation: fetch-caret 1.06s steps(1) infinite;
 }
 
+/* The landing hero and its screenshot arrive with one short rise. It is CSS-only and
+   runs once — no observer, no scroll listener, nothing to jank — and the reduced-motion
+   block below reduces it to 0.01ms, which lands the element on its final frame rather
+   than leaving it invisible. Nothing else in the product animates on load. */
+@keyframes fetch-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.fetch-rise {
+  animation: fetch-rise 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.fetch-rise-delayed {
+  animation-delay: 90ms;
+}
+
 /* Motion: sidebar collapse is 300ms, everything else 150ms, and non-essential
    transitions drop to 0ms when the user asks for reduced motion (§3.4).
 

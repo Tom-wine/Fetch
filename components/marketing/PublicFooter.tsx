@@ -2,8 +2,12 @@ import Link from 'next/link'
 
 /**
  * Minimal on purpose. A public footer's job here is to say what the thing is, point at
- * the two places worth going, and stop — there is no company to link to, no newsletter,
- * and inventing either would be the marketing voice these pages are meant to avoid.
+ * the places worth going, and stop — there is no company to link to, no newsletter, and
+ * inventing either would be the marketing voice these pages are meant to avoid.
+ *
+ * It also carries the sentence about what Fetch.io does NOT do. That used to sit in the
+ * landing hero; it belongs under every public page, not just the first one, and a
+ * visitor who scrolls the guides deserves to meet it as well.
  */
 export function PublicFooter() {
   return (
@@ -23,10 +27,25 @@ export function PublicFooter() {
           >
             quick_start
           </Link>
+          <a
+            href="https://github.com/Tom-wine/Fetch"
+            className="text-muted transition-colors hover:text-text"
+            rel="noreferrer"
+          >
+            github
+          </a>
           <Link href="/dashboard" className="text-muted transition-colors hover:text-text">
             open_app
           </Link>
         </nav>
+      </div>
+
+      <div className="mx-auto w-full max-w-[1240px] px-4 pb-8 sm:px-6">
+        <p className="max-w-[86ch] font-mono text-caption text-faint">
+          {
+            '// fetch.io does not queue-jump, guess passwords or bypass a club’s checks — it signs in with credentials you already have and submits the same form you would, in order, at the rate you choose.'
+          }
+        </p>
       </div>
     </footer>
   )
