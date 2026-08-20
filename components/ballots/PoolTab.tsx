@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Prose } from '@/components/ui/typography'
+import { Hint } from '@/components/ui/tooltip'
 import { BulkActionBar } from '@/components/data/BulkActionBar'
 import { DataTable, type RowSelectionState } from '@/components/data/DataTable'
 import { ALL, FilterSelect } from '@/components/data/FilterSelect'
@@ -24,7 +25,14 @@ import {
   useRevealPassword,
 } from '@/lib/api/hooks/useAccounts'
 import { useAccountResults } from '@/lib/api/hooks/useBallots'
+import { usePoolAccounts, useRunRequirements } from '@/lib/api/hooks/useActiveRun'
 import { useProxies, useTestProxy } from '@/lib/api/hooks/useDashboard'
+import {
+  describeReadyFilter,
+  matchesReadyFilter,
+  readinessOf,
+  summariseReadiness,
+} from '@/lib/ballots/readiness'
 import { ACCOUNT_STATUSES } from '@/components/domain/StatusChip'
 import { upperSnake } from '@/lib/format/text'
 import { BALLOT_CLUB_IDS, type Account, type AccountStatus, type BallotClubId } from '@/lib/types'
@@ -48,8 +56,12 @@ import { sortFieldForColumn, type BallotsUrlState } from './url-state'
  * one of the other thirteen clubs can never appear here and be started by mistake.
  */
 
-/** Hidden at 1440 so ACTIONS stays reachable — the /accounts reasoning, same table. */
-const HIDDEN_COLUMNS = ['proxy']
+/**
+ * Hidden at 1440 so ACTIONS stays reachable — the /accounts reasoning, same table.
+ * LAST_RUN joins them now that READY has taken a column: the run an account was last in
+ * is history, and READY is the question this tab exists to answer.
+ */
+const HIDDEN_COLUMNS = ['proxy', 'lastRun']
 
 export function PoolTab({
   state,
@@ -68,6 +80,54 @@ export function PoolTab({
     (accountId: string) => results.data?.get(accountId),
     [results.data],
   )
+
+  /* ----------------------------------------------------------- readiness */
+
+  /**
+   * Can these accounts actually run tonight?
+   *
+   * The whole pool, not the page: "20 of 48 ready" is a claim about the POOL, and a
+   * page of 25 cannot make it. It is the same cached read the dashboard's readiness
+   * card uses, so the two numbers cannot disagree.
+   */
+  const wholePool = usePoolAccounts()
+  const { requirements, profile: readinessProfile } = useRunRequirements()
+
+  const readinessFor = React.useCallback(
+    (account: Account) => readinessOf(account, requirements),
+    [requirements],
+  )
+
+  const readiness = React.useMemo(
+    () => summariseReadiness(wholePool.accounts, requirements),
+    [wholePool.accounts, requirements],
+  )
+
+  /**
+   * `?ready=no_proxy` — the drill-down the dashboard's counters link to.
+   *
+   * When it is set the table switches to the WHOLE pool, filtered in the browser, and
+   * pages itself: readiness is computed here, so the server cannot filter or count by
+   * it, and asking it to page a set it cannot see would produce the usual lie of a
+   * total that does not match the rows. The other filters are applied here too, so the
+   * two systems never half-apply.
+   */
+  const readyView = React.useMemo(() => {
+    if (!state.ready) return null
+
+    const needle = state.q.trim().toLowerCase()
+    return wholePool.accounts.filter((account) => {
+      if (!matchesReadyFilter(readinessOf(account, requirements), state.ready!)) return false
+      if (state.club && account.club !== state.club) return false
+      if (state.status && account.status !== state.status) return false
+      if (!needle) return true
+      return (
+        account.email.toLowerCase().includes(needle) ||
+        `${account.firstName} ${account.lastName}`.toLowerCase().includes(needle) ||
+        account.membershipId.toLowerCase().includes(needle)
+      )
+    })
+  }, [state.ready, state.q, state.club, state.status, wholePool.accounts, requirements])
 
   const proxiesQuery = useProxies({ pageSize: 100, sort: 'label' })
   const proxyById = React.useMemo(
@@ -196,8 +256,8 @@ export function PoolTab({
   )
 
   const columns = React.useMemo(
-    () => makePoolColumns({ proxyById, resultFor, renderActions }),
-    [proxyById, resultFor, renderActions],
+    () => makePoolColumns({ proxyById, resultFor, readinessFor, renderActions }),
+    [proxyById, resultFor, readinessFor, renderActions],
   )
 
   /* ---------------------------------------------------------------- empty */
@@ -216,13 +276,13 @@ export function PoolTab({
         </div>
       ) : (
         <DataTable
-          data={accounts.rows}
+          data={readyView ?? accounts.rows}
           columns={columns}
           getRowId={(row) => row.id}
           noun="account"
-          loading={accounts.loading}
-          error={accounts.error}
-          onRetry={accounts.onRetry}
+          loading={readyView ? wholePool.loading : accounts.loading}
+          error={readyView ? wholePool.error : accounts.error}
+          onRetry={readyView ? wholePool.onRetry : accounts.onRetry}
           enableSelection
           selection={selection}
           onSelectionChange={(next) => {
@@ -240,10 +300,14 @@ export function PoolTab({
                 : { sort: null, order: 'desc' },
             )
           }
-          pageCount={meta?.totalPages ?? 1}
-          totalRows={matchingTotal}
-          page={state.page}
-          onPageChange={(page) => state.set({ page })}
+          // Manual paging only when the SERVER is the one filtering. With `?ready=`
+          // the browser holds every matching row, so DataTable pages them itself and
+          // the footer's total is the real one rather than a server count of a
+          // different set.
+          pageCount={readyView ? undefined : (meta?.totalPages ?? 1)}
+          totalRows={readyView ? undefined : matchingTotal}
+          page={readyView ? undefined : state.page}
+          onPageChange={readyView ? undefined : (page) => state.set({ page })}
           onPageSizeChange={(size) => state.set({ size, page: 1 })}
           defaultPageSize={state.size}
           empty={<NothingMatches onClear={state.clearFilters} />}
@@ -252,8 +316,28 @@ export function PoolTab({
               <PoolToolbar
                 state={state}
                 total={matchingTotal}
+                ready={readiness.ready}
+                poolTotal={readiness.total}
+                profileName={readinessProfile?.name ?? null}
                 onStartRun={() => onStartRun(null)}
               />
+
+              {/* A filter the SERVER did not apply has to say so — the footer's total
+                  comes from a different place than every other view of this table, and
+                  an operator comparing "Total 14" against the pool's 48 deserves the
+                  sentence rather than the puzzle. */}
+              {readyView && state.ready && (
+                <Prose className="text-caption text-muted">
+                  {`Showing the ${readyView.length} ${readyView.length === 1 ? 'account' : 'accounts'} ${describeReadyFilter(state.ready)}, worked out in the browser across the whole pool rather than asked of the server — readiness depends on the profile a run will use, and the server does not know which one that is. `}
+                  <button
+                    type="button"
+                    onClick={() => state.set({ ready: null })}
+                    className="underline underline-offset-4 transition-colors hover:text-text"
+                  >
+                    Show every account
+                  </button>
+                </Prose>
+              )}
 
               {selectedAccounts.length > 0 && (
                 <div className="space-y-2">
@@ -383,10 +467,17 @@ export function PoolTab({
 function PoolToolbar({
   state,
   total,
+  ready,
+  poolTotal,
+  profileName,
   onStartRun,
 }: {
   state: BallotsUrlState
   total: number
+  /** Ready across the WHOLE pool, not this page — see PoolTab. */
+  ready: number
+  poolTotal: number
+  profileName: string | null
   onStartRun: () => void
 }) {
   return (
@@ -431,9 +522,20 @@ function PoolToolbar({
       }
       actions={
         <>
-          <Prose className="hidden text-caption text-faint lg:block">
-            {total} eligible {total === 1 ? 'account' : 'accounts'}
-          </Prose>
+          {/* Beside the button that acts on it, because "48 eligible" was never the
+              number that decides whether tonight works — this one is. */}
+          <Hint
+            label={
+              profileName
+                ? `Ready to enter under ${profileName}: session valid, membership live, and whatever that profile needs. The rest are listed with their reason in the READY column.`
+                : 'Accounts that can enter a ballot right now.'
+            }
+          >
+            <span className="hidden cursor-help font-mono text-caption text-muted lg:block">
+              <span className={ready > 0 ? 'text-success-ink' : undefined}>{ready}</span>
+              {` of ${poolTotal} ready`}
+            </span>
+          </Hint>
           <Button label="Start run" forward disabled={total === 0} onClick={onStartRun}>
             <Play aria-hidden="true" />
           </Button>

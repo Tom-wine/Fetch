@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation'
 import { useUrlWriter } from '@/lib/url-state'
 import { useUiPreferences } from '@/lib/format/LocaleProvider'
 
+import { isReadyFilter, type ReadyFilter } from '@/lib/ballots/readiness'
 import type { AccountFilters, RunFilters } from '@/lib/api/endpoints'
 import { BALLOT_CLUB_IDS, type AccountStatus, type BallotClubId, type RunStatus } from '@/lib/types'
 
@@ -88,6 +89,12 @@ export interface BallotsUrlPatch {
    * consumes it immediately, or the back button would reopen the dialog every time.
    */
   start?: '1' | null
+  /**
+   * `?ready=no_proxy` — the pool, filtered by whether an account can actually enter.
+   * Resolved in the browser rather than by the API, because readiness depends on the
+   * PROFILE a run will use and the server does not know which one that will be.
+   */
+  ready?: ReadyFilter | null
   club?: BallotClubId | null
   status?: AccountStatus | null
   runStatus?: RunStatus | null
@@ -112,6 +119,9 @@ export function useBallotsUrlState() {
 
   const startRequested = params.get('start') === '1'
 
+  const rawReady = params.get('ready')
+  const ready: ReadyFilter | null = isReadyFilter(rawReady) ? rawReady : null
+
   const status = (params.get('status') as AccountStatus | null) ?? null
   const runStatus = (params.get('runStatus') as RunStatus | null) ?? null
   const q = params.get('q') ?? ''
@@ -129,7 +139,16 @@ export function useBallotsUrlState() {
         // columns: carrying `sort=startedAt` onto the pool would ask /accounts to
         // order by a field it does not have.
         if (patch.tab !== undefined && patch.tab !== next.get('tab')) {
-          for (const key of ['club', 'status', 'runStatus', 'q', 'sort', 'order', 'page']) {
+          for (const key of [
+            'club',
+            'status',
+            'runStatus',
+            'q',
+            'sort',
+            'order',
+            'page',
+            'ready',
+          ]) {
             next.delete(key)
           }
         }
@@ -177,7 +196,7 @@ export function useBallotsUrlState() {
   const clearFilters = React.useCallback(() => {
     setSearchInputState('')
     if (debounce.current) clearTimeout(debounce.current)
-    writeRef.current({ club: null, status: null, runStatus: null, q: null })
+    writeRef.current({ club: null, status: null, runStatus: null, q: null, ready: null })
   }, [])
 
   const sortSpec = React.useMemo(() => {
@@ -222,11 +241,12 @@ export function useBallotsUrlState() {
     [page, size, sortField, order, q, runStatus],
   )
 
-  const filtered = Boolean(club || status || runStatus || q)
+  const filtered = Boolean(club || status || runStatus || q || ready)
 
   return {
     tab,
     startRequested,
+    ready,
     club,
     status,
     runStatus,

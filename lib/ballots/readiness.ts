@@ -166,6 +166,32 @@ export function readinessOf(
   }
 }
 
+/**
+ * What `?ready=` can say. `ready` and `blocked` are the two halves; a specific reason is
+ * what the dashboard's counters link to, so "14 accounts have no proxy" lands on exactly
+ * those fourteen.
+ */
+export type ReadyFilter = 'ready' | 'blocked' | BlockedReason
+
+const READY_FILTERS: ReadyFilter[] = ['ready', 'blocked', ...REASON_ORDER]
+
+export function isReadyFilter(value: string | null): value is ReadyFilter {
+  return value !== null && (READY_FILTERS as string[]).includes(value)
+}
+
+export function matchesReadyFilter(state: Readiness, filter: ReadyFilter): boolean {
+  if (filter === 'ready') return state.ready
+  if (filter === 'blocked') return !state.ready
+  return state.reason === filter
+}
+
+/** The filter, in words, for the line that says what the table is currently showing. */
+export function describeReadyFilter(filter: ReadyFilter): string {
+  if (filter === 'ready') return 'ready to enter'
+  if (filter === 'blocked') return 'blocked'
+  return BLOCKED_REASONS[filter].label
+}
+
 export interface ReadinessSummary {
   total: number
   ready: number

@@ -25,7 +25,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useAccounts } from '@/lib/api/hooks/useAccounts'
+import { usePoolAccounts } from '@/lib/api/hooks/useActiveRun'
+import {
+  BLOCKED_REASONS,
+  REASON_ORDER,
+  readinessOf,
+  summariseReadiness,
+  type BlockedReason,
+  type RunRequirements,
+} from '@/lib/ballots/readiness'
 import { useBallotProfiles, useCreateRun, useImapAccounts } from '@/lib/api/hooks/useBallots'
 import { useProxies } from '@/lib/api/hooks/useDashboard'
 import { upperSnake } from '@/lib/format/text'
@@ -47,6 +55,15 @@ import { formatEstimate } from './vocabulary'
  */
 
 type ScopeMode = 'selection' | 'all'
+
+/** The blocked ones, as a sentence: "3 locked, 2 with no proxy and 1 expired". */
+function listExclusions(byReason: Record<BlockedReason, number>): string {
+  const parts = REASON_ORDER.filter((reason) => byReason[reason] > 0).map(
+    (reason) => `${byReason[reason]} ${BLOCKED_REASONS[reason].label}`,
+  )
+  if (parts.length <= 1) return parts.join('')
+  return `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}`
+}
 
 export function StartRunDialog({
   open,
@@ -78,6 +95,8 @@ export function StartRunDialog({
   const [scope, setScope] = React.useState<ScopeMode>('all')
   const [profileId, setProfileId] = React.useState<string>('')
   const [label, setLabel] = React.useState('')
+  /** The escape hatch under the exclusion line — off by default, on when asked. */
+  const [includeBlocked, setIncludeBlocked] = React.useState(false)
 
   // Reset on every open: a dialog that remembers last time's clubs is a dialog that
   // starts the wrong run when someone hits Enter out of habit.
@@ -86,23 +105,31 @@ export function StartRunDialog({
     setScope(hasSelection ? 'selection' : 'all')
     setClubIds(hasSelection && selectionClubs.length ? selectionClubs : BALLOT_CLUB_IDS)
     setLabel('')
+    setIncludeBlocked(false)
   }, [open, hasSelection, selectionClubs])
 
   /* ---------------------------------------------------------------- scope */
-
-  /**
-   * The real count for the chosen clubs. One row is requested because this needs
-   * `meta.total`, not the accounts — the run's account set is resolved server-side.
-   */
-  const eligible = useAccounts({ club: clubIds, pageSize: 1 })
-  const eligibleTotal = eligible.data?.meta?.total ?? 0
 
   const selectionInClubs = React.useMemo(
     () => (selection ?? []).filter((a) => clubIds.includes(a.club as BallotClubId)),
     [selection, clubIds],
   )
 
-  const accountCount = scope === 'selection' ? selectionInClubs.length : eligibleTotal
+  /* ------------------------------------------------------------ readiness */
+
+  /**
+   * The launcher starts the accounts that can actually enter.
+   *
+   * It used to start "every eligible account in these clubs" — the server's own count —
+   * which included the locked ones, the lapsed memberships and, under a profile with a
+   * proxy group, every account with no proxy. Those are not entries; they are failures
+   * queued in advance, and they arrive twenty minutes later as a run that looks broken.
+   *
+   * Judged against the profile CHOSEN HERE rather than the default one, because that is
+   * the run about to start: switch the profile to one with no proxy group and the
+   * fourteen proxyless accounts stop being blocked, on the spot.
+   */
+  const pool = usePoolAccounts()
 
   /* -------------------------------------------------------------- profile */
 
@@ -140,6 +167,42 @@ export function StartRunDialog({
     !imapQuery.isPending &&
     (!profile.imapId || !imapAccounts.some((a) => a.id === profile.imapId))
 
+  const requirements = React.useMemo<RunRequirements>(
+    () => ({
+      requiresProxy: Boolean(profile?.proxyGroupId),
+      requiresOtpMailbox: profile?.otpSource === 'imap',
+      hasOtpMailbox: imapAccounts.length > 0,
+    }),
+    [profile, imapAccounts.length],
+  )
+
+  const inClubs = React.useMemo(
+    () => pool.accounts.filter((account) => clubIds.includes(account.club as BallotClubId)),
+    [pool.accounts, clubIds],
+  )
+
+  const readiness = React.useMemo(
+    () => summariseReadiness(inClubs, requirements),
+    [inClubs, requirements],
+  )
+
+  const readyAccounts = React.useMemo(
+    () => inClubs.filter((account) => readinessOf(account, requirements).ready),
+    [inClubs, requirements],
+  )
+
+  const excluded = readiness.total - readiness.ready
+
+  /**
+   * What the run will actually contain. A selection is honoured as made — the operator
+   * ticked those rows and can see their READY column — and everything else defaults to
+   * the ready set, with `includeBlocked` as the deliberate override.
+   */
+  const runAccounts =
+    scope === 'selection' ? selectionInClubs : includeBlocked ? inClubs : readyAccounts
+
+  const accountCount = runAccounts.length
+
   /** A warning, not a block: sharing an address is a risk the operator may accept. */
   const thinProxies =
     profile !== null && proxyGroup !== null && proxyGroup.live < profile.concurrency
@@ -157,7 +220,10 @@ export function StartRunDialog({
         // Explicit ids only when a selection is being run: omitting them is what
         // tells the server "every eligible account in these clubs", which stays
         // right even if the pool grew since this dialog opened.
-        accountIds: scope === 'selection' ? selectionInClubs.map((a) => a.id) : undefined,
+        // Always explicit now. Omitting the ids used to mean "every eligible account
+        // in these clubs, resolved when the run starts", which is exactly the set that
+        // included the accounts that cannot enter.
+        accountIds: runAccounts.map((a) => a.id),
         label: label.trim() || undefined,
       },
       {
@@ -235,12 +301,40 @@ export function StartRunDialog({
               <ScopeOption
                 active={scope === 'all'}
                 onSelect={() => setScope('all')}
-                title="All eligible"
-                count={eligibleTotal}
-                pending={eligible.isPending}
-                hint="Every account in the chosen clubs, resolved when the run starts."
+                title={includeBlocked ? 'All eligible' : 'All ready'}
+                count={includeBlocked ? readiness.total : readiness.ready}
+                pending={pool.loading}
+                hint={
+                  includeBlocked
+                    ? 'Every account in the chosen clubs, including the ones that cannot enter.'
+                    : 'Every account in the chosen clubs that can actually enter tonight.'
+                }
               />
             </div>
+
+            {/* The exclusion line. A launcher that quietly drops eleven accounts is as
+                bad as one that quietly starts them — it says how many, why, and offers
+                the override rather than deciding on the operator's behalf. */}
+            {scope === 'all' && excluded > 0 && (
+              <Prose className="text-prose text-muted">
+                {includeBlocked
+                  ? `Including ${excluded} that cannot enter — ${listExclusions(readiness.byReason)}. They will fail rather than enter. `
+                  : `${excluded} excluded — ${listExclusions(readiness.byReason)}. `}
+                <button
+                  type="button"
+                  onClick={() => setIncludeBlocked((previous) => !previous)}
+                  className="underline underline-offset-4 transition-colors hover:text-text"
+                >
+                  {includeBlocked ? 'Leave them out' : 'Start them anyway'}
+                </button>
+              </Prose>
+            )}
+
+            {scope === 'all' && excluded === 0 && readiness.total > 0 && (
+              <Prose className="text-prose text-muted">
+                Every account in these clubs can enter. Nothing was left out.
+              </Prose>
+            )}
           </section>
 
           {/* ----------------------------------------------------- profile */}
