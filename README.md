@@ -25,6 +25,15 @@ Zod-validated API client whose base URL is a single environment variable, so a r
 attached without touching a component — see
 **[`docs/BACKEND-HANDOFF.md`](./docs/BACKEND-HANDOFF.md)**.
 
+## The tour
+
+A first-time visitor gets nine steps across the loop — the pool, the profiles, the launcher and a
+run already in flight — starting once per browser on the dashboard, and available forever after from
+the account menu or `⌘K → take_the_tour`. It reads the seeded run rather than starting one, so it
+never causes a side effect.
+
+![The guided tour, nine steps from the pool to a finished run](./docs/fetch-tour.gif)
+
 ## The screens
 
 ### `/dashboard` — did anything sell, and what am I exposed to
