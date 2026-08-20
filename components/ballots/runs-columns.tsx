@@ -103,14 +103,17 @@ export function makeRunColumns({
       id: 'results',
       accessorKey: 'counts',
       header: 'results',
+      // `13 / 6 / 22` in three colours and no legend. Green and red carried the whole
+      // meaning, which asks the reader to know the order AND see the hues — and the
+      // first read of a table is where nobody knows either. The words cost 60px.
       cell: ({ row }) => {
         const { success, failed, total } = row.original.counts
         return (
           <span className="font-mono text-body whitespace-nowrap tabular-nums">
-            <span className={cn(success > 0 && 'text-success-ink')}>{success}</span>
-            <span className="text-faint"> / </span>
-            <span className={cn(failed > 0 && 'text-danger-ink')}>{failed}</span>
-            <span className="text-faint"> / {total}</span>
+            <span className={cn(success > 0 && 'text-success-ink')}>{`${success} ok`}</span>
+            <span className="text-faint"> · </span>
+            <span className={cn(failed > 0 && 'text-danger-ink')}>{`${failed} failed`}</span>
+            <span className="text-faint">{` · of ${total}`}</span>
           </span>
         )
       },

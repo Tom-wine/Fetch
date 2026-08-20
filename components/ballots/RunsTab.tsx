@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Download, Eye, MoreVertical, Pause, Play, RotateCcw, Square, Trash2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import { Prose } from '@/components/ui/typography'
 import { DataTable } from '@/components/data/DataTable'
 import { ALL, FilterSelect } from '@/components/data/FilterSelect'
 import { Toolbar, ToolbarSearch } from '@/components/data/Toolbar'
@@ -44,7 +45,17 @@ import { sortFieldForColumn, type BallotsUrlState } from './url-state'
  * looking at it.
  */
 
-const HIDDEN_COLUMNS = ['clubs', 'duration']
+/**
+ * What ships visible: LABEL, STATUS, PROGRESS, RESULTS, STARTED, ACTIONS. What it was,
+ * how it went, how far it got, and when.
+ *
+ * RUN_ID and PROFILE join CLUBS and DURATION behind VIEW because RESULTS grew: three
+ * bare numbers became `13 ok · 6 failed · of 22`, which is 120px of new column, and the
+ * table has 974px at 1280. Both are one click away and neither identifies a run to a
+ * human — the id is opaque and lives in the URL, the strip and the monitor header, and
+ * the profile is named on the monitor of any run you open.
+ */
+const HIDDEN_COLUMNS = ['runId', 'clubs', 'profile', 'duration']
 
 export function RunsTab({
   state,
@@ -160,6 +171,20 @@ export function RunsTab({
           />
         }
       />
+
+      {/*
+        The profiles tab is the only screen in the app that explains itself, and it is
+        the one people say is easiest to use. Same treatment here: this table pins
+        moving runs to the top whatever the sort says, which is a rule the operator can
+        only discover by noticing it — so it is stated, once, under the table.
+      */}
+      {!runs.loading && !runs.error && runs.rows.length > 0 && (
+        <Prose className="text-caption text-muted">
+          A run that is still moving is pinned to the top, whatever the sort says — it is the one
+          you came to find. RESULTS reads as attempted: `13 ok · 6 failed · of 22` leaves three that
+          were never submitted, because the run was stopped or the account was skipped.
+        </Prose>
+      )}
 
       {/* §B7 rule 6 — a stop names how much it is throwing away. */}
       <ConfirmDialog

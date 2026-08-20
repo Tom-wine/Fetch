@@ -1,7 +1,14 @@
 'use client'
 
 import * as React from 'react'
-import { Copy, Lock, Pencil, Plus, Trash2 } from 'lucide-react'
+import { Copy, Lock, MoreVertical, Pencil, Plus, Trash2 } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -238,7 +245,7 @@ function ProfileRow({
     <li>
       <div
         className={cn(
-          'group rounded-md border px-3 py-2.5 transition-colors duration-150',
+          'group relative rounded-md border px-3 py-2.5 transition-colors duration-150',
           active
             ? 'border-primary/30 bg-primary/8'
             : 'border-transparent hover:border-border hover:bg-surface-hover',
@@ -247,7 +254,7 @@ function ProfileRow({
         <button
           type="button"
           onClick={onEdit}
-          className="flex w-full min-w-0 flex-col items-start gap-1 text-left"
+          className="flex w-full min-w-0 flex-col items-start gap-1 pr-8 text-left"
         >
           <span className="flex w-full min-w-0 items-center gap-2">
             {/* Verbatim: the operator named this. */}
@@ -259,44 +266,58 @@ function ProfileRow({
               </Chip>
             )}
           </span>
+
+          {/* Directly under the name, where a description belongs. A row of icon
+              buttons used to sit between the two, so the sentence that explains the
+              profile read as a caption on the toolbar rather than on the thing. */}
+          {profile.notes && (
+            <Prose className="line-clamp-2 text-caption text-muted">{profile.notes}</Prose>
+          )}
+
           <span className="font-mono text-caption text-faint">
             {`${profile.concurrency} at once · ${profile.delayMinMs / 1000}–${profile.delayMaxMs / 1000}s · ${profile.maxRetries} ${profile.maxRetries === 1 ? 'retry' : 'retries'}`}
           </span>
         </button>
 
-        <div className="mt-2 flex items-center gap-1">
-          <Button variant="ghost" size="sm" onClick={onEdit} aria-label={`Edit ${profile.name}`}>
-            <Pencil className="size-3.5" aria-hidden="true" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onDuplicate}
-            aria-label={`Duplicate ${profile.name}`}
-          >
-            <Copy className="size-3.5" aria-hidden="true" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onDelete}
-            disabled={protectedProfile}
-            aria-label={`Delete ${profile.name}`}
-            // Disabled without a reason is a bug report; with one it is an answer.
-            title={
-              protectedProfile
-                ? 'The default profile cannot be deleted. Duplicate it and edit the copy instead.'
-                : undefined
-            }
-            className="text-danger-ink hover:bg-danger/10"
-          >
-            <Trash2 className="size-3.5" aria-hidden="true" />
-          </Button>
+        {/*
+          One menu instead of three buttons, and a red trash can that is no longer
+          permanently visible one click from deletion on a list people scan. It appears
+          on hover and on keyboard focus; below `sm` there is no hover, so it stays.
+        */}
+        <div className="absolute top-2 right-2 opacity-100 transition-opacity duration-150 group-focus-within:opacity-100 group-hover:opacity-100 sm:opacity-0">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" aria-label={`Actions for ${profile.name}`}>
+                <MoreVertical className="size-3.5" aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 border-border bg-surface">
+              <DropdownMenuItem onSelect={onEdit} className="gap-2 text-body">
+                <Pencil className="size-4" aria-hidden="true" />
+                <span>Edit</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={onDuplicate} className="gap-2 text-body">
+                <Copy className="size-4" aria-hidden="true" />
+                <span>Duplicate</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onSelect={onDelete}
+                disabled={protectedProfile}
+                className="gap-2 text-body text-danger-ink"
+                // Disabled without a reason is a bug report; with one it is an answer.
+                title={
+                  protectedProfile
+                    ? 'The default profile cannot be deleted. Duplicate it and edit the copy instead.'
+                    : undefined
+                }
+              >
+                <Trash2 className="size-4" aria-hidden="true" />
+                <span>Delete</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-
-        {profile.notes && (
-          <Prose className="mt-1.5 line-clamp-2 text-caption text-muted">{profile.notes}</Prose>
-        )}
       </div>
     </li>
   )

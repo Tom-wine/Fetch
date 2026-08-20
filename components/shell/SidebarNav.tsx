@@ -53,10 +53,12 @@ function NavLink({
       aria-current={active ? 'page' : undefined}
       className={cn(
         'relative flex h-9 items-center gap-2.5 rounded-md px-2.5 transition-colors duration-150',
-        // The active item carries a 1px gradient hairline on its top edge —
-        // allowed gradient use #4 (§3.2).
+        // The active item's gradient hairline, on its LEFT edge — allowed gradient
+        // use #4 (§3.2). It sat on the top edge, where a horizontal rule between two
+        // rows belongs to whichever one you read it with, and it was consistently read
+        // as underlining the item ABOVE. A left rule can only belong to its own row.
         active
-          ? 'bg-primary/12 text-primary-ink before:absolute before:inset-x-0 before:top-0 before:h-px before:rounded-t-md before:bg-fetch-gradient before:content-[""]'
+          ? 'bg-primary/12 text-primary-ink before:absolute before:inset-y-0 before:left-0 before:w-[2px] before:rounded-l-md before:bg-fetch-gradient before:content-[""]'
           : 'text-muted hover:bg-surface-hover hover:text-text',
         collapsed && 'justify-center px-0',
       )}
