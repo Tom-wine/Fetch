@@ -51,3 +51,4 @@ mitm_mcp_traffic.db
 
 # Cross-session scratchpad. Lives outside the repo; ignored in case it ever moves in.
 fetch-sync.md
+lib/guides/search-index.json

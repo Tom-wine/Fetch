@@ -1,0 +1,81 @@
+# What Fetch.io is
+
+By the end of this page you will know what Fetch.io does with your club accounts, what
+it deliberately does not do, and which parts of it are the app you are looking at versus
+the machinery behind it.
+
+## What it does
+
+Fetch.io enters Premier League club accounts into a ballot, one after another, at a pace
+you set.
+
+You give it accounts. You choose a profile — how many to run at once, how long to wait
+between attempts, how many times to retry, which proxies to use. You start a run. It
+works through the accounts and shows you every attempt as it happens: which account,
+what the club said, and whether the entry was confirmed.
+
+That is the whole product. Everything else in the app supports it: the pool exists so
+runs have accounts, proxies and mailboxes exist so accounts can sign in, and the ticket
+inventory exists because a won ballot turns into seats.
+
+## What it does not do
+
+Fetch.io is not a queue-jumper and it does not pretend to be one.
+
+- **It does not bypass a club's checks.** It signs in with credentials you already have
+  and submits the same form you would.
+- **It does not guess or crack passwords.** An account with the wrong password fails to
+  log in, and the run says so.
+- **It does not give you a better place in a queue.** Entering a ballot early is not
+  entering it better; a ballot is a draw.
+- **It does not buy tickets.** It enters ballots. What you do with a won entry happens on
+  the club's site.
+- **It does not solve CAPTCHAs or defeat anti-bot systems.** If a club challenges an
+  attempt, that attempt fails and is reported.
+
+<Callout type="warning" title="Rate limits are real">
+Clubs notice volume. A profile set to enter thirty accounts at once from four proxies is
+the fastest way to have every one of them refused — and `RATE_LIMITED` responses arrive
+per club, not per account. The pacing settings exist because using them is how a run
+finishes.
+</Callout>
+
+## The front end reads; the backend acts
+
+This distinction matters when something goes wrong, because it tells you where to look.
+
+The app you are using **composes a run and reads its state**. When you press START_RUN it
+sends one request describing what you want: these accounts, this profile, these clubs.
+After that it polls for progress and draws what it is told.
+
+The **backend executes the entries**. Signing in, holding sessions, routing through
+proxies, reading one-time codes out of a mailbox, submitting the club's form, deciding
+that a response was a rate limit rather than an outage — all of that happens server-side.
+
+| You see | Where it happens |
+| --- | --- |
+| The pool, profiles, the launcher | The app |
+| Progress, counts, rate, ETA | The app, polling the run |
+| The sign-in and the entry itself | The backend |
+| Proxy routing and OTP retrieval | The backend |
+| The failure message on a task | The backend, shown by the app |
+
+So a task that reads `PROXY_DEAD` is not the app failing to draw something. It is the
+backend telling you that the proxy assigned to that account stopped answering mid-entry,
+and that nothing was submitted for it.
+
+## What you need before you start
+
+- **Club accounts you own**, with their passwords. Fetch.io stores them; it never shows
+  a password back to you on screen — see [Loading accounts](/guides/accounts/loading-accounts).
+- **A proxy group**, if the profile you pick routes through one. Accounts without a proxy
+  are blocked before the run starts rather than failing during it.
+- **A mailbox**, if the club sends a one-time code and you want it read automatically.
+
+<Callout type="note">
+None of these has to be perfect to try it. The Default profile uses no mailbox, and the
+launcher tells you exactly how many accounts it left out and why before you start
+anything.
+</Callout>
+
+Next: [the five-minute quick start](/guides/getting-started/quick-start).

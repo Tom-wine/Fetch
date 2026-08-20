@@ -323,6 +323,37 @@
       'calt' 1;
   }
 
+  /*
+   * The `#` beside a guide heading.
+   *
+   * rehype-autolink-headings appends an empty <a> to every heading; this is what makes
+   * it visible. Hidden until the heading is hovered or the link itself is focused, so
+   * the page reads as prose and still gives every paragraph a URL — which is the whole
+   * reason the plugin is there. Always visible to a keyboard: it is reachable by Tab and
+   * announces itself through its aria-label.
+   */
+  .heading-anchor {
+    margin-left: 0.4em;
+    color: var(--text-faint);
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+
+  .heading-anchor::after {
+    content: '#';
+  }
+
+  h1:hover > .heading-anchor,
+  h2:hover > .heading-anchor,
+  h3:hover > .heading-anchor,
+  .heading-anchor:focus-visible {
+    opacity: 1;
+  }
+
+  .heading-anchor:hover {
+    color: var(--text);
+  }
+
   /* Focus is always visible and never removed (§3.4). */
   :focus-visible {
     outline: 2px solid var(--primary);

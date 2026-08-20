@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
-import { Compass, Key, Play, Ticket, type LucideIcon } from 'lucide-react'
+import { BookOpen, Compass, Key, Play, Ticket, type LucideIcon } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import {
@@ -16,6 +16,7 @@ import {
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { Prose } from '@/components/ui/typography'
 import type { SearchResult, SearchResultType } from '@/lib/types'
+import { searchGuides } from '@/lib/guides/search'
 import { MIN_QUERY_LENGTH, usePaletteSearch, useRecentSearches } from './useCommandPalette'
 
 /**
@@ -115,6 +116,16 @@ export function CommandPalette({
 
   const typing = query.trim().length >= MIN_QUERY_LENGTH
   const commands = matchCommands(query)
+
+  /**
+   * The guides, searched in the browser.
+   *
+   * `GET /search` answers accounts, fixtures and screens; documentation is not in the
+   * database and should not be — it is a build artefact. So the palette asks two
+   * sources and shows one list, and the operator never has to know which of the two
+   * knew the answer. A heading hit lands on the paragraph, not the page.
+   */
+  const guides = React.useMemo(() => (typing ? searchGuides(query) : []), [query, typing])
   const grouped = GROUPS.map((group) => ({
     ...group,
     items: results.filter((result) => result.type === group.type),
@@ -177,6 +188,28 @@ export function CommandPalette({
               </CommandGroup>
             )}
 
+            {!error && guides.length > 0 && (
+              <CommandGroup heading="Guides">
+                {guides.map((hit) => (
+                  <CommandItem
+                    key={hit.id}
+                    value={hit.id}
+                    onSelect={() => {
+                      onOpenChange(false)
+                      router.push(hit.href)
+                    }}
+                    className="gap-2.5"
+                  >
+                    <BookOpen className="size-4 shrink-0 text-muted" aria-hidden="true" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-body text-text">{hit.title}</span>
+                      <span className="block truncate text-caption text-muted">{hit.subtitle}</span>
+                    </span>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+
             {error ? (
               // Not ErrorState: that is a region-sized component with a Retry button,
               // and the retry here is to keep typing.
@@ -206,7 +239,7 @@ export function CommandPalette({
             ) : loading ? (
               <Hint>Searching…</Hint>
             ) : grouped.length === 0 ? (
-              commands.length > 0 ? null : (
+              commands.length > 0 || guides.length > 0 ? null : (
                 <CommandEmpty>
                   <Prose className="text-muted">
                     Nothing matches <span className="font-mono text-text">{settled}</span>.
