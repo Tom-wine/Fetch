@@ -1,0 +1,4 @@
+﻿email,password,club,membership_type,membership_id,first_name,last_name,phone,date_of_birth,loyalty_points,proxy,imap_email,imap_password,tags,notes
+a.hughes@mail.com,W1nterGr0ve!,Arsenal,season-ticket,ARS-4820117,Amelia,Hughes,+44 7700 900312,1991-04-17,2480,198.51.100.14:8080:fetchuser:Kp8sVq2r,a.hughes.otp@mail.com,M4ilbox-Key,priority|aged,Renewal handled by the club directly.
+j.moreau@mail.com,CoteDazur#22,Manchester United,official-member,MU-7719043,Julien,Moreau,+44 7700 900871,1988-11-02,640,198.51.100.27:8080:fetchuser:Zt4wLb9n,j.moreau.otp@mail.com,Inb0x-Secret,away-eligible,
+p.okafor@mail.com,Harbour!7712,Tottenham Hotspur,digital-member,,Priya,Okafor,,,,,,,,

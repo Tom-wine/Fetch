@@ -1,0 +1,81 @@
+# Retrying a run
+
+By the end of this page you will know exactly what RETRY_FAILED does, what it carries
+over, and when retrying makes things worse.
+
+## What it does
+
+**RETRY_FAILED (N)** creates a **new run** containing exactly the accounts that ended
+`FAILED` in the old one.
+
+The original run is not touched. It keeps its counts, its log and its outcome, because it
+is the record of what happened — a retry that rewrote history would destroy the only
+evidence of why you retried.
+
+The new run:
+
+- contains the failed accounts and nothing else;
+- uses **the same profile**, with whatever settings it has *now*;
+- is labelled after the original — `Away scheme — retry`;
+- starts immediately, and you land on its monitor.
+
+Available from the monitor's header and from the row menu in the run history.
+
+## What it does not carry over
+
+- **Accounts that ended `NEEDS_OTP`.** They did not fail; they stopped at a challenge.
+  Attach a mailbox or clear the code, then start a normal run.
+- **Accounts that ended `SKIPPED`.** Nothing was submitted for them. Include them in a
+  fresh run instead.
+- **The original's timing.** The estimate is recomputed for the smaller set.
+
+The button is disabled when nothing failed, and says so: "Nothing in this run failed."
+
+## Fix first, then retry
+
+The profile carries forward — which means retrying without changing anything reproduces
+the conditions that caused the failures.
+
+| The failures said | Do this first |
+| --- | --- |
+| `RATE_LIMITED` | Lower the concurrency and raise the delay on the profile, or duplicate it into a slower one and use that. |
+| `PROXY_DEAD` | Test the proxy group and replace the dead address. |
+| `BLOCKED` | Sign in to the club site by hand for those accounts, then check them. |
+| `OTP_TIMEOUT` | Set the profile's OTP source to IMAP and attach a mailbox. |
+| `UPSTREAM_ERROR` | Nothing. Retry. |
+
+<Callout type="warning" title="Retrying into a rate limit">
+This is the mistake worth naming. Forty accounts come back `RATE_LIMITED`; pressing
+RETRY_FAILED sends the same forty at the same speed to a club that has just told you to
+slow down. The second run fails faster than the first, and the club now has two bursts to
+look at instead of one.
+</Callout>
+
+## When retrying is the wrong move
+
+- **When the club is having an outage.** `UPSTREAM_ERROR` on every account is not forty
+  problems, it is one. Wait.
+- **When the ballot has closed.** A retry after the window is a run of confirmed
+  failures.
+- **When the failures are `SKIPPED`.** The membership is not eligible; a second attempt
+  will not change the club's mind.
+- **When you have not read a single failure message.** Retrying is a decision that
+  should follow evidence, and the evidence is one click away in `LAST_RESPONSE`.
+
+## Doing it by hand instead
+
+Sometimes the right answer is a normal run rather than a retry — for instance when you
+want the failures **and** the accounts you fixed since:
+
+1. Go to **01_pool**.
+2. Filter or select the accounts you want.
+3. **START_RUN** with the selection as the scope.
+
+The launcher's `SELECTION` option exists for exactly this.
+
+## Reading the retry afterwards
+
+The retry is its own run in the history, with its own log and its own outcome. Compare
+the two: if the same accounts fail the same way with a slower profile, the problem is not
+pace — it is those accounts, and the answer is on
+[the failure codes page](/guides/ballots/failure-codes).

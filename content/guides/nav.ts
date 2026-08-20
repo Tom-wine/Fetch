@@ -37,6 +37,94 @@ export const GUIDE_NAV: GuideSection[] = [
         title: 'What Fetch.io is',
         summary: 'What the tool does, and what it deliberately does not do.',
       },
+      {
+        slug: 'getting-started/quick-start',
+        title: 'Quick start',
+        summary: 'Ten accounts into a ballot in five minutes, end to end.',
+      },
+      {
+        slug: 'getting-started/the-ballot-loop',
+        title: 'The ballot loop',
+        summary: 'Four stages — pool, profile, run, read — and why they are separate.',
+      },
+    ],
+  },
+  {
+    label: 'accounts',
+    title: 'Accounts',
+    entries: [
+      {
+        slug: 'accounts/loading-accounts',
+        title: 'Loading accounts',
+        summary: 'Pasting credentials, the CSV wizard, and what happens to duplicates.',
+      },
+      {
+        slug: 'accounts/account-status',
+        title: 'Account status',
+        summary: 'active, needs_login, needs_otp, locked, expired, error — and the fix for each.',
+      },
+      {
+        slug: 'accounts/ready-to-run',
+        title: 'Ready to run',
+        summary: 'Why an account can be ACTIVE and still not be READY.',
+      },
+      {
+        slug: 'accounts/proxies-and-email',
+        title: 'Proxies and email',
+        summary: 'Proxy groups, testing them, IMAP mailboxes, and when a code is needed.',
+      },
+    ],
+  },
+  {
+    label: 'ballots',
+    title: 'Ballots',
+    entries: [
+      {
+        slug: 'ballots/profiles',
+        title: 'Profiles',
+        summary: 'Every setting: what it does, a sane value, and what breaks if it is too high.',
+      },
+      {
+        slug: 'ballots/starting-a-run',
+        title: 'Starting a run',
+        summary: 'Scope, the estimate, and what stops a run before it begins.',
+      },
+      {
+        slug: 'ballots/reading-the-monitor',
+        title: 'Reading the monitor',
+        summary: 'The stats band, the bar, the task table and the three log tabs.',
+      },
+      {
+        slug: 'ballots/failure-codes',
+        title: 'Failure codes',
+        summary: 'Every code the engine can emit, what it means, and what to change.',
+      },
+      {
+        slug: 'ballots/retrying',
+        title: 'Retrying a run',
+        summary: 'What RETRY_FAILED carries over, and when retrying is the wrong move.',
+      },
+    ],
+  },
+  {
+    label: 'reference',
+    title: 'Reference',
+    entries: [
+      {
+        slug: 'reference/csv-template',
+        title: 'CSV template',
+        summary: 'The fifteen columns, which are required, and a file to start from.',
+      },
+      {
+        slug: 'reference/keyboard',
+        title: 'Keyboard',
+        summary: 'The palette, and moving through a table without a mouse.',
+      },
+      {
+        slug: 'reference/glossary',
+        title: 'Glossary',
+        summary: 'run, task, entry, profile, pool, ballot, ready, seq.',
+      },
     ],
   },
 ]

@@ -1,0 +1,74 @@
+# Proxies and email
+
+By the end of this page you will know how proxy groups are used by a run, how to test
+one, where one-time codes come from, and which parts of this are not built yet.
+
+## Proxies
+
+A proxy is the address an entry leaves from. Fetch.io keeps them in **groups**, and a
+profile points at one group — not at individual proxies. The backend picks a proxy from
+the group for each account that has one assigned.
+
+Open **//proxies** to see them. Each row has a status:
+
+| Status | Meaning |
+| --- | --- |
+| `OK` | Answered the last test. |
+| `DEAD` | Did not answer. Any account using it will fail with `PROXY_DEAD`. |
+| `UNTESTED` | Never tested. Unknown, which is not the same as fine. |
+
+Press **TEST** on a row to check it. The chip flips to `TESTING` immediately and is
+replaced by the real verdict when the check returns.
+
+### How many proxies a run needs
+
+The launcher warns when a group is thin:
+
+> grp_1 has 4 live proxies for a concurrency of 8. Several accounts will enter from the
+> same address, which is what clubs look for.
+
+It is a warning, not a block — you may decide the risk is acceptable. But the arithmetic
+is simple: concurrency 8 across 4 live proxies means two accounts share each address at
+any moment, and a club looking for exactly that pattern will find it.
+
+<Callout type="warning" title="A dead proxy is worse than no proxy">
+An account with no proxy is BLOCKED before the run starts and costs nothing. An account
+pointed at a dead proxy is READY, gets attempted, and comes back `PROXY_DEAD` having
+consumed an attempt. Test the group before an on-sale.
+</Callout>
+
+### Assigning proxies to accounts
+
+A proxy can arrive with an account in a CSV — the `proxy` column takes
+`host:port:user:pass` and is matched against the proxies you already have. Accounts
+without one show `—` in the PROXY column of the pool and are BLOCKED under any profile
+with a proxy group.
+
+## One-time codes
+
+Some clubs send a code during sign-in. A profile decides what happens then, through
+`OTP_SOURCE`:
+
+| Setting | Behaviour |
+| --- | --- |
+| `none` | No code handling. If a club asks, the task ends `NEEDS_OTP`. |
+| `manual` | You are expected to answer the challenge yourself. The task waits, then times out as `OTP_TIMEOUT` if nothing arrives. |
+| `imap` | The backend reads the code out of a mailbox and continues. Requires a mailbox to be selected on the profile. |
+
+A profile set to `imap` with no mailbox configured blocks **every** account in the pool —
+readiness reports `no OTP mailbox` on all of them. That is deliberate: the alternative is
+a run that stalls twenty minutes in, on the first account a club challenges, with nobody
+able to say why.
+
+## What is not built yet
+
+Being plain about this, because two screens in the sidebar promise more than they do:
+
+- **`//email_imap`** lists the mailboxes a profile can read from, and that is all it
+  does. There is no UI in this build for adding, editing or testing one — the list comes
+  from the backend. The screen says so.
+- **`//otp_inbox`** is a placeholder. Codes clubs send during an on-sale are meant to
+  land there, matched to the account that triggered them. Nothing populates it yet.
+
+Everything on this page above that line is real: proxy groups, testing, and the three
+OTP sources are wired through the profile and used by a run.

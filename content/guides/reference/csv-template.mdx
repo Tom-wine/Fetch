@@ -1,0 +1,77 @@
+# CSV template
+
+By the end of this page you will have a file that imports cleanly, and you will know
+which three columns are the only ones you cannot leave out.
+
+[**Download the template**](/guides/fetch-io-accounts-template.csv) — fifteen columns, two
+example rows, ready to overwrite.
+
+## The three required columns
+
+| Column | Notes |
+| --- | --- |
+| `email` | The address the account signs in with. It is also the identity duplicates are matched on. |
+| `password` | The club-site password. Held only in the tab you are importing from; never written to browser storage. |
+| `club` | One of the twenty Premier League clubs. Common short forms are matched for you — "Man Utd", "Spurs". |
+
+A row missing any of these is rejected at the validate step, with the reason on the row.
+
+## The twelve optional columns
+
+| Column | Notes |
+| --- | --- |
+| `membership_type` | `season-ticket`, `official-member`, `digital-member`, `international-member`, `ticket-exchange`, `general-sale` or `hospitality`. |
+| `membership_id` | The supporter or client number the club knows this account by. |
+| `first_name` | Shown on the account row, and used on any club form filled in for you. |
+| `last_name` | As above. |
+| `phone` | Any format. Some clubs send their two-factor code here. |
+| `date_of_birth` | Any readable format. Some clubs ask for it at checkout. |
+| `loyalty_points` | A whole number. Anything else is dropped rather than guessed. |
+| `proxy` | `host:port:user:pass`, matched against the proxies you already have. |
+| `imap_email` | The mailbox one-time codes are read from. |
+| `imap_password` | The mailbox or app password. Held only in the tab. |
+| `tags` | Several in one cell, separated by a pipe: `priority\|aged`. |
+| `notes` | Free text, kept verbatim on the account. |
+
+## You do not have to match our header names
+
+The import wizard's second step maps your columns onto these. Recognisable names are
+matched automatically — `e-mail`, `login`, `username` and `mail` all find `email`;
+`pass`, `pwd` and `secret` all find `password` — and anything it is unsure about it asks
+you to place rather than guessing.
+
+The mapping is remembered, so the next export from the same source maps itself.
+
+## A minimal file
+
+Three columns is a valid import:
+
+```csv
+email,password,club
+a.hughes@mail.com,W1nterGr0ve!,Arsenal
+j.moreau@mail.com,CoteDazur#22,Manchester United
+k.novak@mail.com,Brno-1997-Zima,Liverpool
+```
+
+Everything else can be filled in later, or never.
+
+## What happens to a row that fails
+
+Nothing is written until the last step, and rows are handled individually:
+
+- **Malformed** — reported at validate with the reason, and left out of the import.
+- **Duplicate inside the file** — "This email is already on row N of this file."
+- **Already in Fetch.io** — you choose per row: **Skip**, or **Update existing**.
+
+You can go back a step and fix the file without losing the mapping.
+
+<Callout type="note" title="Encoding">
+Save as UTF-8. A byte-order mark at the start of the file is handled; other encodings can
+turn an accented name into three characters that then fail to match a club.
+</Callout>
+
+## After importing
+
+Every imported account starts as `NEEDS_LOGIN` — nothing has tried to sign in yet. Select
+them and press **CHECK_ALL** to find out where they really stand, then read
+[Account status](/guides/accounts/account-status).

@@ -1,0 +1,91 @@
+# Loading accounts
+
+By the end of this page you will be able to get accounts into Fetch.io two ways — pasted
+credentials and a spreadsheet — and know what happens when one is already there.
+
+## Pasting credentials
+
+The fastest way in, and the one to use when all you have is a list of logins.
+
+On **//ballot_entries → 01_pool**, pick the club and paste one account per line:
+
+```
+a.hughes@mail.com:W1nterGr0ve!
+j.moreau@mail.com,CoteDazur#22
+k.novak@mail.com;Brno-1997-Zima
+```
+
+Colon, comma or semicolon — all three are accepted, because the block you have was
+probably not written for us. Everything after the first separator is the password, so a
+password containing a comma survives as long as the separator before it is not one.
+
+Press **LOAD_ACCOUNTS (N)**. The count in the button is the number of lines it could
+read, so if you pasted 124 lines and it says 121, three lines were malformed and are
+listed above the button before you commit to anything.
+
+<Callout type="warning" title="One club at a time">
+The club is chosen once for the whole block. Accounts are entered into their own club's
+ballot, so a block containing two clubs' accounts loaded under one club will enter the
+wrong ballot. Paste them separately.
+</Callout>
+
+## Importing a spreadsheet
+
+Use this when you have more than credentials — memberships, proxies, mailboxes, tags.
+
+Open **//account_manager → IMPORT**, or go straight to `/accounts/import`.
+
+![The import wizard: upload, map columns, validate, import](/guides/import.png)
+
+The wizard is four steps and you can go back at any of them:
+
+1. **01_upload** — drop a `.csv`. Nothing is sent yet.
+2. **02_map_columns** — your headers against ours. Recognisable names are matched for
+   you; anything it is unsure of it asks about rather than guessing.
+3. **03_validate** — every row checked, with the reason for each failure. This is the
+   step that talks to the server, because the one thing your browser cannot know is
+   whether an email already exists here.
+4. **04_import** — writes the rows that passed.
+
+The mapping you choose is remembered, so the next export from the same source maps
+itself.
+
+[The CSV template](/guides/reference/csv-template) lists all fifteen columns and which
+three are required.
+
+## What happens to duplicates
+
+An email is the identity. Fetch.io de-duplicates on it, and the behaviour differs by
+where the duplicate is:
+
+| Situation | What happens |
+| --- | --- |
+| The same email twice in one paste | The second is skipped and counted |
+| The same email twice in one CSV | Row flagged: "This email is already on row N of this file" |
+| Email already in Fetch.io (paste) | Skipped, counted in the result |
+| Email already in Fetch.io (CSV) | You choose per row: **Skip** it, or **Update existing** |
+
+Nothing is silently overwritten. The paste loader reports `created`, `updated` and
+`skipped` separately when it is done, so a block you were not sure about does not leave
+you guessing what it did.
+
+## What is stored, and what is not
+
+- **Passwords are stored** — a run cannot sign in without them — but they are never
+  returned to the browser. The table shows a fixed-width mask, and the only way to see
+  one is **Copy credentials** in the row menu, which puts it on the clipboard without
+  putting it on screen.
+- **The pasted block is not stored.** It goes in one request and the field is cleared.
+- **Mailbox passwords** are treated the same way as club passwords.
+
+<Callout type="danger" title="Anyone with the app has the accounts">
+There is no per-account permission model. Everyone who can open Fetch.io can start a run
+with any account in the pool and copy any credential in it.
+</Callout>
+
+## After loading
+
+New accounts arrive with a status of `needs_login` until they have been checked — nothing
+has tried to sign in with them yet. Select them and press **CHECK_ALL** to verify the
+sessions, then read [Account status](/guides/accounts/account-status) for what each
+result means.

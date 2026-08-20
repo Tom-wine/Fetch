@@ -1,0 +1,66 @@
+# Keyboard
+
+By the end of this page you will be able to find anything and work a table without
+reaching for the mouse.
+
+## The palette
+
+| Key | Does |
+| --- | --- |
+| `⌘K` / `Ctrl+K` | Open the palette. Press again to close it. |
+| `↑` `↓` | Move through results. |
+| `↵` | Open the highlighted result. |
+| `Esc` | Close. |
+
+It is bound on the document in the capture phase, so it works from inside a filter box —
+which is exactly where you tend to be when you want it.
+
+**What it finds:**
+
+- **Commands** — actions rather than records. `Start a run` is here, so the launcher is
+  reachable from any screen.
+- **Accounts** by email, name or membership id.
+- **Fixtures** by either team.
+- **Screens**, by name.
+- **Guides**, by page title or by heading — a heading result opens this documentation at
+  that paragraph.
+
+With nothing typed it shows the commands and the last few things you opened from it.
+Typing needs two characters before it searches.
+
+## Tables
+
+Click a row once to focus it, or Tab into the table.
+
+| Key | Does |
+| --- | --- |
+| `↓` | Move to the next row. |
+| `↑` | Move to the previous row. |
+| `Space` | Select or deselect the focused row, where a table has selection. |
+| `↵` | Open the focused row — the fixture, the run, the account. |
+
+Selection is what the bulk bar acts on, so `Space Space Space ↵` is a real workflow:
+select three accounts, then act on them from the bar that appears.
+
+## Dialogs and sheets
+
+| Key | Does |
+| --- | --- |
+| `Tab` | Move through the controls. Focus is trapped inside the dialog. |
+| `Esc` | Close without acting. |
+| `↵` | Activate the focused control. |
+
+Nothing destructive is bound to `↵` alone. Stopping a run and deleting a profile both go
+through a confirmation that names what it is about to do.
+
+## Focus is always visible
+
+Every focusable thing in the app shows a ring when it has keyboard focus, and the ring is
+never removed for aesthetics. If you cannot see where you are, that is a bug worth
+reporting.
+
+<Callout type="note" title="What is not bound">
+There are no single-letter shortcuts — no `g d` for dashboard, no `/` for search. An app
+with credentials in it should not act on a stray keystroke, and `⌘K` reaches everything a
+letter would.
+</Callout>

@@ -1,0 +1,81 @@
+# Ready to run
+
+By the end of this page you will know why an account can be `ACTIVE` and still not be
+READY, and how to clear each of the reasons.
+
+## Status is one input; READY is the verdict
+
+`STATUS` answers "could we sign in last time". Entering a ballot needs more than that,
+so the pool has a second column:
+
+![The pool table: an ACTIVE account marked BLOCKED because it has no proxy](/guides/pool-ready.png)
+
+The account in the third row is `ACTIVE` and `BLOCKED`. Nothing is wrong with its login.
+It has no proxy, and the profile that would run it routes through a proxy group.
+
+READY is all of these at once:
+
+1. The session is valid — status is `ACTIVE`.
+2. The account is not locked.
+3. The membership has not expired.
+4. It has a proxy, **if the chosen profile uses a proxy group**.
+5. A mailbox is configured, **if the chosen profile reads codes from IMAP**.
+
+## READY is relative to a profile
+
+This is the part worth internalising: **the same account is READY for one profile and
+BLOCKED for another.**
+
+A profile with no proxy group does not care that an account has no proxy. Switch the
+launcher to a profile that has one and fourteen accounts can turn BLOCKED between one
+click and the next.
+
+So both places that show readiness name the profile they measured against:
+
+- the dashboard card says "Measured against Default, the profile START_RUN starts with";
+- the launcher recomputes when you change the profile in the dropdown.
+
+<Callout type="note">
+There is no readiness field on the server. It is worked out in your browser from the
+account and the profile, because the server does not know which profile you are about to
+pick.
+</Callout>
+
+## The blocked reasons and their fixes
+
+| Reason | Meaning | Fix |
+| --- | --- | --- |
+| `locked` | The club locked the account. | Unlock on the club site. |
+| `membership expired` | The membership lapsed, or the status says `EXPIRED`. | Renew with the club. |
+| `needs login` | No valid session. | **CHECK_ALL**, or fix the password. |
+| `needs OTP` | A two-factor challenge is waiting. | Clear it once by hand, or attach a mailbox. |
+| `last check failed` | The check errored rather than answering. | Check again; suspect the proxy. |
+| `no proxy` | This profile routes through a proxy group; this account has none. | Assign a proxy, or choose a profile without a group. |
+| `no OTP mailbox` | The profile reads codes from IMAP and no mailbox exists. | Add one under **//email_imap**, or set the profile's OTP source to none. |
+
+Only the first thing that blocks an account is shown. A locked account with no proxy
+reads `locked`, because giving it a proxy would not move it.
+
+## Membership lapsing
+
+An account whose membership expires within thirty days is READY with a note under the
+chip: `membership lapsing`. It can enter tonight. It will stop being able to, without
+anything else changing, and no run will warn you on the day it does.
+
+## Filtering to the blocked ones
+
+Each dashboard counter links into the pool pre-filtered — `?ready=no_proxy` shows exactly
+those accounts. The pool says when it is filtering this way, because it does it in your
+browser across the whole pool rather than asking the server, and the row count comes from
+somewhere different than usual.
+
+## Before a run
+
+The launcher does this for you. It defaults to the ready accounts and states what it left
+out:
+
+> 28 excluded — 3 locked, 3 membership expired, 4 needs login, 3 needs OTP, 1 last check
+> failed and 14 no proxy. **Start them anyway**
+
+Starting them anyway is a real option — a blocked account fails fast and costs one
+attempt — but it is a choice, not the default.

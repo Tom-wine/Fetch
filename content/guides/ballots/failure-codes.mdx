@@ -1,0 +1,97 @@
+# Failure codes
+
+By the end of this page you will be able to read any code Fetch.io shows you and know
+whether to retry it, change the profile, or fix something outside the app.
+
+This is every code the engine emits. If you see one that is not here, it came from
+somewhere else and is worth reporting.
+
+## Task failures
+
+These appear in `LAST_RESPONSE` on the monitor and in `LAST_RESULT` on the pool.
+
+| Code | HTTP | What it means | What to change |
+| --- | --- | --- | --- |
+| `RATE_LIMITED` | 429 | The club refused the entry for going too fast. | Lower the concurrency, raise the delay, and do not retry at the same settings. |
+| `BLOCKED` | 403 | The club blocked this attempt. The account may need to sign in on the club site first. | Sign in by hand once, then check the account. Retrying immediately fails the same way. |
+| `PROXY_DEAD` | 407 | The proxy stopped responding mid-entry. Nothing was submitted. | Test the proxy group, replace the dead address, then retry. Nothing was submitted, so a retry is clean. |
+| `UPSTREAM_ERROR` | 500 | The club site returned an error. | Retry. This one is genuinely worth retrying — the fault was theirs and it is usually transient. |
+| `OTP_TIMEOUT` | 408 | A code was sent but never arrived. | Enter it by hand, or switch the profile's OTP source to IMAP with a mailbox attached. |
+| `SKIPPED` | — | The membership is not eligible for this ballot. | Nothing here. The club will not accept this membership for this draw. |
+
+<Callout type="warning" title="RATE_LIMITED is the one that spreads">
+The others are about one account. A rate limit is about you: the club has decided your
+traffic is too fast, and the next attempt inherits that decision. Retrying forty failures
+at the same concurrency is the reliable way to turn a bad run into a bad afternoon.
+</Callout>
+
+## What a stopped run leaves behind
+
+When a run is stopped — by you, or by `stopOnRateLimit` — every account not yet attempted
+is marked `SKIPPED` with:
+
+> The run was stopped before this account was submitted.
+
+That is not a failure. Nothing was sent for those accounts, and they are safe to include
+in the next run.
+
+## Run-level events
+
+These appear in `RUN_LOG` rather than against an account. They describe the run, not an
+entry.
+
+| Code | Level | When |
+| --- | --- | --- |
+| `RUN_STARTED` | info | The run began. Names how many accounts it holds. |
+| `SUBMITTED` | info | An entry was submitted for one account. |
+| `ENTRY_CONFIRMED` | success | The club confirmed an entry. Carries the entry reference. |
+| `RUN_PAUSED` | info | Paused. Nothing new is being submitted. |
+| `RUN_RESUMED` | info | Carried on. |
+| `RUN_STOPPED` | warn | Stopped by you. Says how many were not submitted. |
+| `RUN_RATE_LIMITED` | error | Stopped by the profile's rate-limit rule after the first 429. |
+| `RUN_COMPLETED` | success | Every account was attempted. Reports entered and failed. |
+
+A retry also appears in the log, at `warn`, under the code of the failure that caused
+it — `RATE_LIMITED · Retrying (attempt 2 of 3)`. So a code in the log is not always a
+final outcome; the task's own status is.
+
+## Task statuses, and what they are not
+
+The status of a task is where it ended up. It is not the same as a code:
+
+| Status | Meaning |
+| --- | --- |
+| `QUEUED` | Waiting for a free worker. |
+| `RUNNING` | Being entered now. |
+| `RETRYING` | The first attempt failed; another is under way. |
+| `SUCCESS` | The club confirmed the ballot entry. |
+| `FAILED` | The club refused the entry. The message says why. |
+| `NEEDS_OTP` | The club asked for a code that never arrived. |
+| `SKIPPED` | Not attempted. |
+
+`NEEDS_OTP` is deliberately not `FAILED`: nothing was refused. The entry stopped at a
+challenge, and the same account with a mailbox attached usually goes straight through.
+
+## Which are worth retrying
+
+| Retry now | Fix first, then retry | Do not retry |
+| --- | --- | --- |
+| `UPSTREAM_ERROR` | `PROXY_DEAD` — replace the proxy | `SKIPPED` — the membership is ineligible |
+| | `RATE_LIMITED` — slow the profile down | |
+| | `BLOCKED` — sign in on the club site | |
+| | `OTP_TIMEOUT` — attach a mailbox | |
+
+[RETRY_FAILED](/guides/ballots/retrying) starts a new run containing exactly the failures.
+It carries the same profile forward, which is why "fix first" means editing the profile
+before you press it — not after.
+
+## Reading a code you have never seen
+
+Three questions, in order:
+
+1. **Did anything get submitted?** `PROXY_DEAD` says nothing was. `RATE_LIMITED` means it
+   arrived and was refused.
+2. **Is it about this account, or about you?** `BLOCKED` and `SKIPPED` are the account's.
+   `RATE_LIMITED` is yours.
+3. **Would the same settings produce the same answer?** If yes, change something before
+   retrying.

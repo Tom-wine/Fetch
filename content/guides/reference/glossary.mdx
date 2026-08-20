@@ -1,0 +1,95 @@
+# Glossary
+
+The words this app uses, and exactly what each one means here. Where a word has a loose
+everyday meaning, the strict one is what the screens use.
+
+## ballot
+
+A club's draw for tickets. You enter it; you do not buy from it. Entering early is not
+entering better — a ballot is a draw, and Fetch.io's job is to get every account entered
+before the window closes, not to get you a better place in it.
+
+## pool
+
+The accounts available to ballot runs: everything belonging to one of the seven supported
+clubs. `01_pool` is the tab, and "the pool" is that set of accounts, not the table showing
+it.
+
+The pool is the whole set — not the page of twenty-five you are looking at. "20 of 48
+ready" counts the pool.
+
+## account
+
+One club login: an email, a password, a club, and whatever else you know about it — a
+membership, a proxy, a mailbox, tags. The email is its identity; duplicates are matched
+on it.
+
+## status
+
+What happened the last time Fetch.io tried to sign in with an account: `ACTIVE`,
+`NEEDS_LOGIN`, `NEEDS_OTP`, `LOCKED`, `EXPIRED` or `ERROR`. A statement about the past,
+with a `LAST_CHECK` timestamp saying how far past.
+
+## ready
+
+Whether an account can enter a ballot **right now, under a specific profile**. Broader
+than status: session valid, not locked, membership live, plus a proxy and a mailbox if
+that profile needs them.
+
+The same account can be READY for one profile and BLOCKED for another. Both places that
+show it name the profile they measured against.
+
+## profile
+
+A set of pacing rules: how many accounts at once, how long between attempts, how many
+retries, which proxy group, where one-time codes come from, and whether to stop on the
+first rate limit. It holds no accounts and no clubs.
+
+A run records its profile's name and settings when it starts, so editing a profile never
+changes what a past run did.
+
+## run
+
+One pairing of accounts and a profile, at a moment. It has a status
+(`QUEUED`, `RUNNING`, `PAUSED`, `COMPLETED`, `STOPPED`, `FAILED`), counts, a rate, an ETA
+and a log. It lives on the backend: closing the tab does not stop it.
+
+Runs accumulate. They are the history of what you attempted and what the clubs said.
+
+## task
+
+One account's attempt inside a run — one row of the monitor's table. A task has a status,
+an attempt count, and the last response the club gave. A run of 48 accounts has 48 tasks.
+
+## entry
+
+The thing being submitted: one account's ballot entry for one club. A confirmed entry
+gets a reference like `EN-5_0010`, which is the club's receipt and the only proof the
+entry landed.
+
+"Attempt" is what Fetch.io does; "entry" is what the club records.
+
+## attempt
+
+One try at a task. `2/3` in the ATTEMPT column means the second of up to three, and a
+retried attempt starts from scratch — new sign-in, new submission.
+
+## seq
+
+The number on every event in a run's log. It only ever increases, and the app asks for
+"everything after seq N" rather than re-reading the whole log, which is what lets the
+monitor keep a growing feed without duplicating lines.
+
+Two guarantees, which matter when reading a log during an incident: `seq` ascending is
+also time ascending, and a cursor never goes backwards.
+
+## worker
+
+One of the concurrent slots a run has. Concurrency 8 means eight workers, each taking the
+next account, entering it, waiting the profile's delay, and taking another.
+
+## rate
+
+Attempts completed per minute, measured rather than predicted: what has actually happened
+divided by elapsed time. It falls when a club slows down, which is usually the first
+visible sign that one has.

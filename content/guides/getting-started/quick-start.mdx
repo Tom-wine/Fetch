@@ -1,0 +1,106 @@
+# Quick start
+
+By the end of this page you will have entered ten accounts into a ballot and watched
+every attempt land. It takes about five minutes.
+
+You need ten club accounts and their passwords. Nothing else has to be set up first.
+
+## 1. Load the accounts
+
+Open **//ballot_entries** in the sidebar and stay on **01_pool**.
+
+At the top is the paste loader. Choose the club these accounts belong to, then paste one
+account per line:
+
+```
+a.hughes@mail.com:W1nterGr0ve!
+j.moreau@mail.com:CoteDazur#22
+k.novak@mail.com:Brno-1997-Zima
+```
+
+A colon between the address and the password is the usual separator; a comma or a
+semicolon works too. Press **LOAD_ACCOUNTS** and they appear in the table below.
+
+![The pool tab, with the paste loader above the table of accounts](/guides/pool.png)
+
+<Callout type="note">
+The block you paste is sent once and never stored — not in the URL, not in local
+storage, not in the console. The field clears the moment the accounts are created.
+</Callout>
+
+Accounts already in the pool are counted and skipped rather than duplicated, so pasting
+the same block twice is harmless. If you have a spreadsheet instead, use
+[the CSV import](/guides/accounts/loading-accounts) — it maps your columns to ours and
+shows you every row it could not read before anything is written.
+
+## 2. Check who is ready
+
+Look at the **READY** column and the counter beside START_RUN. It reads something like
+`20 of 48 ready`.
+
+READY means the account can enter a ballot right now: the session is valid, the
+membership is live, and it has whatever the profile needs. BLOCKED accounts say why in
+one word — `no proxy`, `needs login`, `membership expired`.
+
+You do not have to fix them to continue. The launcher leaves them out and tells you it
+did.
+
+## 3. Start the run
+
+Press **START_RUN**. The launcher opens.
+
+![The launcher, with clubs, scope, profile, estimate and label](/guides/launcher.png)
+
+Four things to look at, top to bottom:
+
+- **Scope** — the clubs, and how many accounts are going. It defaults to ALL_READY.
+- **Profile** — leave it on **Default** for now: eight at once, two to five seconds
+  apart, two retries.
+- **Estimate** — how long this will take, from the count and the profile. Read it. It is
+  the one number that catches "I meant ten accounts, not three hundred".
+- **Label** — optional. Left blank, the run is named after its clubs and the time.
+
+Press **START_RUN (N)**. You land on the monitor.
+
+## 4. Read the monitor
+
+![The run monitor: counters, progress bar, task table and log](/guides/monitor.png)
+
+The band across the top answers "is it working" without reading anything else:
+
+![The stats band: seven counters over one segmented progress bar](/guides/monitor-band.png)
+
+- **SUCCESS** — the club confirmed the entry.
+- **FAILED** — the club refused it. The reason is in the table.
+- **NEEDS_OTP** — a code was asked for and never arrived.
+- **QUEUED** — not attempted yet.
+
+Every counter is a filter. Click **FAILED** and the table below shows only the failures;
+click it again to clear.
+
+In the table, **LAST_RESPONSE** is the column that matters. It carries the club's status
+code and a sentence saying what happened, in English:
+
+> The proxy stopped responding mid-entry. Nothing was submitted.
+
+<Callout type="note" title="You can leave">
+The run keeps going if you navigate away, and a strip in the top bar follows you around
+the app with its progress and a link back. Closing the tab does not stop it either — the
+run lives on the backend, not in your browser.
+</Callout>
+
+## 5. Deal with the failures
+
+When it finishes, press **RETRY_FAILED (N)** in the header. That starts a NEW run
+containing exactly the accounts that failed, leaving the original as a record of what
+happened. [More on retrying](/guides/ballots/retrying).
+
+Before you retry, read one failure. `RATE_LIMITED` means the profile is too fast for
+that club and retrying at the same settings will fail the same way;
+[the failure codes page](/guides/ballots/failure-codes) says which is which.
+
+## What next
+
+- [The ballot loop](/guides/getting-started/the-ballot-loop) — why the four stages are separate.
+- [Profiles](/guides/ballots/profiles) — every setting and a sane value for it.
+- [Failure codes](/guides/ballots/failure-codes) — the page you will come back to.

@@ -1,3 +1,4 @@
+import * as React from 'react'
 import type { MDXComponents } from 'mdx/types'
 import Link from 'next/link'
 
@@ -47,11 +48,22 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
       </h3>
     ),
 
-    p: ({ children, ...props }) => (
-      <Prose className="mt-4 text-prose text-muted" {...props}>
-        {children}
-      </Prose>
-    ),
+    /**
+     * Markdown wraps a standalone image in a paragraph, and a <figure> inside a <p> is
+     * invalid HTML — the browser closes the paragraph early and React reports a
+     * hydration error on every guide with a screenshot in it. So a paragraph whose only
+     * child is an image renders as the image alone.
+     */
+    p: ({ children, ...props }) => {
+      const onlyChild = React.Children.count(children) === 1 ? children : null
+      if (React.isValidElement(onlyChild) && onlyChild.type === GuideImage) return onlyChild
+
+      return (
+        <Prose className="mt-4 text-prose text-muted" {...props}>
+          {children}
+        </Prose>
+      )
+    },
 
     // Internal links route through next/link; anything external opens away and says so.
     a: ({ href = '', children, ...props }) => {
@@ -170,7 +182,10 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
 
     hr: (props) => <hr className="mt-10 border-border" {...props} />,
 
-    img: (props) => <GuideImage {...(props as { src?: string; alt?: string })} />,
+    // GuideImage itself, not a wrapper around it: the `p` above compares the child's
+    // component identity, and an arrow function here would mint a new one every render —
+    // the comparison would never match and every screenshot would stay inside a <p>.
+    img: GuideImage as MDXComponents['img'],
 
     // Available in every guide without an import.
     Callout,

@@ -1,0 +1,100 @@
+# Starting a run
+
+By the end of this page you will know what every part of the launcher decides, what the
+estimate is telling you, and what stops a run before it starts.
+
+## Opening the launcher
+
+Four ways, all the same dialog:
+
+- **START_RUN** on the pool or the run history.
+- **START_RUN →** on the dashboard when nothing is running.
+- **⌘K → Start a run** from anywhere in the app.
+- A link ending `?tab=pool&start=1`, which is what those buttons send you to.
+
+It is a dialog rather than a screen because it is a decision, not a place — and because
+opening it should not lose the row selection you just made.
+
+![The launcher: clubs, scope, profile, estimate and label](/guides/launcher.png)
+
+## Scope: which accounts go
+
+**Clubs.** Pick one or more. Accounts are entered into their own club's ballot, so the
+clubs decide which accounts are even considered.
+
+**Selection or all.** Two options:
+
+- `SELECTION (N)` — the rows you ticked on the pool tab. Available only if you ticked
+  some.
+- `ALL_READY (N)` — every account in the chosen clubs that can actually enter.
+
+`ALL_READY` is the default, and it is not the same as "all". Underneath it the launcher
+says what it left out:
+
+> 28 excluded — 3 locked, 3 membership expired, 4 needs login, 3 needs OTP, 1 last check
+> failed and 14 no proxy. **Start them anyway**
+
+Those accounts are not entries, they are failures queued in advance. **Start them anyway**
+is there for when you disagree — a blocked account fails fast and costs one attempt — but
+it is a choice you make rather than one made for you.
+
+<Callout type="note" title="Readiness follows the profile">
+Change the profile and the excluded count changes with it. A profile with no proxy group
+does not care that fourteen accounts have no proxy, and they stop being excluded the
+moment you pick it.
+</Callout>
+
+## Profile: how fast
+
+The dropdown lists your profiles; the panel underneath shows the settings the run will
+use — concurrency, delay, timeout, retries, proxy group, OTP source, rate-limit
+behaviour. It is read-only and shown rather than linked, so nobody starts three hundred
+accounts on yesterday's concurrency because the settings were one click away.
+
+Two things appear under it when they apply:
+
+- **A thin proxy group.** `grp_1 has 4 live proxies for a concurrency of 8` — a warning.
+  The run will start.
+- **A missing mailbox.** A profile set to read codes from IMAP with no mailbox selected —
+  a block. The run will not start, and the API refuses it too.
+
+## The estimate
+
+```
+20 tasks · concurrency 8 · delay 2–5s · ≈ 17 s
+```
+
+Recomputed from the account count and the profile on every change. It exists to catch
+the mistake this dialog is for: starting far more accounts than you meant, at a pace you
+did not check.
+
+Retries are not modelled. A run where most accounts fail and retry takes longer than the
+estimate says — the estimate describes the happy path.
+
+## The label
+
+Optional, and yours: it renders exactly as you type it, on the monitor and in the
+history. Left blank, the run is named after its clubs and the time it started.
+
+Good labels say the occasion — `Away scheme - Newcastle, Leeds and Forest` — because in a
+week the run id will mean nothing and the label is what you search.
+
+## What blocks a start
+
+**START_RUN** is disabled when:
+
+- no club is chosen;
+- the scope resolves to zero accounts;
+- no profile is selected;
+- the profile reads codes from IMAP and has no valid mailbox.
+
+Each states its own reason next to the control that caused it, rather than a disabled
+button with no explanation.
+
+## After you press start
+
+You land on the monitor for the new run. The run itself is on the backend: closing the
+tab, navigating away or losing your connection does not stop it. A strip in the top bar
+follows you around the app until it finishes.
+
+Next: [reading the monitor](/guides/ballots/reading-the-monitor).

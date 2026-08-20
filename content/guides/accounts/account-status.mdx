@@ -1,0 +1,63 @@
+# Account status
+
+By the end of this page you will know what each of the six statuses means, what caused
+it, and what to do about it.
+
+Status is one thing only: **what happened the last time Fetch.io tried to sign in**. It
+is not whether the account can enter a ballot — that is
+[READY](/guides/accounts/ready-to-run), which is broader.
+
+![The accounts table, with status chips in their own column](/guides/accounts.png)
+
+## The six statuses
+
+| Status | What it means | What to do |
+| --- | --- | --- |
+| `ACTIVE` | The last check signed in successfully. The session is good. | Nothing. |
+| `NEEDS_LOGIN` | There is no valid session — either it expired, or nothing has tried yet. | Run **CHECK_ALL** on it. If it stays, the password is wrong. |
+| `NEEDS_OTP` | The club asked for a one-time code and the sign-in stopped there. | Clear it once by hand, or give the account a mailbox and let IMAP read the code. |
+| `LOCKED` | The club locked the account. | Unlock it on the club's own site. Nothing here can. |
+| `EXPIRED` | The membership behind the account has lapsed. | Renew with the club. The login may still work; the ballot will still refuse it. |
+| `ERROR` | The last check failed in a way that was not an answer — a timeout, a dead proxy, an unreadable response. | Check it again. If it repeats, look at the proxy. |
+
+## Where status comes from
+
+Every account arrives as `NEEDS_LOGIN`, whether pasted or imported. That is not a
+failure — it means nothing has tried to sign in yet, and it is the honest state for an
+account nobody has verified.
+
+Status changes when:
+
+- you press **CHECK_ALL** or check a single account from its row menu;
+- a run signs in with it, which updates the status as a side effect of trying.
+
+Nothing changes it in the background. An `ACTIVE` account checked a week ago is a
+statement about last week — the `LAST_CHECK` column tells you how old the answer is.
+
+<Callout type="note" title="Check before an on-sale, not during">
+Checking a hundred accounts signs in a hundred times. Do it the evening before. A club
+that sees a hundred logins and then a hundred entries in the same five minutes is being
+given a pattern to notice.
+</Callout>
+
+## Reading the health strip
+
+On **//dashboard**, BALLOT_READINESS counts the same statuses across the whole pool, and
+every counter is a link that opens the pool already filtered to it:
+
+- `LOCKED 3` → the three locked accounts
+- `NEEDS_LOGIN 4` → the four with no session
+
+Underneath, a line reports accounts whose membership lapses within thirty days. Those are
+still `ACTIVE` and still able to enter tonight — the line exists so a renewal is a
+decision rather than a surprise.
+
+## What status does not tell you
+
+An `ACTIVE` account can still be unable to run:
+
+- it has no proxy, and the profile routes through a proxy group;
+- the profile reads codes from IMAP and no mailbox is configured;
+- the membership expires between the check and the run.
+
+That is what [Ready to run](/guides/accounts/ready-to-run) is for.

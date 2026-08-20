@@ -1,0 +1,80 @@
+# The ballot loop
+
+By the end of this page you will know what the four stages are, why they are separate
+screens rather than one wizard, and where you are in the loop at any moment.
+
+## The four stages
+
+```
+01_pool  ->  02_profiles  ->  03_runs  ->  the monitor
+accounts     how fast          history      what happened
+```
+
+**Load accounts** into the pool. **Choose a profile** — the pace. **Start a run**, which
+pairs a set of accounts with a profile. **Read the monitor** while it works, and again
+when it finishes.
+
+Then round again: the failures from one run become the accounts of the next.
+
+## Why they are separate
+
+A wizard would walk you through all four every time, which is the wrong shape for how
+this is actually used.
+
+**The pool changes rarely.** Accounts are loaded once and reused for a season. You do
+not want to paste them again before every ballot, and you do want to fix a locked account
+on a quiet afternoon rather than four minutes before an on-sale.
+
+**Profiles are settings you reuse.** "Overnight" is two at a time with long gaps. "Slow
+and quiet" is for a club that starts refusing above three. You write them once and pick
+one at launch — which also means the settings that worked last time are still there next
+time, instead of being retyped under pressure.
+
+**A run is a pairing, not a place.** It is a set of accounts, a profile, and a moment. It
+exists as a record afterwards: what was attempted, what the club said, what you can
+retry. Runs are the only stage that accumulates.
+
+**The monitor is a view of one run.** It never edits anything. Everything on it — the
+counters, the bar, the table, the log — is one run's state, drawn as it changes.
+
+## Where you are
+
+The sidebar answers it. `//ballot_entries` is the loop's first three stages as numbered
+tabs; `run_history` opens on the third.
+
+While a run is moving, a strip in the top bar shows it on every screen:
+
+```
+run_s6o96 · 16/48 · 3 failed · 4/min →
+```
+
+That is there so you can go and fix a proxy on `//proxies` without losing the run you
+started. It disappears when nothing is running.
+
+## What the app does at each stage
+
+| Stage | The app does | The backend does |
+| --- | --- | --- |
+| Pool | Stores accounts, checks sessions on request | Signs in to verify a session |
+| Profiles | Stores settings | Reads them when a run starts |
+| Launch | Sends one request describing the run | Resolves the accounts and begins |
+| Monitor | Polls and draws | Attempts every entry, records each outcome |
+
+Nothing is attempted from your browser. Closing the tab does not stop a run, and opening
+the monitor on another machine shows the same run at the same point.
+
+<Callout type="note">
+This is also why the monitor is honest about lag: it polls every two seconds, so a
+counter can be up to two seconds behind what the backend has already done. It is never
+ahead.
+</Callout>
+
+## The loop in practice
+
+1. **Before the on-sale** — load accounts, fix anything BLOCKED, pick a profile.
+2. **At the on-sale** — start the run, watch the band.
+3. **After** — read the failures, retry the ones worth retrying, and note which clubs
+   refused so the next profile is slower for them.
+
+The third step is the one that compounds. A club that rate-limited you at eight at once
+will do it again next month, and the profile is where that knowledge lives.

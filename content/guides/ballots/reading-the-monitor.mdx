@@ -1,0 +1,105 @@
+# Reading the monitor
+
+By the end of this page you will be able to answer "is this working" in one glance, and
+"why did that account fail" in two clicks.
+
+![The run monitor at 1440px](/guides/monitor.png)
+
+## The header
+
+The run's label, its clubs, the profile it is using, its status, and when it started.
+`run_s6o96` beside the label is the run id — click it to copy; it is what you paste into
+a message to a colleague.
+
+Four actions live here:
+
+- **PAUSE** — stop submitting. Attempts in flight finish; nothing new starts.
+- **RESUME** — carry on. Paused time does not count towards elapsed.
+- **STOP** — end the run. Everything not yet attempted becomes `SKIPPED`, and the run
+  cannot be restarted, only retried as a new one. It asks first, and names how many
+  accounts it is about to skip.
+- **RETRY_FAILED (N)** — start a new run from this one's failures.
+- **EXPORT** — download the run as a file.
+
+## The stats band
+
+![Seven counters over one segmented progress bar](/guides/monitor-band.png)
+
+Seven counters and one bar. Read the bar first: green is confirmed, red is failed, violet
+is waiting on a code, grey is not attempted yet.
+
+| Counter | Means |
+| --- | --- |
+| `TOTAL` | Every account in the run. Also the "clear the filter" button. |
+| `QUEUED` | Not attempted yet. |
+| `RUNNING` | Being attempted right now, including retries. |
+| `SUCCESS` | The club confirmed the entry. |
+| `FAILED` | The club refused it. |
+| `NEEDS_OTP` | A code was asked for and never arrived. |
+| `SKIPPED` | Not attempted — either the membership was ineligible, or the run stopped first. |
+
+**Every counter is a filter.** Click `FAILED` to show only failures in the table below;
+click it again to clear. That is the two-click path from "something is wrong" to the list
+of what.
+
+Under the bar: `12 of 48 attempted · 25%`, and on the right `rate 3.8/min` and
+`eta 9 min`. The rate is measured, not predicted — it is what has actually happened
+divided by elapsed time — so it moves as a club slows down.
+
+<Callout type="note" title="Up to two seconds behind">
+The monitor polls; it does not stream. A counter can lag the backend by a couple of
+seconds. It is never ahead of it.
+</Callout>
+
+## The task table
+
+One row per account.
+
+| Column | What it carries |
+| --- | --- |
+| `ACCOUNT` | The email. Truncated with the full address on hover. |
+| `STATUS` | QUEUED, RUNNING, RETRYING, SUCCESS, FAILED, NEEDS_OTP or SKIPPED. |
+| `ATTEMPT` | `2/3` — second attempt of three allowed. A second attempt reads differently from a first. |
+| `LAST_RESPONSE` | The club's status code and a sentence saying what happened. |
+
+`CLUB`, `UPDATED`, `PROXY` and `DURATION` are available under **VIEW** — they are hidden
+by default so `LAST_RESPONSE` has the width to say something useful.
+
+`LAST_RESPONSE` is the column this screen exists for. `429` on its own is a number and
+`RATE_LIMITED` on its own is a code; both come with the sentence that says what to change.
+[Every code is listed here](/guides/ballots/failure-codes).
+
+## The three log tabs
+
+![The RUN_LOG, filtered by level](/guides/monitor-log.png)
+
+**TASK_LOG** — one account's whole timeline. Click any row in the table and this tab
+fills with just that account's events: submitted, retried, confirmed or failed. The
+header repeats which account you are looking at, because the row you clicked scrolls
+away.
+
+**RUN_LOG** — every event in the run, oldest first, with a search box and level filters
+(`ALL`, `INFO`, `SUCCESS`, `WARN`, `ERROR`). This is the chronology: it never runs
+backwards, and each line carries a timestamp, a level, a code and the readable message.
+
+**SUMMARY** — the run in aggregate, once there is enough to aggregate:
+
+- the median attempt duration;
+- a count per failure code, most common first, each with its sentence;
+- a breakdown per club — attempted, confirmed, failed.
+
+The per-code count comes from the run's event feed rather than from the tasks, because a
+task keeps only its LAST message: an account that was rate-limited and then succeeded on
+retry would vanish from a task-based count while still having been rate-limited.
+
+## A worked example
+
+The band says `SUCCESS 9 · FAILED 3`. You want to know what the three have in common.
+
+1. Click **FAILED**. The table shows three rows.
+2. Read `LAST_RESPONSE`. All three say `407 — The proxy stopped responding mid-entry`.
+3. Open **SUMMARY**. `PROXY_DEAD ×3`, all in one club.
+4. Go to **//proxies**, test the group, replace the dead one.
+5. Come back and press **RETRY_FAILED (3)**.
+
+Total time: under a minute, and you fixed the cause rather than retrying into it.

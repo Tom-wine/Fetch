@@ -1,0 +1,134 @@
+# Profiles
+
+By the end of this page you will know what every profile setting does, what a sane value
+looks like, and what goes wrong when it is too high.
+
+A profile is **how fast to go**. It holds no accounts and no clubs — a run pairs a
+profile with a set of accounts at launch, so the same profile can be used for every club
+you have.
+
+![The profiles tab: the list on the left, the settings form on the right](/guides/profiles.png)
+
+## Name
+
+Free text, and it is yours — Fetch.io never reformats it. Name profiles after the
+situation rather than the numbers: "Overnight" and "Slow and quiet" survive being edited;
+"8 at once" does not.
+
+## Delay min and delay max
+
+**What it does.** The pause between two entries on the same worker. Each gap is drawn at
+random between the two values, so the pattern is not a metronome.
+
+**A sane value.** Two to five seconds for a club you have run before. Twenty to forty for
+one that has refused you.
+
+**Too low.** Zero to one second across eight workers is roughly eight entries a second
+arriving from a handful of addresses. That is the shape of a script, and the response is
+`RATE_LIMITED` — usually for the whole run, not just the fast attempts.
+
+Set them equal for a fixed gap. Min above max is refused by the API, not just by the
+form.
+
+## Concurrency
+
+**What it does.** How many accounts are being entered at the same moment. Range 1–50.
+
+**A sane value.** 8 is the shipped default. 2–3 for a club that rate-limits.
+
+**Too high.** Three things break at once. The club sees a burst; the proxy group is
+shared between more accounts than it has addresses; and the whole run finishes inside the
+window a club watches for bursts. Above 10, clubs start rate limiting — the form says so
+under the field.
+
+<Callout type="warning" title="Concurrency and proxies together">
+Concurrency 8 across 4 live proxies means two accounts entering from one address at any
+moment. The launcher warns when the group is thinner than the concurrency; that warning is
+the one worth reading twice.
+</Callout>
+
+## Timeout
+
+**What it does.** How long a single entry may take before it counts as failed.
+
+**A sane value.** 30 seconds.
+
+**Too low.** A club that is slow rather than broken gets marked failed, and you retry
+entries that were about to succeed. **Too high.** A stuck attempt holds a worker for the
+whole timeout, and with concurrency 2 that is half the run standing still.
+
+## Max retries
+
+**What it does.** How many extra attempts a failed account gets. Range 0–5. A retried
+account is attempted again from scratch — new sign-in, new entry.
+
+**A sane value.** 2.
+
+**Too high.** Retries multiply the load exactly when a club is already refusing you. Five
+retries across forty-eight accounts is up to 288 attempts, and if the failures are
+`RATE_LIMITED` every retry makes the rate limit worse.
+
+Retries are visible in the monitor's `ATTEMPT` column as `2/3`.
+
+## Proxy group
+
+**What it does.** Which pool of addresses the run leaves from. `NONE` means your own
+address.
+
+**A sane value.** A group with at least as many live proxies as the concurrency.
+
+**Too small.** Accounts share addresses. See
+[Proxies and email](/guides/accounts/proxies-and-email).
+
+Choosing a group also changes who can run: accounts with no proxy become BLOCKED under
+this profile. The launcher recounts as soon as you switch.
+
+## OTP source
+
+**What it does.** Where a one-time code comes from when a club asks for one.
+
+- `none` — no handling. A challenged account ends `NEEDS_OTP`.
+- `manual` — you answer it. The task waits and eventually times out as `OTP_TIMEOUT`.
+- `imap` — the backend reads the code from the mailbox you select, and continues.
+
+`imap` requires a mailbox. The API refuses a profile that asks for IMAP without one,
+because the alternative is a run that stalls on the first challenge with no explanation.
+
+## Stop on rate limit
+
+**What it does.** When on, the first `RATE_LIMITED` response ends the whole run. The
+accounts not yet attempted are marked `SKIPPED` rather than being pushed into a club that
+has just said no.
+
+**A sane value.** On, for any club you have not run recently.
+
+**Off** means the run keeps going after the first refusal. Occasionally right — some
+clubs rate-limit one endpoint and not another — but the usual outcome is forty-seven more
+refusals and forty-seven accounts that now look suspicious to that club.
+
+## Webhook URL
+
+Optional. Called once when the run finishes. Leave it blank if you have nowhere to send
+it; nothing else depends on it.
+
+## Notes
+
+Free text, shown under the profile's name in the list. This is where the reason lives:
+"For clubs that start refusing above three at a time" tells the next person — or you in
+six weeks — why the numbers are what they are.
+
+## The shipped profiles
+
+| Profile | Shape | For |
+| --- | --- | --- |
+| Default | 8 at once, 2–5s, 2 retries | A first run against any club |
+| Overnight | 2 at once, 20–40s, 2 retries | Leaving running while you sleep |
+| Slow and quiet | 3 at once, 6–14s, 3 retries | Clubs that refuse above three at a time |
+
+`Default` cannot be deleted. Duplicate it and edit the copy — the duplicate button is in
+the card's overflow menu.
+
+<Callout type="note">
+Editing a profile does not change a run that already used it. A run records the profile's
+name and settings when it starts, so history stays true.
+</Callout>
