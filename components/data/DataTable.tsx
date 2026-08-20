@@ -68,6 +68,17 @@ const features = tableFeatures({
 export interface ColumnMeta {
   sortable?: boolean
   /**
+   * The column that takes whatever width is left over.
+   *
+   * A table laid out from its content gives every column exactly what it asks for, so
+   * a column whose value is a SENTENCE gets the same treatment as one holding `2/3`
+   * and has to be capped at some pixel width chosen by hand — too small and it cuts
+   * mid-word, too large and the table overflows its pane at the next breakpoint down.
+   * `grow` says "this one absorbs the slack" instead, so the width is decided by the
+   * layout rather than by a guess. At most one column per table.
+   */
+  grow?: boolean
+  /**
    * A small note rendered after the sort arrow, for a caveat that only makes sense
    * at the header — e.g. a column whose server order does not match what the cells
    * currently display. Kept out of the cells so it is stated once, where the operator
@@ -448,8 +459,16 @@ export function DataTable<TData extends RowData>({
         // Stacked below md: giving the toolbar `flex-1 min-w-0` on a phone lets it
         // collapse to a sliver beside the controls, which is how a bulk bar ends up
         // one word wide.
+        //
+        // Above md it needs the opposite guarantee. `flex-1 min-w-0` means the toolbar
+        // gets whatever the actions leave, and the actions never yield: at 1280px that
+        // was 227px, so /accounts stacked its four filter selects ONE PER ROW and put
+        // 200px of chrome above the first account. The floor makes the ACTIONS wrap
+        // instead. Both rows still wrap and neither scrolls (§9 rule 1) -- the
+        // difference is which one gives way, and a row of buttons loses nothing by
+        // moving down a line while a row of filters loses its whole shape.
         <div className="flex flex-col items-stretch gap-3 md:flex-row md:flex-wrap md:items-start md:justify-between">
-          <div className="min-w-0 md:flex-1">{toolbar}</div>
+          <div className="min-w-0 md:min-w-[30rem] md:flex-1">{toolbar}</div>
           {controls}
         </div>
       )}
@@ -488,6 +507,7 @@ export function DataTable<TData extends RowData>({
                               'border-b border-border bg-surface-raised text-left text-label font-semibold whitespace-nowrap text-muted',
                               cellPad,
                               frozen && 'sticky left-0 z-30',
+                              header.column.columnDef.meta?.grow && 'w-full',
                             )}
                           >
                             {isSelect ? (
@@ -557,6 +577,7 @@ export function DataTable<TData extends RowData>({
                                 cellPad,
                                 frozen && 'sticky left-0 z-10 bg-surface',
                                 selected && frozen && 'bg-surface',
+                                cell.column.columnDef.meta?.grow && 'w-full',
                               )}
                               // A click on the checkbox must not also open the row.
                               onClick={isSelect ? (e) => e.stopPropagation() : undefined}

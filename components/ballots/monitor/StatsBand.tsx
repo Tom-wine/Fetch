@@ -22,8 +22,12 @@ import { RunProgress, formatEstimate, taskHint } from '../vocabulary'
  * because the way out of a filter has to be the control that set it. TOTAL is the
  * clear-all, which is why it is the one that reads active when nothing is filtered.
  *
- * Under `md` it is a 2×4 grid: eight cells for seven counters and TOTAL, with RATE and
- * ETA moving under the bar. "Is it working" has to be readable on a phone.
+ * Under `sm` it is still two columns, but it LEADS WITH SUCCESS AND FAILED and folds
+ * the other five into single lines beneath them. Seven equal-weight cells at two per row
+ * filled a phone screen on their own, which pushed the first failed task below the fold
+ * — and "is it working" is exactly the question a phone is holding this screen open to
+ * answer. The order only changes below `sm`; from `sm` up TOTAL leads, because there it
+ * is the clear-all at the head of a row that fits.
  */
 
 interface Counter {
@@ -32,6 +36,10 @@ interface Counter {
   label: string
   value: number
   tone: string
+  /** Answers "is it working", so it keeps its full size on a phone. */
+  lead?: boolean
+  /** Where it sits below `sm`. Static strings — Tailwind reads these literally. */
+  smallOrder: string
 }
 
 export function StatsBand({
@@ -49,13 +57,57 @@ export function StatsBand({
   const c = run.counts
 
   const counters: Counter[] = [
-    { status: null, label: 'Total', value: c.total, tone: 'text-text' },
-    { status: 'QUEUED', label: 'Queued', value: c.queued, tone: 'text-muted' },
-    { status: 'RUNNING', label: 'Running', value: c.running, tone: 'text-primary-ink' },
-    { status: 'SUCCESS', label: 'Success', value: c.success, tone: 'text-success-ink' },
-    { status: 'FAILED', label: 'Failed', value: c.failed, tone: 'text-danger-ink' },
-    { status: 'NEEDS_OTP', label: 'Needs OTP', value: c.needsOtp, tone: 'text-violet-ink' },
-    { status: 'SKIPPED', label: 'Skipped', value: c.skipped, tone: 'text-muted' },
+    {
+      status: null,
+      label: 'Total',
+      value: c.total,
+      tone: 'text-text',
+      smallOrder: 'max-sm:order-3',
+    },
+    {
+      status: 'QUEUED',
+      label: 'Queued',
+      value: c.queued,
+      tone: 'text-muted',
+      smallOrder: 'max-sm:order-5',
+    },
+    {
+      status: 'RUNNING',
+      label: 'Running',
+      value: c.running,
+      tone: 'text-primary-ink',
+      smallOrder: 'max-sm:order-4',
+    },
+    {
+      status: 'SUCCESS',
+      label: 'Success',
+      value: c.success,
+      tone: 'text-success-ink',
+      lead: true,
+      smallOrder: 'max-sm:order-1',
+    },
+    {
+      status: 'FAILED',
+      label: 'Failed',
+      value: c.failed,
+      tone: 'text-danger-ink',
+      lead: true,
+      smallOrder: 'max-sm:order-2',
+    },
+    {
+      status: 'NEEDS_OTP',
+      label: 'Needs OTP',
+      value: c.needsOtp,
+      tone: 'text-violet-ink',
+      smallOrder: 'max-sm:order-6',
+    },
+    {
+      status: 'SKIPPED',
+      label: 'Skipped',
+      value: c.skipped,
+      tone: 'text-muted',
+      smallOrder: 'max-sm:order-7',
+    },
   ]
 
   const done = c.success + c.failed + c.needsOtp + c.skipped
@@ -135,6 +187,9 @@ function CounterButton({
       title={counter.status ? taskHint(counter.status) : 'Every account in this run.'}
       className={cn(
         'flex min-w-0 flex-col items-start gap-0.5 rounded-md border px-2.5 py-2 text-left transition-colors duration-150',
+        counter.smallOrder,
+        // The folded five: label and value on one line, at body size, below `sm`.
+        !counter.lead && 'max-sm:flex-row max-sm:items-baseline max-sm:gap-2 max-sm:py-1',
         active
           ? 'border-primary/40 bg-primary/10'
           : 'border-transparent hover:border-border hover:bg-surface-hover',
@@ -144,7 +199,13 @@ function CounterButton({
       <span className="truncate font-mono text-label text-faint uppercase">
         {upperSnake(counter.label)}
       </span>
-      <span className={cn('font-mono text-h2 leading-none font-bold tabular-nums', counter.tone)}>
+      <span
+        className={cn(
+          'font-mono text-h2 leading-none font-bold tabular-nums',
+          !counter.lead && 'max-sm:text-body',
+          counter.tone,
+        )}
+      >
         {counter.value}
       </span>
     </button>

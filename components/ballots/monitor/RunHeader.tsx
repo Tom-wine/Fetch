@@ -68,8 +68,19 @@ export function RunHeader({
       <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-4">
         <div className="min-w-0">
           {/* The label is domain data — a fixture, a club, whatever the operator
-              typed. Verbatim, never snake_cased (§B7 rule 7). */}
-          <Display as="h1" size="h1" className="text-text">
+              typed. Verbatim, never snake_cased (§B7 rule 7).
+
+              Clamped to two lines, and smaller under `sm`. A long label at 28px
+              uppercase took FOUR lines on a 375px screen, and with the stats band under
+              it the first failed task was two scrolls down — on the screen whose whole
+              job is answering "is it working" at a glance. The full label is on the
+              element, so nothing is lost to the clamp. */}
+          <Display
+            as="h1"
+            size="h1"
+            title={run.label}
+            className="line-clamp-2 text-text max-sm:text-[20px]"
+          >
             {run.label}
           </Display>
 

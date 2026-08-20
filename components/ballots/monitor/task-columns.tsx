@@ -19,6 +19,13 @@ import { TaskStatusChip } from '../vocabulary'
  * someone deciding whether to lower the concurrency. The engine attaches a readable
  * sentence to every outcome and it is shown here, in the row, not behind a hover.
  *
+ * Which is why it gets the width. It was capped at 280px, narrow enough to cut "A code
+ * was sent but never arriv…" mid-word — the reader got the half of the sentence that
+ * describes the symptom and none of the half that says what to do. It is now the table's
+ * `grow` column, so it takes whatever the other seven leave rather than a pixel figure
+ * picked by hand, and the full sentence is on the element's `title` for the times two
+ * lines still are not enough.
+ *
  * PROXY is not sortable — the API can only order by the stored label, and a run where
  * every task shares a group would reorder into something the column does not explain.
  */
@@ -32,8 +39,11 @@ export function taskColumns(): FetchColumnDef<BallotTask>[] {
       enableHiding: false,
       cell: ({ row }) => (
         // An email is domain data and the widest thing in the table — capped, not
-        // fluid, or it pushes UPDATED off the right edge of a 64%-wide pane.
-        <span className="block max-w-[190px] truncate text-body text-text">
+        // fluid, or it pushes the sentence that explains the failure off the pane.
+        <span
+          title={row.original.accountEmail}
+          className="block max-w-[150px] truncate text-body text-text"
+        >
           {row.original.accountEmail}
         </span>
       ),
@@ -73,6 +83,7 @@ export function taskColumns(): FetchColumnDef<BallotTask>[] {
       id: 'response',
       accessorKey: 'lastMessage',
       header: 'last response',
+      meta: { grow: true },
       cell: ({ row }) => <ResponseCell task={row.original} />,
     },
     {
@@ -128,7 +139,7 @@ function ResponseCell({ task }: { task: BallotTask }) {
     : 'text-muted'
 
   return (
-    <div className="flex max-w-[280px] min-w-0 flex-col gap-0.5">
+    <div className="flex min-w-0 flex-col gap-0.5" title={task.lastMessage}>
       <span className="flex items-baseline gap-1.5">
         {task.lastHttpStatus !== undefined && (
           <span className={cn('font-mono text-body font-semibold tabular-nums', tone)}>
@@ -147,5 +158,16 @@ function ResponseCell({ task }: { task: BallotTask }) {
   )
 }
 
-/** Dropped first at ~840px of pane, where all eight columns stop fitting. */
-export const INITIALLY_HIDDEN = ['proxy', 'duration']
+/**
+ * What ships visible: ACCOUNT, STATUS, ATTEMPT, LAST_RESPONSE.
+ *
+ * Who it was, what happened, how many goes it took, and why — with LAST_RESPONSE taking
+ * every pixel the other three leave. Eight columns wanted 776px and the pane is 592px at
+ * 1280 and 691px at 1440, so the sentence was being squeezed to 129px: two lines of
+ * about fifteen characters, on the one column an operator opens this screen to read.
+ *
+ * The four that step aside are the four that repeat something already on the page or in
+ * the log: CLUB (the header names the run's clubs), UPDATED (the RUN_LOG is a
+ * chronology), PROXY and DURATION. All four are one click away in VIEW.
+ */
+export const INITIALLY_HIDDEN = ['club', 'updated', 'proxy', 'duration']
