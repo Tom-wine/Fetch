@@ -190,8 +190,11 @@ function CounterButton({
         counter.smallOrder,
         // The folded five: label and value on one line, at body size, below `sm`.
         !counter.lead && 'max-sm:flex-row max-sm:items-baseline max-sm:gap-2 max-sm:py-1',
+        // A tinted ground, not a frame. The selected counter carried a visible border
+        // while the other six carried none, so the filter that is ON looked like a
+        // different KIND of control rather than the same one in a different state.
         active
-          ? 'border-primary/40 bg-primary/10'
+          ? 'border-transparent bg-primary/12'
           : 'border-transparent hover:border-border hover:bg-surface-hover',
         empty && 'cursor-default opacity-45 hover:border-transparent hover:bg-transparent',
       )}

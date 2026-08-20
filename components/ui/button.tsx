@@ -11,7 +11,12 @@ import { upperSnake } from '@/lib/format/text'
  * count sits in parens outside the snake — `DELETE_ACCOUNTS (4)`.
  */
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 rounded-md font-mono text-btn font-semibold whitespace-nowrap transition-colors duration-150 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
+  // Disabled is a GHOST, not a dimmed fill. `opacity-50` over a solid primary still
+  // reads as a live button in light at 1440 -- `LOAD_ACCOUNTS (0)` looked clickable and
+  // was not. Stripping the fill (`bg-none` for the gradient, `bg-transparent` for the
+  // solid) and the border colour leaves one shape for "not available right now",
+  // whichever variant was asked for.
+  'inline-flex items-center justify-center gap-2 rounded-md font-mono text-btn font-semibold whitespace-nowrap transition-colors duration-150 disabled:pointer-events-none disabled:border disabled:border-border disabled:bg-transparent disabled:bg-none disabled:text-faint disabled:shadow-none [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
   {
     variants: {
       variant: {

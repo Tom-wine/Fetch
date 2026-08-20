@@ -14,7 +14,8 @@ import { Percent } from './Money'
  * Black, a lower_snake metric label, and a month-on-month delta chip.
  *
  * The gradient square is allowed use #2 of the five in §3.2 — one per tile, nothing
- * else in the tile carries it.
+ * else in the tile carries it. It takes the two-stop form: at 48px the three-stop
+ * gradient's middle colour fills the box, and the signature reads as flat blue.
  *
  * `children` holds the value so the caller can pass <Money> (privacy-blurred and
  * locale-formatted) rather than a pre-formatted string.
@@ -45,7 +46,7 @@ export function StatTile({
     >
       <span
         aria-hidden="true"
-        className="flex size-12 shrink-0 items-center justify-center rounded-md bg-fetch-gradient"
+        className="flex size-12 shrink-0 items-center justify-center rounded-md bg-fetch-gradient-sq"
       >
         <Icon className="size-5 text-white" />
       </span>

@@ -267,6 +267,18 @@
   background-image: linear-gradient(135deg, #0057c8 0%, #1a8cf0 48%, #6fd3fa 100%);
 }
 
+/*
+ * The same gradient for a SMALL square, without the middle stop.
+ *
+ * In a 48px icon tile the 48% stop fills most of the box and the ramp reads as flat
+ * mid-blue -- the signature is there in the CSS and absent to the eye. Dropping the
+ * waypoint spreads the same two endpoint colours across the whole diagonal, so a 48px
+ * square shows the range a 400px panel shows. Same colours, same gradient, one less stop.
+ */
+@utility bg-fetch-gradient-sq {
+  background-image: linear-gradient(135deg, #0057c8 0%, #6fd3fa 100%);
+}
+
 @utility shadow-fetch-glow {
   box-shadow: 0 0 24px -4px rgb(26 140 240 / 0.55);
 }

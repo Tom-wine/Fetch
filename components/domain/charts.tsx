@@ -100,6 +100,45 @@ function ChartPlaceholder({ height }: { height: number }) {
 /** Axis and tooltip type, matching the §3.3 caption spec. */
 const TICK = { fontSize: 11, fontFamily: 'var(--font-mono)' }
 
+/**
+ * The bar chart's y scale, from the data rather than from recharts' default.
+ *
+ * Recharts rounds the top of the axis up to its own idea of a nice number, which on a
+ * £62k month landed at £90k: the tallest bar filled two-thirds of the plot and the top
+ * third of a very tall card was empty. This rounds up to the next multiple of a step
+ * near an eighth of the maximum, so the tallest bar reaches ~90% of the plot AND every
+ * tick is still a round number -- both, rather than one at the cost of the other.
+ *
+ * Returns `undefined` when there is nothing to scale, which leaves recharts' default in
+ * place for an empty series rather than inventing an axis for no data.
+ */
+function barScale(
+  data: Array<Record<string, unknown>>,
+  keys: string[],
+): { domain: [number, number]; ticks: number[] } | undefined {
+  let max = 0
+  for (const row of data) {
+    for (const key of keys) {
+      const value = row[key]
+      if (typeof value === 'number' && Number.isFinite(value) && value > max) max = value
+    }
+  }
+  if (max <= 0) return undefined
+
+  // A step near an eighth of the maximum: fine enough that the tallest bar reaches
+  // ~90% of the plot, coarse enough that the axis stays at six to nine round labels.
+  const rough = max / 8
+  const magnitude = 10 ** Math.floor(Math.log10(rough))
+  const normalised = rough / magnitude
+  const step = (normalised <= 1 ? 1 : normalised <= 2 ? 2 : normalised <= 5 ? 5 : 10) * magnitude
+
+  const top = Math.ceil(max / step) * step
+  const ticks: number[] = []
+  for (let tick = 0; tick <= top + step / 2; tick += step) ticks.push(tick)
+
+  return { domain: [0, top], ticks }
+}
+
 export type ValueKind = 'money' | 'number'
 
 function useValueFormatter(kind: ValueKind, currency: Currency) {
@@ -295,6 +334,10 @@ export function BarChart({
 }: BaseProps) {
   const theme = useChartTheme()
   const { full: format, axis: axisFormat } = useValueFormatter(kind, currency)
+  const scale = barScale(
+    data,
+    series.map((s) => s.key),
+  )
 
   if (!theme) {
     return (
@@ -325,6 +368,8 @@ export function BarChart({
             axisLine={false}
             width={64}
             tickFormatter={axisFormat}
+            domain={scale?.domain}
+            ticks={scale?.ticks}
           />
           <Tooltip
             cursor={{ fill: theme.grid, fillOpacity: 0.25 }}
