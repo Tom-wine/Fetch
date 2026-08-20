@@ -27,10 +27,16 @@ import { BALLOT_CLUB_IDS, type AccountStatus, type BallotClubId, type RunStatus 
 
 export type BallotsTabId = 'pool' | 'profiles' | 'runs'
 
+/**
+ * Numbered, because the product has a LOOP and the tabs were three neutral nouns.
+ * Load accounts, choose a profile, run them, watch — §B1's own sequence, in the
+ * `01_upload / 02_map_columns` grammar the CSV wizard already uses (§3.3b). A first
+ * visitor should be able to read the order off the tab bar.
+ */
 export const BALLOT_TABS: Array<{ id: BallotsTabId; label: string }> = [
-  { id: 'pool', label: 'Pool' },
-  { id: 'profiles', label: 'Profiles' },
-  { id: 'runs', label: 'Runs' },
+  { id: 'pool', label: '01 Pool' },
+  { id: 'profiles', label: '02 Profiles' },
+  { id: 'runs', label: '03 Runs' },
 ]
 
 const DEFAULTS = {
@@ -77,6 +83,11 @@ function normaliseSort(tab: BallotsTabId, raw: string | null): string | null {
 
 export interface BallotsUrlPatch {
   tab?: BallotsTabId
+  /**
+   * `?start=1` — open the launcher on arrival. An ARRIVAL, not a state: the screen
+   * consumes it immediately, or the back button would reopen the dialog every time.
+   */
+  start?: '1' | null
   club?: BallotClubId | null
   status?: AccountStatus | null
   runStatus?: RunStatus | null
@@ -98,6 +109,8 @@ export function useBallotsUrlState() {
   // A club outside the seven is not a ballot club, so it is ignored rather than
   // passed to the API, which would return an empty table with no explanation.
   const club = rawClub && BALLOT_CLUB_IDS.includes(rawClub) ? rawClub : null
+
+  const startRequested = params.get('start') === '1'
 
   const status = (params.get('status') as AccountStatus | null) ?? null
   const runStatus = (params.get('runStatus') as RunStatus | null) ?? null
@@ -213,6 +226,7 @@ export function useBallotsUrlState() {
 
   return {
     tab,
+    startRequested,
     club,
     status,
     runStatus,

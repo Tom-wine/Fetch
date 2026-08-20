@@ -47,6 +47,35 @@ export function BallotsScreen() {
   const poolProbe = useAccounts({ club: BALLOT_CLUB_IDS, pageSize: 1 })
   const poolTotal = poolProbe.data?.meta?.total ?? 0
 
+  /**
+   * `?start=1` opens the launcher on arrival.
+   *
+   * The launcher is a dialog rather than a route (§B2), so START_RUN from the dashboard
+   * card, the ⌘K palette or a pasted link has to ask this screen to open it. The param
+   * is consumed immediately — it describes an ARRIVAL, not a state, and leaving it in
+   * the URL would reopen the dialog on every back-button press.
+   */
+  const { startRequested, set } = state
+
+  // Guarded by a ref, not by the dependency list: `set` is rebuilt on every render
+  // (the URL writer it closes over is a fresh object each time), so an effect that
+  // opens the dialog and clears the param would re-run, re-open and re-clear until
+  // React stopped it — "Maximum update depth exceeded", on arrival, from a link.
+  // The ref makes it once-per-arrival, and clears itself when the param is gone so a
+  // second START_RUN onto the same mounted screen still opens the launcher.
+  const consumedStart = React.useRef(false)
+
+  React.useEffect(() => {
+    if (!startRequested) {
+      consumedStart.current = false
+      return
+    }
+    if (consumedStart.current) return
+    consumedStart.current = true
+    setLaunching({ accounts: null })
+    set({ start: null })
+  }, [startRequested, set])
+
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-6">
       <PageHeader title="Ballot Entries" subtitle="load_accounts_and_run_entries" />

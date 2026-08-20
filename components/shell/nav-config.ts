@@ -43,8 +43,26 @@ export function isGroup(entry: NavEntry): entry is NavGroup {
   return 'items' in entry
 }
 
+/**
+ * The rail is ordered by the JOB, not by the alphabet or by what was built first.
+ *
+ * Ballots are the product, so they come straight after the dashboard. Accounts feed
+ * ballots — an account exists so that it can enter a draw — so they come after the
+ * thing they feed rather than before it. Inventory is what a won ballot turns into,
+ * and insights is the slow question you ask afterwards.
+ */
 export const NAV: NavEntry[] = [
   { label: 'Dashboard', href: '/dashboard', icon: Monitor },
+  {
+    label: 'Ballots',
+    items: [
+      // §9 rule 4 — no two nav icons look alike. A ballot is a draw, so `Dices`; a run
+      // history is a log, so `History`. Deliberately neither the calendar nor the clock
+      // this group replaces, which read as "when" rather than "what happened".
+      { label: 'Ballot Entries', href: '/ballots', icon: Dices },
+      { label: 'Run History', href: '/ballots?tab=runs', icon: History },
+    ],
+  },
   {
     label: 'Accounts',
     items: [
@@ -59,16 +77,6 @@ export const NAV: NavEntry[] = [
     items: [
       { label: 'My Tickets', href: '/mytickets', icon: Ticket },
       { label: 'My Links', href: '/mylinks', icon: Link2, soon: true },
-    ],
-  },
-  {
-    label: 'Ballots',
-    items: [
-      // §9 rule 4 — no two nav icons look alike. A ballot is a draw, so `Dices`; a run
-      // history is a log, so `History`. Deliberately neither the calendar nor the clock
-      // this group replaces, which read as "when" rather than "what happened".
-      { label: 'Ballot Entries', href: '/ballots', icon: Dices },
-      { label: 'Run History', href: '/ballots?tab=runs', icon: History },
     ],
   },
   { label: 'Insights', href: '/insights', icon: BarChart3 },

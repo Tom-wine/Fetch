@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
-import { Compass, Key, Ticket, type LucideIcon } from 'lucide-react'
+import { Compass, Key, Play, Ticket, type LucideIcon } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import {
@@ -34,7 +34,47 @@ import { MIN_QUERY_LENGTH, usePaletteSearch, useRecentSearches } from './useComm
  *
  * The dialog owns the query rather than a parent, and clears it on close: reopening
  * onto the last search, with its results, reads as though the palette never closed.
+ *
+ * COMMANDS come first, above anything the server matched. The palette could only ever
+ * find RECORDS, so the app's central action was reachable from exactly one screen: an
+ * operator on /mytickets who wanted to start a run had to navigate to /ballots first.
+ * They are local and match on their own keywords, so they cost no request and appear
+ * with nothing typed, which is where a first-time visitor looks for "what can this do".
  */
+
+interface Command {
+  id: string
+  title: string
+  subtitle: string
+  /** Typed words that should surface it — `run` finds START_RUN, so does `ballot`. */
+  keywords: string[]
+  href: string
+  icon: LucideIcon
+}
+
+const COMMANDS: Command[] = [
+  {
+    id: 'cmd_start_run',
+    title: 'Start a run',
+    subtitle: 'Enter the ready accounts into a ballot',
+    keywords: ['start', 'run', 'ballot', 'enter', 'launch', 'new'],
+    // The launcher is a dialog on /ballots rather than a route, so the command asks
+    // that screen to open it. The param is in the URL for the same reason everything
+    // else is: this link works pasted into a chat message.
+    href: '/ballots?tab=pool&start=1',
+    icon: Play,
+  },
+]
+
+function matchCommands(query: string): Command[] {
+  const needle = query.trim().toLowerCase()
+  if (!needle) return COMMANDS
+  return COMMANDS.filter(
+    (command) =>
+      command.title.toLowerCase().includes(needle) ||
+      command.keywords.some((word) => word.startsWith(needle)),
+  )
+}
 
 const GROUPS: Array<{ type: SearchResultType; label: string; icon: LucideIcon }> = [
   { type: 'account', label: 'Accounts', icon: Key },
@@ -74,10 +114,19 @@ export function CommandPalette({
   )
 
   const typing = query.trim().length >= MIN_QUERY_LENGTH
+  const commands = matchCommands(query)
   const grouped = GROUPS.map((group) => ({
     ...group,
     items: results.filter((result) => result.type === group.type),
   })).filter((group) => group.items.length > 0)
+
+  const runCommand = React.useCallback(
+    (command: Command) => {
+      onOpenChange(false)
+      router.push(command.href)
+    },
+    [onOpenChange, router],
+  )
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -105,6 +154,29 @@ export function CommandPalette({
             than below the fold.
           */}
           <CommandList className="max-h-[min(70vh,560px)]">
+            {/* Above the search states, not inside them: an action is available whether
+                or not the server has answered, and whether or not anything matched. */}
+            {!error && commands.length > 0 && (
+              <CommandGroup heading="Commands">
+                {commands.map((command) => (
+                  <CommandItem
+                    key={command.id}
+                    value={command.id}
+                    onSelect={() => runCommand(command)}
+                    className="gap-2.5"
+                  >
+                    <command.icon className="size-4 shrink-0 text-primary" aria-hidden="true" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-body text-text">{command.title}</span>
+                      <span className="block truncate text-caption text-muted">
+                        {command.subtitle}
+                      </span>
+                    </span>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+
             {error ? (
               // Not ErrorState: that is a region-sized component with a Retry button,
               // and the retry here is to keep typing.
@@ -134,11 +206,13 @@ export function CommandPalette({
             ) : loading ? (
               <Hint>Searching…</Hint>
             ) : grouped.length === 0 ? (
-              <CommandEmpty>
-                <Prose className="text-muted">
-                  Nothing matches <span className="font-mono text-text">{settled}</span>.
-                </Prose>
-              </CommandEmpty>
+              commands.length > 0 ? null : (
+                <CommandEmpty>
+                  <Prose className="text-muted">
+                    Nothing matches <span className="font-mono text-text">{settled}</span>.
+                  </Prose>
+                </CommandEmpty>
+              )
             ) : (
               grouped.map((group) => (
                 <CommandGroup key={group.type} heading={group.label}>

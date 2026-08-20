@@ -16,6 +16,7 @@ import { initialsOf, useProfile } from '@/lib/format/LocaleProvider'
 import { Hint } from '@/components/ui/tooltip'
 import { CURRENT_USER } from './nav-config'
 import { NotificationPopover } from './NotificationPopover'
+import { RunStrip } from './RunStrip'
 import { ThemeSegment } from './ThemeSegment'
 
 /**
@@ -48,7 +49,11 @@ export function Topbar({
         </button>
       </Hint>
 
-      <div className="pointer-events-auto ml-auto flex items-center gap-2">
+      {/* Left of the controls, so it never fights the account menu for the corner and
+          has the whole empty middle of the bar to truncate into. */}
+      <RunStrip />
+
+      <div className="pointer-events-auto ml-auto flex shrink-0 items-center gap-2">
         {/*
           The same palette ⌘K opens. It is a button rather than an input: nothing is
           typed here, and a text field that steals focus into a dialog is a field that
