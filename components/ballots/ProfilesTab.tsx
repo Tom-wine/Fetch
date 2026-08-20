@@ -156,10 +156,11 @@ export function ProfilesTab() {
           </ul>
         ) : (
           <ul className="max-h-[640px] space-y-1 overflow-y-auto p-2">
-            {profiles.map((profile) => (
+            {profiles.map((profile, position) => (
               <ProfileRow
                 key={profile.id}
                 profile={profile}
+                first={position === 0}
                 active={draft?.profile?.id === profile.id}
                 onEdit={() => startEdit(profile)}
                 onDuplicate={() => startDuplicate(profile)}
@@ -229,12 +230,15 @@ export function ProfilesTab() {
 function ProfileRow({
   profile,
   active,
+  first,
   onEdit,
   onDuplicate,
   onDelete,
 }: {
   profile: BallotProfile
   active: boolean
+  /** The guided tour points at one card; a `data-tour` on all of them anchors nothing. */
+  first: boolean
   onEdit: () => void
   onDuplicate: () => void
   onDelete: () => void
@@ -244,6 +248,7 @@ function ProfileRow({
   return (
     <li>
       <div
+        data-tour={first ? 'profile-card' : undefined}
         className={cn(
           'group relative rounded-md border px-3 py-2.5 transition-colors duration-150',
           active

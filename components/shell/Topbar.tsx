@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronDown, LogOut, Menu, Search, Settings, User } from 'lucide-react'
+import { ChevronDown, Compass, LogOut, Menu, Search, Settings, User } from 'lucide-react'
 import Link from 'next/link'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { initialsOf, useProfile } from '@/lib/format/LocaleProvider'
+import { useTour } from '@/components/tour/TourProvider'
 import { Hint } from '@/components/ui/tooltip'
 import { CURRENT_USER } from './nav-config'
 import { NotificationPopover } from './NotificationPopover'
@@ -31,6 +32,7 @@ export function Topbar({
   onOpenSearch: () => void
 }) {
   const profile = useProfile()
+  const tour = useTour()
 
   return (
     // <header>, not <div>: this is the banner landmark. As a plain div the theme
@@ -119,6 +121,13 @@ export function Topbar({
                 <Settings className="size-4" aria-hidden="true" />
                 settings
               </Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            {/* Permanent, and not only in the palette: someone who wants the tour again
+                is by definition someone who does not know where things are. */}
+            <DropdownMenuItem onSelect={() => tour.start()} className="text-body">
+              <Compass className="size-4" aria-hidden="true" />
+              take_the_tour
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem className="text-body text-danger-ink">

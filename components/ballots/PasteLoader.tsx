@@ -135,7 +135,10 @@ export function PasteLoader({
   }
 
   return (
-    <section className="rounded-lg border border-border bg-surface p-4 sm:p-5">
+    <section
+      data-tour="pool-paste"
+      className="rounded-lg border border-border bg-surface p-4 sm:p-5"
+    >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <SectionLabel>quick_load</SectionLabel>
         <Button

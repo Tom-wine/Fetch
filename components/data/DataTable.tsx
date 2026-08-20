@@ -68,6 +68,14 @@ const features = tableFeatures({
 export interface ColumnMeta {
   sortable?: boolean
   /**
+   * A `data-tour` value for this column's header cell.
+   *
+   * The guided tour anchors on attributes rather than classes or positions, and a column
+   * header is drawn by DataTable rather than by the screen — so the column that wants to
+   * be pointed at says so here, and the table stamps it on the `th`.
+   */
+  tour?: string
+  /**
    * The column that takes whatever width is left over.
    *
    * A table laid out from its content gives every column exactly what it asks for, so
@@ -503,6 +511,7 @@ export function DataTable<TData extends RowData>({
                             key={header.id}
                             scope="col"
                             style={{ width: isSelect ? 44 : undefined }}
+                            data-tour={header.column.columnDef.meta?.tour}
                             className={cn(
                               'border-b border-border bg-surface-raised text-left text-label font-semibold whitespace-nowrap text-muted',
                               cellPad,

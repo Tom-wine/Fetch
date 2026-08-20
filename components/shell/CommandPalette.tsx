@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
-import { BookOpen, Compass, Key, Play, Ticket, type LucideIcon } from 'lucide-react'
+import { BookOpen, Compass, Key, Play, Route, Ticket, type LucideIcon } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import {
@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/compone
 import { Prose } from '@/components/ui/typography'
 import type { SearchResult, SearchResultType } from '@/lib/types'
 import { searchGuides } from '@/lib/guides/search'
+import { useTour } from '@/components/tour/TourProvider'
 import { MIN_QUERY_LENGTH, usePaletteSearch, useRecentSearches } from './useCommandPalette'
 
 /**
@@ -49,7 +50,10 @@ interface Command {
   subtitle: string
   /** Typed words that should surface it — `run` finds START_RUN, so does `ballot`. */
   keywords: string[]
-  href: string
+  /** Where it goes, for the commands that are a navigation. */
+  href?: string
+  /** What it does, for the ones that are not. */
+  action?: 'tour'
   icon: LucideIcon
 }
 
@@ -64,6 +68,14 @@ const COMMANDS: Command[] = [
     // else is: this link works pasted into a chat message.
     href: '/ballots?tab=pool&start=1',
     icon: Play,
+  },
+  {
+    id: 'cmd_take_tour',
+    title: 'Take the tour',
+    subtitle: 'Nine steps through the loop, from accounts to failures',
+    keywords: ['tour', 'guide', 'tutorial', 'walkthrough', 'help', 'start', 'intro'],
+    action: 'tour',
+    icon: Route,
   },
 ]
 
@@ -97,6 +109,7 @@ export function CommandPalette({
   onOpenChange: (open: boolean) => void
 }) {
   const router = useRouter()
+  const tour = useTour()
   const [query, setQuery] = React.useState('')
   const { recent, remember, clear } = useRecentSearches()
   const { results, loading, error, settled } = usePaletteSearch(query, open)
@@ -134,9 +147,12 @@ export function CommandPalette({
   const runCommand = React.useCallback(
     (command: Command) => {
       onOpenChange(false)
-      router.push(command.href)
+      // The palette closes first either way: the tour's first highlight has to land on
+      // the page, not on the dialog that launched it.
+      if (command.action === 'tour') tour.start()
+      else if (command.href) router.push(command.href)
     },
-    [onOpenChange, router],
+    [onOpenChange, router, tour],
   )
 
   return (

@@ -107,7 +107,7 @@ export function RunHeader({
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div data-tour="run-actions" className="flex flex-wrap items-center gap-2">
           {canPause && (
             <Button
               variant="secondary"

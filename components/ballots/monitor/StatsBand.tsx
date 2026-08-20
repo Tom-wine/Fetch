@@ -115,6 +115,7 @@ export function StatsBand({
 
   return (
     <section
+      data-tour="run-stats"
       aria-label="Run progress"
       className={cn('rounded-lg border border-border bg-surface p-4 sm:p-5', className)}
     >

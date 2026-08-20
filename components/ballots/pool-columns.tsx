@@ -60,6 +60,8 @@ export function makePoolColumns({
       id: 'ready',
       accessorKey: 'id',
       header: 'ready',
+      // The tour points at this header; see lib/tour/steps.ts.
+      meta: { tour: 'pool-ready' },
       // Not sortable: the API cannot order 300 rows by a verdict computed here, and a
       // header that reordered only the visible page would be the usual lie.
       enableHiding: false,

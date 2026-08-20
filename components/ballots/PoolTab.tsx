@@ -536,7 +536,13 @@ function PoolToolbar({
               {` of ${poolTotal} ready`}
             </span>
           </Hint>
-          <Button label="Start run" forward disabled={total === 0} onClick={onStartRun}>
+          <Button
+            data-tour="start-run"
+            label="Start run"
+            forward
+            disabled={total === 0}
+            onClick={onStartRun}
+          >
             <Play aria-hidden="true" />
           </Button>
         </>

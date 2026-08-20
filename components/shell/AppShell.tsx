@@ -4,6 +4,7 @@ import * as React from 'react'
 import { usePathname } from 'next/navigation'
 
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
+import { TourProvider } from '@/components/tour/TourProvider'
 import { CommandPalette } from './CommandPalette'
 import { SIDEBAR_COOKIE } from './constants'
 import { SidebarNav } from './SidebarNav'
@@ -56,22 +57,29 @@ export function AppShell({
   }, [])
 
   return (
-    <div className="flex h-screen overflow-hidden bg-bg text-text">
-      <SidebarNav collapsed={collapsed} onToggle={toggle} className="hidden shrink-0 lg:flex" />
+    // TourProvider wraps the shell rather than a page: the tour crosses /ballots,
+    // /ballots?tab=profiles and /ballots/run/[id], and a provider mounted on any one of
+    // them would lose its place at the first navigation.
+    <TourProvider>
+      <div className="flex h-screen overflow-hidden bg-bg text-text">
+        <SidebarNav collapsed={collapsed} onToggle={toggle} className="hidden shrink-0 lg:flex" />
 
-      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent side="left" className="w-64 border-0 bg-bg p-0 lg:hidden">
-          <SheetTitle className="sr-only">Navigation</SheetTitle>
-          <SidebarNav collapsed={false} className="w-64" />
-        </SheetContent>
-      </Sheet>
+        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+          <SheetContent side="left" className="w-64 border-0 bg-bg p-0 lg:hidden">
+            <SheetTitle className="sr-only">Navigation</SheetTitle>
+            <SidebarNav collapsed={false} className="w-64" />
+          </SheetContent>
+        </Sheet>
 
-      <div className="relative flex min-w-0 flex-1 flex-col">
-        <Topbar onOpenNav={() => setMobileOpen(true)} onOpenSearch={() => setSearchOpen(true)} />
-        <main className="min-h-0 flex-1 overflow-y-auto px-4 pt-14 pb-10 sm:px-6">{children}</main>
+        <div className="relative flex min-w-0 flex-1 flex-col">
+          <Topbar onOpenNav={() => setMobileOpen(true)} onOpenSearch={() => setSearchOpen(true)} />
+          <main className="min-h-0 flex-1 overflow-y-auto px-4 pt-14 pb-10 sm:px-6">
+            {children}
+          </main>
+        </div>
+
+        <CommandPalette open={searchOpen} onOpenChange={setSearchOpen} />
       </div>
-
-      <CommandPalette open={searchOpen} onOpenChange={setSearchOpen} />
-    </div>
+    </TourProvider>
   )
 }

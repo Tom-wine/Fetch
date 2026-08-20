@@ -314,12 +314,14 @@ export function RunMonitorScreen() {
       */}
       {wide ? (
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,62fr)_minmax(0,38fr)]">
-          <div className="min-w-0">{table}</div>
+          <div data-tour="run-table" className="min-w-0">
+            {table}
+          </div>
           {panel}
         </div>
       ) : (
         <div className="space-y-4">
-          {table}
+          <div data-tour="run-table">{table}</div>
           {panel}
         </div>
       )}

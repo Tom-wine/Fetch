@@ -137,32 +137,34 @@ export function ProfileForm({
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field
-            label="Concurrency"
-            htmlFor="profile-concurrency"
-            error={errors.concurrency?.message}
-          >
-            <Input
-              id="profile-concurrency"
-              type="number"
-              min={1}
-              max={50}
-              inputMode="numeric"
-              className="border-border bg-surface font-mono"
-              {...register('concurrency', { valueAsNumber: true })}
-            />
-            {/* §B5.2 asks for this note verbatim, and it is chrome, so it keeps the
+          <div data-tour="profile-concurrency">
+            <Field
+              label="Concurrency"
+              htmlFor="profile-concurrency"
+              error={errors.concurrency?.message}
+            >
+              <Input
+                id="profile-concurrency"
+                type="number"
+                min={1}
+                max={50}
+                inputMode="numeric"
+                className="border-border bg-surface font-mono"
+                {...register('concurrency', { valueAsNumber: true })}
+              />
+              {/* §B5.2 asks for this note verbatim, and it is chrome, so it keeps the
                 `//` prefix. It is a hint, not an error — §B7 rule 3 only forbids the
                 prefix on messages that explain a failure. */}
-            <p
-              className={cn(
-                'font-mono text-caption',
-                concurrency > 10 ? 'text-warning-ink' : 'text-faint',
-              )}
-            >
-              {'// above 10, clubs start rate limiting'}
-            </p>
-          </Field>
+              <p
+                className={cn(
+                  'font-mono text-caption',
+                  concurrency > 10 ? 'text-warning-ink' : 'text-faint',
+                )}
+              >
+                {'// above 10, clubs start rate limiting'}
+              </p>
+            </Field>
+          </div>
 
           <SecondsField
             id="profile-timeout"

@@ -88,6 +88,7 @@ export function BallotsScreen() {
         <TabsList
           ref={fade.ref}
           style={fade.style}
+          data-tour="ballots-tabs"
           className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-none border-b border-border bg-transparent p-0 text-muted"
         >
           {BALLOT_TABS.map(({ id, label }) => (
