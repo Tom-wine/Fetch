@@ -71,7 +71,7 @@ export const NAV: NavEntry[] = [
       { label: 'Run History', href: '/ballots?tab=runs', icon: History },
     ],
   },
-  { label: 'Insights', href: '/insights', icon: BarChart3, soon: true },
+  { label: 'Insights', href: '/insights', icon: BarChart3 },
 ]
 
 /** Pinned below a divider at the foot of the rail. */

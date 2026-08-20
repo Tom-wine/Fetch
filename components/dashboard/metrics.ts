@@ -1,23 +1,20 @@
 import type { RevenuePoint } from '@/lib/types'
 
 /**
- * The arithmetic behind the three KPI tiles, kept out of the components so the
- * definition of each delta chip is written down once and can be read on its own.
+ * The arithmetic behind the money tiles and the revenue chart, kept out of the
+ * components so the definition of a delta chip is written down once.
  *
- * THE RULE FOR EVERY CHIP ON THIS SCREEN
+ * THE RULE FOR EVERY CHIP
  *
- * A delta chip states the month-on-month change of the value printed directly
- * above it — never a related number that happens to be nearby. That distinction
- * matters because two of the three tiles show a RUNNING TOTAL and one shows a
- * MONTHLY FLOW, and those have different month-on-month arithmetic:
+ * A delta chip states the month-on-month change of the value printed directly above
+ * it — never a related number that happens to be nearby. The tile that carries one
+ * shows a RUNNING TOTAL, so its arithmetic is `added / (total - added)` rather than
+ * the `(now - before) / before` a monthly flow would use. Using the flow formula on a
+ * running total reports a change the total never made, which is exactly the kind of
+ * confidently-wrong number an operator acts on.
  *
- *   flow   `this month` vs `last month`            → (now - before) / before
- *   total  `the total now` vs `the total a month   → added / (total - added)
- *          ago`, i.e. before this month was added
- *
- * Using the flow formula on a running total would report a change the total never
- * made, which is exactly the kind of confidently-wrong number an operator would
- * act on.
+ * The flow helpers went with the third tile when the dashboard became a control room
+ * for runs: nothing on the screen compares two months any more.
  */
 
 export type Metric = 'revenue' | 'tickets'
@@ -32,30 +29,6 @@ export type RevenueDatum = {
 
 export function toChartData(points: RevenuePoint[]): RevenueDatum[] {
   return points.map((p) => ({ period: p.period, revenue: p.revenue, tickets: p.ticketsSold }))
-}
-
-/**
- * The last two buckets of the series, newest last. `null` when the series is too
- * short to compare — a first-month tenant gets no chip rather than a fake one.
- */
-export function lastTwoMonths(points: RevenuePoint[]): {
-  current: RevenuePoint | null
-  previous: RevenuePoint | null
-} {
-  return {
-    current: points.at(-1) ?? null,
-    previous: points.length > 1 ? (points.at(-2) ?? null) : null,
-  }
-}
-
-/**
- * Month-on-month change of a FLOW — this month's figure against last month's.
- * `undefined` (no chip) when there is no previous month, or when it was zero and
- * the percentage would be infinite.
- */
-export function flowDelta(current?: number, previous?: number): number | undefined {
-  if (current === undefined || previous === undefined || previous <= 0) return undefined
-  return (current - previous) / previous
 }
 
 /**
