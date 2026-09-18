@@ -12,6 +12,7 @@ import {
   bulkImportResultSchema,
   clubRefSchema,
   fixtureSchema,
+  seatmapSchema,
   imapAccountSchema,
   importRowVerdictSchema,
   kpiSetSchema,
@@ -24,6 +25,7 @@ import {
   ticketSchema,
   type AccountCreate,
   type AccountPatch,
+  type RegistrationCreate,
   type BallotProfileInput,
   type RunCreate,
   type TicketPatch,
@@ -100,6 +102,10 @@ export const accountsApi = {
   create: (body: AccountCreate) =>
     apiFetch('/accounts', { method: 'POST', body, schema: accountSchema }),
 
+  /** The full membership registration — the rich superset, tokenized payment only. */
+  register: (body: RegistrationCreate) =>
+    apiFetch('/accounts/register', { method: 'POST', body, schema: accountSchema }),
+
   patch: (id: string, body: AccountPatch) =>
     apiFetch(`/accounts/${id}`, { method: 'PATCH', body, schema: accountSchema }),
 
@@ -147,6 +153,8 @@ export const fixturesApi = {
 
   tickets: (id: string, params: TicketFilters = {}) =>
     apiFetch(`/fixtures/${id}/tickets`, { query: params, schema: z.array(ticketSchema) }),
+
+  seatmap: (id: string) => apiFetch(`/fixtures/${id}/seatmap`, { schema: seatmapSchema }),
 }
 
 /* --------------------------------------------------------------- tickets */

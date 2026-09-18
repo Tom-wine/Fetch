@@ -8,7 +8,7 @@ import { RelativeTime } from '@/components/domain/RelativeTime'
 import { StatusChip } from '@/components/domain/StatusChip'
 import type { FetchColumnDef } from '@/components/data/DataTable'
 import type { Account, Proxy } from '@/lib/types'
-import { AccountIdentity, AccountPasswordCell, MembershipCell, ProxyCell } from './cells'
+import { AccountIdentity, AccountPasswordCell, LoyaltyCell, MembershipCell, ProxyCell } from './cells'
 
 /**
  * The §8.2 column list, in order: select · ACCOUNT · CLUB · MEMBERSHIP · LOYALTY ·
@@ -63,7 +63,7 @@ export function makeAccountColumns({
       accessorKey: 'loyaltyPoints',
       header: 'loyalty',
       meta: { sortable: true },
-      cell: ({ row }) => <Num value={row.original.loyaltyPoints ?? 0} className="font-semibold" />,
+      cell: ({ row }) => <LoyaltyCell account={row.original} />,
     },
     {
       id: 'tickets',

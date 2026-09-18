@@ -6,20 +6,21 @@ import { Map as MapIcon } from 'lucide-react'
 import { EmptyState } from '@/components/data/states'
 import { SectionLabel } from '@/components/ui/typography'
 import { Num } from '@/components/domain/Money'
+import { useFixtureSeatmap } from '@/lib/api/hooks/useFixtureDetail'
+import { sectionForBlock } from '@/lib/registries/stadiums'
 import type { Fixture, Ticket } from '@/lib/types'
+import { StadiumMap, type StandCounts } from './StadiumMap'
 
 /**
  * The `Seat Map` tab.
  *
- * A stadium map is published by the club, per venue, and Fetch.io has no endpoint that
- * fetches one — so the tab is honest about that rather than drawing a generic bowl and
- * putting real block names on invented positions. A seat map whose geometry is made up
- * is worse than no map: an operator would use it to judge a view.
+ * It asks `GET /fixtures/:id/seatmap` on reach and draws whatever comes back. Today
+ * the mock returns a per-stadium SCHEMATIC — the venue's real, named stands around a
+ * pitch — and this tab tints each stand by the seats the operator owns there. A real
+ * backend can return a provider SVG behind the same endpoint with no change here.
  *
- * What the tab CAN say truthfully is which parts of this stadium the inventory sits
- * in, so the space under the empty state is the block list rather than nothing. The
- * selected seats are marked, so the tab still answers "where am I" while it waits for
- * a map.
+ * Honesty rule, unchanged from before: the geometry is not to scale. The stand names
+ * are real; their positions are a schematic. The caption says so.
  */
 export function SeatMapTab({
   fixture,
@@ -31,50 +32,115 @@ export function SeatMapTab({
   tickets: Ticket[]
   selectedIds: Set<string>
 }) {
-  const blocks = React.useMemo(() => {
-    const byBlock = new Map<string, { total: number; selected: number }>()
+  const query = useFixtureSeatmap(fixture.id)
+  const seatmap = query.data?.data ?? null
+
+  // Tally each ticket into its stand, and keep the ones that match no stand so the
+  // block list below can still show them.
+  const { counts, blocks } = React.useMemo(() => {
+    const sections = seatmap?.sections ?? []
+    const counts = new Map<string, StandCounts>()
+    const blocks = new Map<string, { total: number; selected: number; section: string | null }>()
+
     for (const ticket of tickets) {
-      const found = byBlock.get(ticket.block) ?? { total: 0, selected: 0 }
-      found.total += 1
-      if (selectedIds.has(ticket.id)) found.selected += 1
-      byBlock.set(ticket.block, found)
+      const section = sections.length ? sectionForBlock(ticket.block, sections) : null
+      const isSelected = selectedIds.has(ticket.id)
+
+      if (section) {
+        const c = counts.get(section.id) ?? { total: 0, selected: 0 }
+        c.total += 1
+        if (isSelected) c.selected += 1
+        counts.set(section.id, c)
+      }
+
+      const b = blocks.get(ticket.block) ?? {
+        total: 0,
+        selected: 0,
+        section: section?.name ?? null,
+      }
+      b.total += 1
+      if (isSelected) b.selected += 1
+      blocks.set(ticket.block, b)
     }
-    return [...byBlock.entries()].sort((a, b) => a[0].localeCompare(b[0], 'en'))
-  }, [tickets, selectedIds])
+
+    return {
+      counts,
+      blocks: [...blocks.entries()].sort((a, b) => a[0].localeCompare(b[0], 'en')),
+    }
+  }, [seatmap, tickets, selectedIds])
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <EmptyState
-        icon={MapIcon}
-        title="Map unavailable"
-        body={`No seat map has been published for ${fixture.venue.name}. Fetch.io will show it here as soon as the club provides one.`}
-        glyph="brackets"
-        className="min-h-[200px] shrink-0 py-8"
-      />
+      {query.isPending ? (
+        <MapSkeleton venue={fixture.venue.name} />
+      ) : seatmap && seatmap.sections.length > 0 ? (
+        <div className="shrink-0 border-b border-border px-4 py-4">
+          <StadiumMap
+            sections={seatmap.sections}
+            counts={counts}
+            venue={seatmap.venue}
+            className="mx-auto max-w-[440px]"
+          />
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-caption text-muted">
+            <LegendSwatch className="bg-primary-solid/50 border-primary-solid" /> owned
+            <LegendSwatch className="border-primary-ink ring-1 ring-primary-ink" /> has selection
+            <LegendSwatch className="bg-surface-raised border-border" /> no seats
+          </div>
+          <p className="mt-2 text-center text-caption text-faint">
+            {seatmap.attribution ?? 'Schematic — stand layout, not a to-scale plan.'}
+          </p>
+        </div>
+      ) : (
+        <EmptyState
+          icon={MapIcon}
+          title="Map unavailable"
+          body={`No seat map could be loaded for ${fixture.venue.name}.`}
+          glyph="brackets"
+          className="min-h-[200px] shrink-0 py-8"
+        />
+      )}
 
       {blocks.length > 0 && (
-        <div className="min-h-0 flex-1 overflow-y-auto border-t border-border px-4 py-3">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
           <SectionLabel>blocks in this inventory</SectionLabel>
           <ul className="mt-2 space-y-1.5">
-            {blocks.map(([block, counts]) => (
+            {blocks.map(([block, entry]) => (
               <li
                 key={block}
                 className="flex items-center justify-between gap-3 rounded-md border border-border bg-surface px-2.5 py-2"
               >
-                <span className="min-w-0 truncate text-body text-text">{block}</span>
+                <span className="flex min-w-0 flex-col">
+                  <span className="truncate text-body text-text">{block}</span>
+                  {entry.section && (
+                    <span className="truncate text-caption text-faint">{entry.section}</span>
+                  )}
+                </span>
                 <span className="shrink-0 text-caption text-muted tabular-nums">
-                  {counts.selected > 0 && (
+                  {entry.selected > 0 && (
                     <span className="mr-2 text-primary-ink">
-                      <Num value={counts.selected} /> selected
+                      <Num value={entry.selected} /> selected
                     </span>
                   )}
-                  <Num value={counts.total} /> {counts.total === 1 ? 'seat' : 'seats'}
+                  <Num value={entry.total} /> {entry.total === 1 ? 'seat' : 'seats'}
                 </span>
               </li>
             ))}
           </ul>
         </div>
       )}
+    </div>
+  )
+}
+
+function LegendSwatch({ className }: { className?: string }) {
+  return <span className={`inline-block size-3 shrink-0 rounded-sm border align-middle ${className}`} />
+}
+
+function MapSkeleton({ venue }: { venue: string }) {
+  return (
+    <div className="shrink-0 border-b border-border px-4 py-4">
+      <div className="mx-auto aspect-[320/220] w-full max-w-[440px] animate-pulse rounded-lg bg-surface-raised" />
+      <p className="mt-3 text-center text-caption text-faint">Loading the map for {venue}…</p>
     </div>
   )
 }

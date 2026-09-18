@@ -5,6 +5,7 @@ import * as React from 'react'
 import { cn } from '@/lib/utils'
 import { upperSnake } from '@/lib/format/text'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Num } from '@/components/domain/Money'
 import { Chip } from '@/components/domain/StatusChip'
 import { PasswordCell } from '@/components/domain/PasswordCell'
 import { useRevealPassword } from '@/lib/api/hooks/useAccounts'
@@ -39,14 +40,52 @@ export function initialsOf(account: Account): string {
   return account.email.slice(0, 2).toUpperCase()
 }
 
-/** Membership type as a chip, client reference in mono underneath (§8.2 MEMBERSHIP). */
+/**
+ * Membership type as a chip, then the club-assigned membership number and the client
+ * reference in mono (§8.2 MEMBERSHIP). The membership number is the one registration
+ * hands back, so it leads; the client reference the operator supplied sits under it.
+ */
 export function MembershipCell({ account }: { account: Account }) {
   return (
     <div className="flex min-w-0 flex-col items-start gap-1">
       <Chip tone="neutral">{upperSnake(account.membershipType)}</Chip>
+      {account.membershipNumber && (
+        <span className="truncate font-mono text-caption text-primary-ink">
+          {account.membershipNumber}
+        </span>
+      )}
       {account.membershipId && (
         <span className="truncate font-mono text-caption text-muted">{account.membershipId}</span>
       )}
+    </div>
+  )
+}
+
+/**
+ * The LOYALTY column, read per club. Chelsea tracks loyalty points; Liverpool tracks
+ * ticketing credits; every other club shows its loyalty-points figure. The label
+ * under the number says which programme it is, so a Chelsea row and a Liverpool row
+ * are never read as the same thing.
+ */
+export function LoyaltyCell({ account }: { account: Account }) {
+  if (account.club === 'liverpool') {
+    return <TrackerValue label="credits" value={account.credits} />
+  }
+  if (account.club === 'chelsea') {
+    return <TrackerValue label="LP" value={account.loyaltyPoints} />
+  }
+  return <Num value={account.loyaltyPoints ?? 0} className="font-semibold" />
+}
+
+function TrackerValue({ label, value }: { label: string; value?: number }) {
+  return (
+    <div className="flex flex-col items-start leading-tight">
+      {value === undefined ? (
+        <span className="text-faint">—</span>
+      ) : (
+        <Num value={value} className="font-semibold" />
+      )}
+      <span className="font-mono text-label text-faint uppercase">{label}</span>
     </div>
   )
 }

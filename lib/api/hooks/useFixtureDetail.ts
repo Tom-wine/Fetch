@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 import { ApiError, type ApiResult } from '../client'
 import { accountsApi, fixturesApi, ticketsApi, type TicketFilters } from '../endpoints'
 import type { TicketPatch } from '../schemas'
-import type { Account, Ticket, TicketVisibility } from '@/lib/types'
+import type { Account, Seatmap, Ticket, TicketVisibility } from '@/lib/types'
 import { qk } from './keys'
 import { useOptimisticMutation } from './useOptimisticMutation'
 import { toTableState, type TableState } from './useAccounts'
@@ -56,6 +56,22 @@ export function useFixtureTicketsPage(
     pageSize: meta?.pageSize ?? Number(filters.pageSize ?? 25),
     totalPages: meta?.totalPages ?? 1,
   }
+}
+
+/* ---------------------------------------------------------- the seatmap */
+
+/**
+ * The venue seat map for the `Seat Map` tab. Fetched on demand — the query only runs
+ * once a fixture id is known, so it fires when the tab is reached rather than on every
+ * fixture load. The map rarely changes, so it is held for the session.
+ */
+export function useFixtureSeatmap(fixtureId: string | null) {
+  return useQuery<ApiResult<Seatmap>, ApiError>({
+    queryKey: qk.fixtures.seatmap(fixtureId ?? ''),
+    queryFn: () => fixturesApi.seatmap(fixtureId!),
+    enabled: Boolean(fixtureId),
+    staleTime: 5 * 60_000,
+  })
 }
 
 /* ----------------------------------------------------------- the facets */

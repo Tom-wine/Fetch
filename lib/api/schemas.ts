@@ -85,6 +85,22 @@ const minorUnits = z.int()
 
 /* --------------------------------------------------------------- resources */
 
+/**
+ * A payment card reference — tokenized. `last4` is the only fragment of the number
+ * ever present; there is no field for the full PAN or the CVV, by design. A real
+ * backend replaces `last4` with a processor token and keeps the shape.
+ */
+export const cardRefSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  brand: z.string().optional(),
+  last4: z.string().regex(/^\d{4}$/),
+  expMonth: z.int().min(1).max(12),
+  expYear: z.int().min(2000).max(2099),
+  cardholder: z.string().optional(),
+  billingSameAsMember: z.boolean().optional(),
+})
+
 export const accountSchema = z.object({
   id: z.string(),
   email: z.email(),
@@ -92,14 +108,29 @@ export const accountSchema = z.object({
   club: clubIdSchema,
   provider: providerIdSchema,
   membershipId: z.string(),
+  membershipNumber: z.string().optional(),
   membershipType: membershipTypeSchema,
   memberSince: isoDate.optional(),
   membershipExpiresAt: isoDate.optional(),
   loyaltyPoints: z.int().nonnegative().optional(),
+  credits: z.int().nonnegative().optional(),
   firstName: z.string().optional(),
+  middleName: z.string().optional(),
   lastName: z.string().optional(),
+  gender: z.string().optional(),
+  nationality: z.string().optional(),
   phone: z.string().optional(),
+  altPhone: z.string().optional(),
   dateOfBirth: z.string().optional(),
+  recoveryEmail: z.string().optional(),
+  username: z.string().optional(),
+  addressLine1: z.string().optional(),
+  addressLine2: z.string().optional(),
+  city: z.string().optional(),
+  postcode: z.string().optional(),
+  county: z.string().optional(),
+  country: z.string().optional(),
+  cards: z.array(cardRefSchema).optional(),
   status: accountStatusSchema,
   proxyId: z.string().optional(),
   imapId: z.string().optional(),
@@ -138,6 +169,23 @@ export const fixtureSchema = z.object({
   faceValueTotal: minorUnits,
   valueAtRisk: minorUnits,
   currency: currencySchema,
+})
+
+export const seatmapSectionSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  side: z.enum(['N', 'E', 'S', 'W']),
+  aliases: z.array(z.string()),
+})
+
+export const seatmapSchema = z.object({
+  fixtureId: z.string(),
+  venue: z.string(),
+  format: z.enum(['sections', 'svg']),
+  sections: z.array(seatmapSectionSchema),
+  svg: z.string().optional(),
+  source: z.string(),
+  attribution: z.string().optional(),
 })
 
 export const ticketSchema = z.object({
@@ -351,8 +399,43 @@ export const accountCreateSchema = z.object({
 
 export type AccountCreate = z.infer<typeof accountCreateSchema>
 
+/**
+ * A card as the registration form submits it: no id (the server mints one), and —
+ * the whole point — no full number and no CVV. The form derives `last4` from what
+ * the operator types and drops the rest before it ever leaves the browser.
+ */
+export const cardInputSchema = cardRefSchema.omit({ id: true })
+
+/**
+ * POST /accounts/register — the full membership registration payload. A superset of
+ * the create schema so no club's fields are ever missed, with every added field
+ * optional. Payment is `cards`, tokenized; there is deliberately no PAN or CVV field
+ * anywhere in this schema.
+ */
+export const registrationCreateSchema = accountCreateSchema.extend({
+  membershipNumber: z.string().optional(),
+  credits: z.int().nonnegative().optional(),
+  middleName: z.string().optional(),
+  gender: z.string().optional(),
+  nationality: z.string().optional(),
+  altPhone: z.string().optional(),
+  recoveryEmail: z.union([z.email(), z.literal('')]).optional(),
+  username: z.string().optional(),
+  addressLine1: z.string().optional(),
+  addressLine2: z.string().optional(),
+  city: z.string().optional(),
+  postcode: z.string().optional(),
+  county: z.string().optional(),
+  country: z.string().optional(),
+  imapEmail: z.union([z.email(), z.literal('')]).optional(),
+  imapPassword: z.string().optional(),
+  cards: z.array(cardInputSchema).optional(),
+})
+
+export type RegistrationCreate = z.infer<typeof registrationCreateSchema>
+
 /** PATCH /accounts/:id — every field optional; `password` is write-only. */
-export const accountPatchSchema = accountCreateSchema.partial().extend({
+export const accountPatchSchema = registrationCreateSchema.partial().extend({
   status: accountStatusSchema.optional(),
 })
 

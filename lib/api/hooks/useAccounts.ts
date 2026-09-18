@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-query'
 import { ApiError, type ApiResult } from '../client'
 import { accountsApi, type AccountFilters } from '../endpoints'
-import type { AccountCreate, AccountPatch } from '../schemas'
+import type { AccountCreate, AccountPatch, RegistrationCreate } from '../schemas'
 import type {
   Account,
   AccountStats,
@@ -81,6 +81,17 @@ export function useCreateAccount() {
     mutationFn: (body) => accountsApi.create(body),
     keys: () => [qk.accounts.all],
     successMessage: (result) => `${result.data.email} added.`,
+  })
+}
+
+export function useRegisterMembership() {
+  return useOptimisticMutation<RegistrationCreate, ApiResult<Account>>({
+    mutationFn: (body) => accountsApi.register(body),
+    keys: () => [qk.accounts.all],
+    successMessage: (result) =>
+      `${result.data.email} registered${
+        result.data.membershipNumber ? ` — ${result.data.membershipNumber}` : ''
+      }.`,
   })
 }
 
