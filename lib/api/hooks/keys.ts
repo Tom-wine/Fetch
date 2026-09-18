@@ -42,6 +42,7 @@ export const qk = {
     detail: (id: string) => [...qk.fixtures.all, 'detail', id] as const,
     tickets: (id: string, filters: TicketFilters) =>
       [...qk.fixtures.all, 'detail', id, 'tickets', filters] as const,
+    seatmap: (id: string) => [...qk.fixtures.all, 'detail', id, 'seatmap'] as const,
   },
   proxies: {
     all: ['proxies'] as const,

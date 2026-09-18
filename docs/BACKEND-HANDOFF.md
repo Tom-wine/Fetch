@@ -194,6 +194,31 @@ rest**, and a reveal that is logged loudly enough to notice.
 The import path never persists a password client-side either: it lives in memory for
 the length of the wizard and is POSTed once.
 
+### `POST /accounts/register` and payment — tokenized, never a PAN or a CVV
+
+The registration flow (`/accounts/register`, and the rich manual form behind it)
+collects the full membership data set, payment included. Payment reaches the API as
+`cards[]`, and each card carries **only** a label, the last four digits, the expiry
+month and the expiry year:
+
+```json
+{ "cards": [{ "label": "Amex personal", "brand": "amex", "last4": "1004",
+              "expMonth": 8, "expYear": 2028 }] }
+```
+
+**There is no field for the full card number and no field for the CVV, anywhere in
+the request schema.** The form derives `last4` in the browser and drops the rest
+before submitting; the server schema strips any extra keys, so a client that tries to
+send a PAN or a CVV has them discarded rather than stored. This is deliberate and
+non-negotiable:
+
+- **Never persist a PAN or a CVV.** Storing a CVV violates PCI-DSS outright; storing a
+  PAN puts you in PCI scope you do not want. Replace `last4` with a **processor token**
+  (Stripe, Adyen, Braintree) and keep the shape identical — the frontend already treats
+  `last4` as an opaque display value.
+- The membership number in `membershipNumber` is assigned at registration; the mock
+  mints a placeholder, a real backend returns whatever the club/registration issues.
+
 ---
 
 ## 7. Enum-keyed maps are SPARSE
@@ -337,6 +362,29 @@ that quietly changed afterwards.
 
 ---
 
+## 12b. The seat map is a seam
+
+`GET /fixtures/:id/seatmap` returns the venue's seat map. The mock returns a
+per-stadium **schematic** — the real named stands of the home club's ground — so the
+tab can draw and highlight owned seats today:
+
+```json
+{ "fixtureId": "fx_002", "venue": "Anfield", "format": "sections",
+  "sections": [{ "id": "the-kop", "name": "The Kop", "side": "S", "aliases": ["kop"] }],
+  "source": "mock-schematic",
+  "attribution": "Schematic — stand layout, not a to-scale plan." }
+```
+
+The tab renders whatever it gets, so a real backend can serve the **provider's published
+map** (Ticketmaster, SecuTix, …) behind this same endpoint with `"format": "svg"`, an
+inlined `svg` string and an `attribution`, and the tab draws that instead — no frontend
+change. If you serve `format: "sections"` you may also return provider section geometry;
+if you only have names, keep `aliases` so the client can place an owned seat's `block`
+into its stand. Fetching and normalizing the provider map is **your** side (CORS blocks
+it from the browser, and it may be a ToS/IP question) — the frontend only displays it.
+
+---
+
 ## 13. Mock-only affordances
 
 Both are ignored by a real backend and can be dropped with `app/api/v1`.
@@ -363,6 +411,7 @@ Nothing is broken; the screen is waiting for you to come back.
 - [ ] `passwordMasked` only, at a **constant** width.
 - [ ] `POST /accounts/:id/reveal` is audited, rate-limited, `no-store`.
 - [ ] Credentials encrypted at rest.
+- [ ] Payment is a processor token + `last4` + expiry. **Never** a PAN, **never** a CVV.
 - [ ] `byStatus` / `byClub` are sparse — absent means none.
 - [ ] `sort` + `order` honoured on every list; `pageSize` capped at 200.
 - [ ] `meta.total` and `meta.totalPages` correct — the pager reads them.

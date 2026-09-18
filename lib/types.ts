@@ -67,17 +67,46 @@ export interface Account {
   passwordMasked: string
   club: ClubId
   provider: ProviderId
-  /** Client reference / supporter number. */
+  /** Client reference / supporter number the operator supplied. */
   membershipId: string
+  /**
+   * The club-assigned membership number, generated at registration. Distinct from
+   * `membershipId` (which the operator gives): this is the number the membership
+   * came back with, shown on the membership record.
+   */
+  membershipNumber?: string
   membershipType: MembershipType
   memberSince?: string
   /** Drives the "expiring" warning chip. */
   membershipExpiresAt?: string
+  /** Chelsea loyalty-points tracker. */
   loyaltyPoints?: number
+  /** Liverpool credits tracker. */
+  credits?: number
   firstName?: string
+  middleName?: string
   lastName?: string
+  gender?: string
+  nationality?: string
   phone?: string
+  altPhone?: string
   dateOfBirth?: string
+  /** A recovery / secondary address kept on the membership. */
+  recoveryEmail?: string
+  /** The club-site username, when it differs from the email. */
+  username?: string
+  addressLine1?: string
+  addressLine2?: string
+  city?: string
+  postcode?: string
+  county?: string
+  country?: string
+  /**
+   * Tokenized payment references only — a display label, last four digits and
+   * expiry. The full card number and CVV are NEVER captured or stored; a real
+   * backend holds a processor token in their place. See docs/BACKEND-HANDOFF.md.
+   */
+  cards?: CardRef[]
   status: AccountStatus
   proxyId?: string
   imapId?: string
@@ -88,10 +117,67 @@ export interface Account {
   createdAt: string
 }
 
+/**
+ * A payment card, stored the only safe way a card is ever stored: a label, the last
+ * four digits and the expiry. No PAN, no CVV — those are never captured. A real
+ * backend swaps `last4` for a processor token and keeps the rest identical.
+ */
+export interface CardRef {
+  id: string
+  /** The operator's own name for the card: "Amex personal", "Revolut #2". */
+  label: string
+  /** "visa" | "mastercard" | "amex" | … — inferred from the leading digits. */
+  brand?: string
+  /** Exactly four digits, the only part of the number ever kept. */
+  last4: string
+  /** 1–12. */
+  expMonth: number
+  /** Four-digit year. */
+  expYear: number
+  /** The cardholder name, when it differs from the member. */
+  cardholder?: string
+  /** True when the billing address is the membership address. */
+  billingSameAsMember?: boolean
+}
+
 export interface Venue {
   name: string
   city: string
   country: string
+}
+
+/** The compass side a stand sits on, used to place it around the pitch. */
+export type StandSide = 'N' | 'E' | 'S' | 'W'
+
+/**
+ * One stand / section of a seat map. `aliases` are the words a ticket's `block`
+ * string may contain that place it in this section — the client matches an owned
+ * seat to its stand by them.
+ */
+export interface SeatmapSection {
+  id: string
+  name: string
+  side: StandSide
+  aliases: string[]
+}
+
+/**
+ * A fixture's seat map, served by `GET /fixtures/:id/seatmap`. Today the mock returns
+ * a per-stadium SCHEMATIC (`format: 'sections'`) built from the stand registry; a real
+ * backend can return a provider SVG (`format: 'svg'`) behind the same endpoint, and
+ * the tab renders whichever it gets. See docs/BACKEND-HANDOFF.md.
+ */
+export interface Seatmap {
+  fixtureId: string
+  venue: string
+  format: 'sections' | 'svg'
+  sections: SeatmapSection[]
+  /** An inline provider SVG, when `format` is 'svg'. */
+  svg?: string
+  /** Where the map came from: 'mock-schematic', 'ticketmaster', … */
+  source: string
+  /** Credit line for a provider map, shown under it. */
+  attribution?: string
 }
 
 export interface FixtureCounts {

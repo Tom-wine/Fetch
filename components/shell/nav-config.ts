@@ -11,6 +11,7 @@ import {
   Settings,
   Shield,
   Ticket,
+  UserPlus,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -66,6 +67,7 @@ export const NAV: NavEntry[] = [
   {
     label: 'Accounts',
     items: [
+      { label: 'Register Membership', href: '/accounts/register', icon: UserPlus },
       { label: 'Account Manager', href: '/accounts', icon: Key },
       { label: 'Proxies', href: '/accounts?tab=proxies', icon: Shield },
       { label: 'Email IMAP', href: '/accounts?tab=imap', icon: Mail },
